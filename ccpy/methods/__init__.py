@@ -14,6 +14,8 @@ solve four-index equations, with the integrals (vvvv included) materialized from
 vectors, and issue a DFPortWarning.
 """
 from ccpy.methods.base import MethodBase
+from ccpy.methods.adc import ADC2, EAADC2, IPADC2
+from ccpy.methods.fno import FNOEvaluation, FNOOptions, FNOResult, FNOTarget, prepare_fno, register_fno_provider
 from ccpy.methods.cc import (ACCD, ACCSD, ACCSDT_P, CC2, CC3, CC4, CCD, CCSD, CCSDT, CCSDT_P, CCSDTQ, ECCC2,
                              ACCBase, CCBase, CCPBase)
 from ccpy.methods.corrections import (CCP3, CCP4, CCT3, AdaptiveCCPQ, CREACC23, CREOMCC23, CRCC23, CRCC24,
@@ -38,7 +40,8 @@ from ccpy.methods.mbpt import MP2, MP3, MP4, MBPTBase
 from ccpy.methods.reference import DFPortWarning, Reference
 
 
-__all__ = [name for name in dir() if not name.startswith("_") and name[0].isupper()] + ["methods_requiring_df_port"]
+__all__ = [name for name in dir() if not name.startswith("_") and name[0].isupper()] + [
+    "methods_requiring_df_port", "prepare_fno", "register_fno_provider"]
 
 
 def methods_requiring_df_port():

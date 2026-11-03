@@ -45,6 +45,12 @@ class MethodBase:
         object, and reuse them when given a method that holds them.
     nfrozen, ndelete : int, optional
         Frozen core and deleted virtual orbitals (only with an SCF upstream).
+    fno : FNOOptions, optional
+        Prepare a DF-MP2 (or registered provider) frozen-natural-orbital reference
+        before allocating correlated quantities. Inherited from an upstream method.
+    fno_targets : sequence of FNOTarget, optional
+        Explicit target identities in returned EOM root order for state-specific
+        completion. Defaults to the prepared reference's configured target order.
     **options
         Solver options (see SOLVER_OPTIONS) and fd_step/fd_npoints for finite-difference
         gradients. Solver options are passed on to the methods created internally.
@@ -61,12 +67,26 @@ class MethodBase:
         obj._ctor_args = (args, kwargs)
         return obj
 
-    def __init__(self, upstream, nfrozen=None, ndelete=None, **options):
+    def __init__(self, upstream, nfrozen=None, ndelete=None, *, fno=None, fno_targets=None, **options):
         unknown = set(options) - set(SOLVER_OPTIONS) - set(METHOD_OPTIONS)
         if unknown:
             raise TypeError(f"{type(self).__name__}: unknown options {sorted(unknown)}")
         self.upstream = upstream
         self.reference = self.resolve_reference(upstream, nfrozen, ndelete)
+        from ccpy.methods.fno import FNOTarget, prepare_fno
+
+        existing = self.reference.fno_result
+        if fno is False and existing is not None:
+            raise ValueError("Cannot disable upstream FNOs; start a new calculation from SCF.")
+        if fno is not None and fno is not False:
+            if isinstance(upstream, MethodBase) and existing is None:
+                raise ValueError("Cannot change an upstream method's orbital basis; enable FNOs on its SCF/reference.")
+            self.reference = prepare_fno(self.reference, fno)
+        self.fno_targets = None if fno_targets is None else tuple(fno_targets)
+        if self.fno_targets is not None and not all(isinstance(t, FNOTarget) for t in self.fno_targets):
+            raise TypeError("fno_targets must contain FNOTarget objects in EOM output order.")
+        if self.fno_targets is not None and len(set(self.fno_targets)) != len(self.fno_targets):
+            raise ValueError("fno_targets must identify distinct EOM states.")
         # solver options given to an upstream method carry over unless overridden
         inherited = upstream.user_options if isinstance(upstream, MethodBase) else {}
         options = {**{k: v for k, v in inherited.items() if k != "RHF_symmetry"}, **options}
@@ -96,11 +116,56 @@ class MethodBase:
     def reference_energy(self):
         return self.reference.energy
 
+    @property
+    def fno_result(self):
+        return self.reference.fno_result
+
+    @property
+    def fno_options(self):
+        return None if self.fno_result is None else self.fno_result.options
+
+    def _complete_ground_energy(self, raw):
+        result = self.fno_result
+        if result is None or result.options.energy_completion == "none":
+            return raw
+        return raw + result.delta_ground
+
+    def _state_shifts(self, count, sector, irreps=None):
+        """Reporting-only state shifts; kernels always retain raw eigenvalues."""
+        import numpy as np
+
+        result = self.fno_result
+        if result is None or result.options.energy_completion == "none":
+            return np.zeros(count)
+        if result.options.energy_completion == "ground":
+            return np.full(count, result.delta_ground)
+        targets = self.fno_targets if self.fno_targets is not None else result.options.targets
+        if len(targets) != count or any(t.sector != sector for t in targets):
+            raise ValueError("State-specific FNO completion requires one matching-sector FNOTarget per returned root; "
+                             "pass fno_targets in EOM result order.")
+        if irreps is not None and any(t.irrep is not None and t.irrep != irrep
+                                      for t, irrep in zip(targets, irreps)):
+            raise ValueError("FNO target irreps do not match the EOM root order.")
+        multiplicity = getattr(self, "multiplicity", None)
+        if multiplicity is None and getattr(self, "guess_settings", None) is not None:
+            multiplicity = self.guess_settings["multiplicity"]
+        if multiplicity is not None and multiplicity > 0 and any(
+                t.multiplicity is not None and t.multiplicity != multiplicity for t in targets):
+            raise ValueError("FNO target multiplicities do not match the targeted EOM spin.")
+        try:
+            return np.array([result.delta_state(t) for t in targets])
+        except KeyError as exc:
+            raise ValueError("Missing matched low-level energy for an EOM FNO target.") from exc
+
     # ------------------------------------------------------------------ contract
     def solve(self):
         raise NotImplementedError
 
     def energy(self):
+        raise NotImplementedError
+
+    def raw_energy(self):
+        """Ordinary truncated-space energy, before FNO completion."""
         raise NotImplementedError
 
     def ensure_solved(self):
@@ -130,7 +195,7 @@ class MethodBase:
         from ccpy.scf.uhf import UHF
 
         return (self.gradient_function is not None and isinstance(self.reference.scf, (RHF, UHF))
-                and self.reference.ndelete == 0)
+                and self.reference.ndelete == 0 and self.fno_result is None)
 
     def _gradient_function(self):
         return getattr(import_module(self.gradient_module), self.gradient_function)
@@ -155,10 +220,38 @@ class MethodBase:
             new_upstream = upstream.with_molecule(molecule)
         new = type(self)(new_upstream, *args[1:], **kwargs)
         self._copy_setup(new)
+        new.fno_targets = self.fno_targets
         return new
 
     def _copy_setup(self, new):
         """Transfer setup done after construction (e.g., an EOM initial guess) to `new`."""
+
+    def _validate_working_excitations(self, excitations, particle_spins, hole_spins):
+        """Check selected-space indices before calling compiled FNO-space kernels.
+
+        Lists remain the caller's responsibility to generate in the new basis;
+        dimensions alone cannot detect a stale list whose indices happen to fit.
+        """
+        if self.fno_result is None:
+            return
+        import numpy as np
+
+        if set(excitations) != set(particle_spins):
+            raise ValueError("Selected excitations must contain every required spin block in the working basis.")
+        nv = {"a": self.system.nunoccupied_alpha, "b": self.system.nunoccupied_beta}
+        no = {"a": self.system.noccupied_alpha, "b": self.system.noccupied_beta}
+        for key, values in excitations.items():
+            values = np.asarray(values)
+            bounds = [nv[s] for s in particle_spins[key]] + [no[s] for s in hole_spins[key]]
+            if (values.ndim != 2 or values.shape[1] != len(bounds) or values.shape[0] == 0 or
+                    not np.all(np.isfinite(values)) or not np.all(values == np.floor(values))):
+                raise ValueError(f"Invalid selected excitation block {key}; supply integer rows in the working basis "
+                                 "or one all-ones row for an empty spin block.")
+            if values.shape[0] == 1 and np.all(values == 1):
+                continue
+            if np.any(values < 1) or np.any(values > np.asarray(bounds)):
+                raise ValueError(f"Selected excitation block {key} exceeds the working orbital dimensions; "
+                                 "regenerate selected spaces after FNO preparation.")
 
     # ------------------------------------------------------------------ helpers
     def _depends_on(self, *objects):
@@ -178,12 +271,22 @@ class MethodBase:
         print("   ------------------------------------------")
         for key, value in self.options.items():
             print("  ", key, "=", value)
+        if self.fno_result is not None:
+            result = self.fno_result
+            print(f"   FNO source = {result.options.source}; completion = {result.options.energy_completion}")
+            print(f"   FNO virtuals (alpha, beta) = ({self.system.nunoccupied_alpha}, "
+                  f"{self.system.nunoccupied_beta}); discarded = {result.discarded}")
+            print(f"   FNO low-level energies: full = {result.full.ground_energy:.12f}, "
+                  f"truncated = {result.truncated.ground_energy:.12f}")
+            print(f"   FNO ground correction = {result.delta_ground:.12f}")
         print("   ------------------------------------------\n")
 
     @staticmethod
     def resolve_cc(method, upstream, cc_class):
         """Ground-state CC object held by `upstream`, or a new `cc_class` on method's reference."""
         if isinstance(upstream, MethodBase) and hasattr(upstream, "cc"):
+            if upstream.cc.reference is not method.reference:
+                raise ValueError("Cannot share CC amplitudes between different orbital references.")
             return upstream.cc
         return cc_class(method.reference, **method.user_options)
 

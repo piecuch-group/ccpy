@@ -1,6 +1,12 @@
-"""Analytic nuclear gradient of an excited state's CR-EOMCC(2,3)_A energy, factorized with
+"""Analytic nuclear gradient of an excited state's delta-CR-EOMCC(2,3)_A energy, factorized with
 density fitting or Cholesky vectors, RHF or UHF reference (ccpq_analytical_gradients.pdf,
 Secs. 7-8).
+
+The CR-EOMCC(2,3) moment <K|(Hbar R)_C|0> contains r0 times the ground-state moment
+<K|(H(T1) e^T2)_C|0>, which makes the correction non-size-intensive. delta-CR-EOMCC(2,3) drops it,
+and so does this gradient: the r0 terms are commented out where they occur and marked
+NON-INTENSIVE TERM (the r0 X_g part of J_g, F_r0, r0 <V3|O|0> in the densities and r0 dT0 in F_t).
+The gradient is therefore that of E_EOMCCSD + ddelta (the "ddeltas" of ccpy.methods.CREOMCC23).
 
 Theory
 ------
@@ -10,9 +16,10 @@ The state is an EOMCCSD root with right vector R = r0 + R1 + R2, left vector L =
     delta = sum_K N_K M_K / D_K,   M_K = <K|(Hbar R)_C|0>,   N_K = <L|Hbar|K>,
     D_K   = omega + f_ii + f_jj + f_kk - f_aa - f_bb - f_cc      (bare Fock, variant A).
 
-R is an excitation operator like T, so M = r0 M3 + D_R M3: with the moment intermediates X_g of
-ccpy.gradients.crcc23_gradient, M = A sum_g (J_g . t_g + X_g . r_g), J_g = r0 X_g + X_g(T, H1)
-+ X_g(R, H) (linear part), H1 = [H(T1), R1]. The gradient of E_EOMCCSD + delta is that of
+R is an excitation operator like T, so M = r0 M3 + D_R M3 for CR-EOMCC(2,3) and M = D_R M3 for
+delta-CR-EOMCC(2,3) (used here): with the moment intermediates X_g of
+ccpy.gradients.crcc23_gradient, M = A sum_g (J_g . t_g + X_g . r_g), J_g = X_g(T, H1) + X_g(R, H)
+(linear part; + r0 X_g for CR-EOMCC(2,3)), H1 = [H(T1), R1]. The gradient of E_EOMCCSD + delta is that of
 
     E = <L|Hbar|R> + sum_mu z_b,mu <mu|Hbar|0>                                     (EOMCCSD)
         + delta + a^T (A - E) r + l^T (A - E) b + nu (l^T r - 1) + sum_mu z_c,mu <mu|Hbar|0>,
@@ -27,7 +34,7 @@ v_K = N_K / D_K and W = sum_K u_K v_K, stationarity gives, in the order of Sec. 
 
 with the sources of delta at fixed state
 
-    F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0>,    F_r(mu) = sum_K v_K d<K|(H(T1) e^T2)_C|0>/dt_mu,
+    F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0> (0 here),    F_r(mu) = sum_K v_K d<K|(H(T1) e^T2)_C|0>/dt_mu,
     F_l(mu) = sum_K <mu|Hbar|K> u_K,
     F_t(mu) = sum_K v_K <K|[Hbar, tau_mu] R|0> + sum_K u_K <L|[Hbar, tau_mu]|K> + W <0|Hbar|mu>.
 
@@ -82,7 +89,7 @@ from ccpy.models.integrals import Integral
 
 def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zvector_tol=1.0e-10, components=False,
                             verbose=True):
-    """Analytic CR-EOMCC(2,3)_A gradient of one EOMCCSD root, (natoms, 3) in Eh/bohr, from the
+    """Analytic delta-CR-EOMCC(2,3)_A gradient of one EOMCCSD root, (natoms, 3) in Eh/bohr, from the
     CCSD T, the root's R, r0, L, omega, and the CCSD HBar, on the SCF reference
     (ccpy.methods.Reference). components=True returns a dict with the base (EOMCCSD, nuclear
     repulsion included), correction and total gradients."""
@@ -141,15 +148,20 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     # the triples: M = <K|(Hbar R)_C|0> = A sum_g (J_g . t_g + X_g . r_g), N = <L|Hbar|K>, D_K
     X = {"aaa": build_triples_intermediates_aaa(T, H), "aab": build_triples_intermediates_aab(T, H),
          "abb": build_triples_intermediates_abb(T, H), "bbb": build_triples_intermediates_bbb(T, H)}
-    # J_g = r0 X_g + X_g(T, H1R) + X_g(R, H)
-    J = {"aaa": [r0 * xg + xg1 + xgr for xg, xg1, xgr in zip(X["aaa"], build_triples_intermediates_aaa(T, H1R),
-                                                             build_triples_intermediates_aaa(R, H, constant=False))],
-         "aab": [r0 * xg + xg1 + xgr for xg, xg1, xgr in zip(X["aab"], build_triples_intermediates_aab(T, H1R),
-                                                             build_triples_intermediates_aab(R, H, constant=False))],
-         "abb": [r0 * xg + xg1 + xgr for xg, xg1, xgr in zip(X["abb"], build_triples_intermediates_abb(T, H1R),
-                                                             build_triples_intermediates_abb(R, H, constant=False))],
-         "bbb": [r0 * xg + xg1 + xgr for xg, xg1, xgr in zip(X["bbb"], build_triples_intermediates_bbb(T, H1R),
-                                                             build_triples_intermediates_bbb(R, H, constant=False))]}
+    # J_g = X_g(T, H1R) + X_g(R, H): the moments of delta-CR-EOMCC(2,3), M = <K|(Hbar (R1 + R2))_C|0>.
+    # NON-INTENSIVE TERM, dropped: r0 X_g, i.e. r0 times the ground-state moment <K|(H(T1) e^T2)_C|0>
+    # (CR-EOMCC(2,3) proper; not size-intensive). With it, J_g = r0 X_g + X_g(T, H1R) + X_g(R, H):
+    # J = {"aaa": [r0 * xg + xg1 + xgr for xg, xg1, xgr in zip(X["aaa"], build_triples_intermediates_aaa(T, H1R),
+    #                                                          build_triples_intermediates_aaa(R, H, constant=False))],
+    #      ... and likewise for "aab", "abb", "bbb"}
+    J = {"aaa": [xg1 + xgr for xg1, xgr in zip(build_triples_intermediates_aaa(T, H1R),
+                                               build_triples_intermediates_aaa(R, H, constant=False))],
+         "aab": [xg1 + xgr for xg1, xgr in zip(build_triples_intermediates_aab(T, H1R),
+                                               build_triples_intermediates_aab(R, H, constant=False))],
+         "abb": [xg1 + xgr for xg1, xgr in zip(build_triples_intermediates_abb(T, H1R),
+                                               build_triples_intermediates_abb(R, H, constant=False))],
+         "bbb": [xg1 + xgr for xg1, xgr in zip(build_triples_intermediates_bbb(T, H1R),
+                                               build_triples_intermediates_bbb(R, H, constant=False))]}
     rdm1_Lu, rdm2_Lu = zero_triples_density(system)
     tr = calc_triples(X, T, L, H, reference, rdm1_Lu, rdm2_Lu, omega=omega, R=R, r0=r0, J=J)
     del X, J
@@ -186,27 +198,28 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     # bare-frame densities: <V3|O|0> (D_v0), <V3|O|R> (D_vR) and <L|O|U3> (D_Lu)
     D_v0, Y_v0 = build_DY(rdm1_v0, rdm2_v0, None, H.chol, T, B, reference)
     D_Lu, Y_Lu = build_DY(rdm1_Lu, rdm2_Lu, None, H.chol, T, B, reference)
-    # <V3|O|R> = r0 <V3|O|0> + D_R2 <V3|O|0> + D_R1 <V3|O|0> + <C'|O|0>
+    # <V3|O|R> = D_R2 <V3|O|0> + D_R1 <V3|O|0> + <C'|O|0>
+    # (NON-INTENSIVE TERM, dropped: + r0 <V3|O|0>, the density of r0 times the ground-state moment)
     D_vR, Y_vR = build_DY(rdm1_vR, rdm2_vR, None, H.chol, T, B, reference)
     _, Y_v0R1 = build_DY(rdm1_v0, rdm2_v0, None, H1R.chol, T, B1R, reference)
     D_c, Y_c = build_DY(*calc_ccsd_rdm(T, cprime, system, energy=0.0),
                         lambda a, s: calc_rdm2_vvvv_slice(cprime, T, a, s), H.chol, T, B, reference)
-    D_vR.a.oo += r0 * D_v0.a.oo + D_c.a.oo
-    D_vR.a.ov += r0 * D_v0.a.ov + D_c.a.ov
-    D_vR.a.vo += r0 * D_v0.a.vo + D_c.a.vo
-    D_vR.a.vv += r0 * D_v0.a.vv + D_c.a.vv
-    D_vR.b.oo += r0 * D_v0.b.oo + D_c.b.oo
-    D_vR.b.ov += r0 * D_v0.b.ov + D_c.b.ov
-    D_vR.b.vo += r0 * D_v0.b.vo + D_c.b.vo
-    D_vR.b.vv += r0 * D_v0.b.vv + D_c.b.vv
-    Y_vR.a.oo += r0 * Y_v0.a.oo + Y_c.a.oo + Y_v0R1.a.oo
-    Y_vR.a.ov += r0 * Y_v0.a.ov + Y_c.a.ov + Y_v0R1.a.ov
-    Y_vR.a.vo += r0 * Y_v0.a.vo + Y_c.a.vo + Y_v0R1.a.vo
-    Y_vR.a.vv += r0 * Y_v0.a.vv + Y_c.a.vv + Y_v0R1.a.vv
-    Y_vR.b.oo += r0 * Y_v0.b.oo + Y_c.b.oo + Y_v0R1.b.oo
-    Y_vR.b.ov += r0 * Y_v0.b.ov + Y_c.b.ov + Y_v0R1.b.ov
-    Y_vR.b.vo += r0 * Y_v0.b.vo + Y_c.b.vo + Y_v0R1.b.vo
-    Y_vR.b.vv += r0 * Y_v0.b.vv + Y_c.b.vv + Y_v0R1.b.vv
+    D_vR.a.oo += D_c.a.oo  # + r0 * D_v0.a.oo (non-intensive)
+    D_vR.a.ov += D_c.a.ov  # + r0 * D_v0.a.ov (non-intensive)
+    D_vR.a.vo += D_c.a.vo  # + r0 * D_v0.a.vo (non-intensive)
+    D_vR.a.vv += D_c.a.vv  # + r0 * D_v0.a.vv (non-intensive)
+    D_vR.b.oo += D_c.b.oo  # + r0 * D_v0.b.oo (non-intensive)
+    D_vR.b.ov += D_c.b.ov  # + r0 * D_v0.b.ov (non-intensive)
+    D_vR.b.vo += D_c.b.vo  # + r0 * D_v0.b.vo (non-intensive)
+    D_vR.b.vv += D_c.b.vv  # + r0 * D_v0.b.vv (non-intensive)
+    Y_vR.a.oo += Y_c.a.oo + Y_v0R1.a.oo  # + r0 * Y_v0.a.oo (non-intensive)
+    Y_vR.a.ov += Y_c.a.ov + Y_v0R1.a.ov  # + r0 * Y_v0.a.ov (non-intensive)
+    Y_vR.a.vo += Y_c.a.vo + Y_v0R1.a.vo  # + r0 * Y_v0.a.vo (non-intensive)
+    Y_vR.a.vv += Y_c.a.vv + Y_v0R1.a.vv  # + r0 * Y_v0.a.vv (non-intensive)
+    Y_vR.b.oo += Y_c.b.oo + Y_v0R1.b.oo  # + r0 * Y_v0.b.oo (non-intensive)
+    Y_vR.b.ov += Y_c.b.ov + Y_v0R1.b.ov  # + r0 * Y_v0.b.ov (non-intensive)
+    Y_vR.b.vo += Y_c.b.vo + Y_v0R1.b.vo  # + r0 * Y_v0.b.vo (non-intensive)
+    Y_vR.b.vv += Y_c.b.vv + Y_v0R1.b.vv  # + r0 * Y_v0.b.vv (non-intensive)
     # ... the R1 rotation of <V3|O|0>: D_v0 R1^T - R1^T D_v0 (and Y_v0 likewise)
     D_vR.a.oo[nfz:, :] -= R.a.T @ D_v0.a.vo
     D_vR.a.ov += D_v0.a.oo[:, nfz:] @ R.a.T
@@ -224,8 +237,11 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     Y_vR.b.ov += Y_v0.b.oo[:, :, nfz:] @ R.b.T
     Y_vR.b.ov[:, nfz:, :] -= R.b.T @ Y_v0.b.vv
     Y_vR.b.vv += Y_v0.b.vo[:, :, nfz:] @ R.b.T
-    # F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0>, F_r(mu) = sum_K v_K d<K|(H(T1) e^T2)_C|0>/dt_mu
-    F_r0 = tr["F_r0"]
+    # F_r(mu) = sum_K v_K d<K|(H(T1) e^T2)_C|0>/dt_mu, the derivative of delta along r(mu).
+    # NON-INTENSIVE TERM, dropped: the derivative along r0, F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0>, which
+    # delta-CR-EOMCC(2,3) does not have
+    # F_r0 = tr["F_r0"]
+    F_r0 = 0.0
     dTr = {"aa": dT0["aa"] + tr["dT"]["aa"], "ab": dT0["ab"] + tr["dT"]["ab"], "bb": dT0["bb"] + tr["dT"]["bb"]}
     F_r = SimpleNamespace(
         a=build_F_r_1A(D_v0, Y_v0, h, B, nfz), b=build_F_r_1B(D_v0, Y_v0, h, B, nfz), ab=dTr["ab"],
@@ -241,16 +257,17 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
         aa=dL["aa"] - dL["aa"].transpose(1, 0, 2, 3) - dL["aa"].transpose(0, 1, 3, 2) + dL["aa"].transpose(1, 0, 3, 2),
         bb=dL["bb"] - dL["bb"].transpose(1, 0, 2, 3) - dL["bb"].transpose(0, 1, 3, 2) + dL["bb"].transpose(1, 0, 3, 2),
     )
-    # F_t doubles: the T2 gradient of sum_K v_K M_K (J_g . t_g directly, r0 X_g(T, H), X_g(T, H1R) and
-    # X_g(T, H) . r_g through the intermediates), (J^T c')_doubles and W <0|Hbar|ijab>; the singles
-    # are part of build_g_1A / build_g_1B
+    # F_t doubles: the T2 gradient of sum_K v_K M_K (J_g . t_g directly, X_g(T, H1R) and X_g(T, H) . r_g
+    # through the intermediates), (J^T c')_doubles and W <0|Hbar|ijab>; the singles are part of
+    # build_g_1A / build_g_1B. NON-INTENSIVE TERM, dropped: r0 dT0, the T2 gradient of r0 X_g(T, H) . t_g
     Cp, LHcp = copy.deepcopy(T), copy.deepcopy(T)
     Cp.a, Cp.b = np.asfortranarray(cprime.a), np.asfortranarray(cprime.b)
     Cp.aa, Cp.ab, Cp.bb = np.asfortranarray(cprime.aa), np.asfortranarray(cprime.ab), np.asfortranarray(cprime.bb)
     LH_fun(LHcp, Cp, T, Hbar, False, system)
-    dTt = {"aa": tr["dJT"]["aa"] + r0 * dT0["aa"] + dTH1["aa"] + dTR["aa"],
-           "ab": tr["dJT"]["ab"] + r0 * dT0["ab"] + dTH1["ab"] + dTR["ab"],
-           "bb": tr["dJT"]["bb"] + r0 * dT0["bb"] + dTH1["bb"] + dTR["bb"]}
+    # (non-intensive: + r0 * dT0["aa"], + r0 * dT0["ab"], + r0 * dT0["bb"])
+    dTt = {"aa": tr["dJT"]["aa"] + dTH1["aa"] + dTR["aa"],
+           "ab": tr["dJT"]["ab"] + dTH1["ab"] + dTR["ab"],
+           "bb": tr["dJT"]["bb"] + dTH1["bb"] + dTR["bb"]}
     F_t_aa = (dTt["aa"] - dTt["aa"].transpose(1, 0, 2, 3) - dTt["aa"].transpose(0, 1, 3, 2)
               + dTt["aa"].transpose(1, 0, 3, 2)
               + np.array(LHcp.aa) + W * Hbar.aa.oovv.transpose(2, 3, 0, 1))
@@ -510,7 +527,7 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     D, Yr, Wd = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
     grad = contract_derivative_integrals(D, Yr, Wd, reference)
     if verbose:
-        print_gradient(reference.molecule, grad, "CR-EOMCC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
+        print_gradient(reference.molecule, grad, "delta-CR-EOMCC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
     if not components:
         return grad
     D, Yr, Wd = orbital_relaxation(D1c, Yc, reference, zvector_tol=zvector_tol, verbose=False)

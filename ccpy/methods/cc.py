@@ -64,7 +64,7 @@ class CCBase(MethodBase):
 
     @property
     def total_energy(self):
-        return self.reference_energy + self.correlation_energy
+        return self._complete_ground_energy(self.reference_energy + self.correlation_energy)
 
     def get_hbar(self, hbar_class=None):
         """HBar of this method's T (built, or rebuilt after T changed, on demand)."""
@@ -129,6 +129,10 @@ class CCBase(MethodBase):
         self.ensure_solved()
         return self.total_energy
 
+    def raw_energy(self):
+        self.ensure_solved()
+        return self.reference_energy + self.correlation_energy
+
     # ------------------------------------------------------------------ gradients
     def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
         left = self.left.ensure_solved()
@@ -174,6 +178,8 @@ class CCPBase(CCBase):
 
     def _prepare_excitations(self, excitations):
         excitations = {k: np.asfortranarray(np.array(v)) for k, v in excitations.items()}
+        spins = {s: s for s in ("aaa", "aab", "abb", "bbb")}
+        self._validate_working_excitations(excitations, spins, spins)
         if self.options["RHF_symmetry"]:
             assert excitations["aaa"].shape[0] == excitations["bbb"].shape[0]
             assert excitations["aab"].shape[0] == excitations["abb"].shape[0]

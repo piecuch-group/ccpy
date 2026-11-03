@@ -27,6 +27,9 @@ class MBPTBase(MethodBase):
         return self
 
     def energy(self):
+        return self._complete_ground_energy(self.raw_energy())
+
+    def raw_energy(self):
         self.ensure_solved()
         return self.reference_energy + self.correlation_energy
 
@@ -34,6 +37,17 @@ class MBPTBase(MethodBase):
 class MP2(MBPTBase):
     """MP2 with DF/Cholesky integrals."""
     function = "calc_mp2"
+
+    def solve(self):
+        from ccpy.mbpt.dfmp2 import dfmp2
+
+        self._print_header()
+        self.correlation_energy, _ = dfmp2(self.reference, need_density=False)
+        raw = self.reference_energy + self.correlation_energy
+        print(f"   DF-MP2 correlation energy = {self.correlation_energy:.12f}")
+        print(f"   DF-MP2 total energy = {self._complete_ground_energy(raw):.12f}")
+        self._finish_solve(True)
+        return self
 
 
 class MP3(MBPTBase):

@@ -22,6 +22,8 @@ containing subroutines that are callable from Python and interoperable with Nump
    installation
    getting_started
    computational_options
+   fno
+   adc
    walkthrough
    references
    contact_information

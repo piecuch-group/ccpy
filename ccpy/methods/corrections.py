@@ -117,6 +117,9 @@ class GroundStateCorrectionBase(CorrectionBase):
 
     def energy(self):
         """Total energy: CC energy plus the correction of the chosen variant."""
+        return self._complete_ground_energy(self.raw_energy())
+
+    def raw_energy(self):
         self.ensure_solved()
         return self.reference_energy + self.cc.correlation_energy + self.deltas[self.variant]
 
@@ -356,7 +359,7 @@ class AdaptiveCCPQ(MethodBase):
     def _stochastic_test(self):
         """Semi-stochastic CC(P;3) energy, stopped once the stopping test is decided."""
         tolerance, z = self.adaptive_options["energy_tolerance"], self.convergence_z
-        base = self.reference_energy + self.cc.correlation_energy
+        base = self._complete_ground_energy(self.reference_energy + self.cc.correlation_energy)
         previous, previous_error = self.ccpq_energies[-1], self.ccpq_errors[-1]
 
         def decided(delta, error):
@@ -434,7 +437,7 @@ class AdaptiveCCPQ(MethodBase):
         self.extrapolated = {"ccq": [], "ccr": [], "cccf": []}
         self.pspaces, self.timings = [], []
         self.adaptive_converged = False
-        e_ref = self.reference_energy
+        e_ref = self._complete_ground_energy(self.reference_energy)
         nmacro = self.nmacro if self.fixed_pspaces is None else len(self.fixed_pspaces)
         for imacro in range(nmacro):
             if self.fixed_pspaces is not None:
@@ -472,6 +475,7 @@ class AdaptiveCCPQ(MethodBase):
                     self.system, num_add[imacro], use_RHF=self.options["RHF_symmetry"],
                     min_thresh=self.adaptive_options["minimum_threshold"],
                     buffer_factor=self.adaptive_options["buffer_factor"])
+                e_ccpq = self._complete_ground_energy(e_ccpq)
                 error = 0.0
             if check and not converged:
                 converged = self._converged(e_ccpq, error)
@@ -518,6 +522,9 @@ class AdaptiveCCPQ(MethodBase):
         """CC(P;3)_D energy of the last macroiteration (runs the adaptive loop if needed)."""
         self.ensure_solved()
         return self.ccpq_energies[-1]
+
+    def raw_energy(self):
+        return self.energy() - self._complete_ground_energy(0.0)
 
 
 class CRCC24(GroundStateCorrectionBase):
@@ -591,6 +598,11 @@ class ExcitedStateCorrectionBase(CorrectionBase):
         total = self.eom.energy() + np.array([d[self.variant] for d in self.deltas])
         return total if root is None else total[root]
 
+    def raw_energy(self, root=None):
+        self.ensure_solved()
+        total = self.eom.raw_energy() + np.array([d[self.variant] for d in self.deltas])
+        return total if root is None else total[root]
+
     def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, **kwargs):
         self.ensure_solved()
         eom, left, hbar = self.eom, self.left, self.eom.hbar
@@ -600,7 +612,13 @@ class ExcitedStateCorrectionBase(CorrectionBase):
 
 
 class CREOMCC23(ExcitedStateCorrectionBase):
-    """CR-EOMCC(2,3) triples corrections to EOMCCSD (DF/Cholesky)."""
+    """delta-CR-EOMCC(2,3) triples corrections to EOMCCSD (DF/Cholesky).
+
+    energy() and gradient() are those of delta-CR-EOMCC(2,3), E_EOMCCSD + ddeltas: the
+    size-intensive correction without r0 times the ground-state moment. The full CR-EOMCC(2,3)
+    corrections are kept in ``deltas`` and their energies are returned by full_energy() and
+    full_raw_energy().
+    """
     module, function = "ccpy.moments.creomcc23_chol", "calc_creomcc23"
     gradient_module, gradient_function = "ccpy.gradients.creomcc23_gradient", "calc_creomcc23_gradient"
     gradient_variants = ("A",)
@@ -610,6 +628,37 @@ class CREOMCC23(ExcitedStateCorrectionBase):
                                             hbar.correlation_energy, hbar.H, self._fock(), self.system,
                                             self.options["RHF_symmetry"])
         return delta, ddelta
+
+    def energy(self, root=None):
+        """delta-CR-EOMCC(2,3) total energies of the roots (or of one root)."""
+        self.ensure_solved()
+        total = self.eom.energy() + np.array([d[self.variant] for d in self.ddeltas])
+        return total if root is None else total[root]
+
+    def raw_energy(self, root=None):
+        self.ensure_solved()
+        total = self.eom.raw_energy() + np.array([d[self.variant] for d in self.ddeltas])
+        return total if root is None else total[root]
+
+    def full_energy(self, root=None):
+        """Full CR-EOMCC(2,3) total energies (with the non-intensive r0 term), E_EOMCCSD + deltas."""
+        self.ensure_solved()
+        total = self.eom.energy() + np.array([d[self.variant] for d in self.deltas])
+        return total if root is None else total[root]
+
+    def full_raw_energy(self, root=None):
+        self.ensure_solved()
+        total = self.eom.raw_energy() + np.array([d[self.variant] for d in self.deltas])
+        return total if root is None else total[root]
+
+    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, **kwargs):
+        """Gradient of delta-CR-EOMCC(2,3)_A, E_EOMCCSD + ddeltas[root]["A"]: the analytic gradient
+        drops the non-size-intensive r0 (ground-state moment) part of the correction."""
+        self.ensure_solved()
+        eom, left, hbar = self.eom, self.left, self.eom.hbar
+        return self._gradient_function()(hbar.T, eom.R[root], eom.r0[root], left.L[root], eom.omega[root], hbar.H,
+                                         self.reference, delta=self.ddeltas[root][self.variant],
+                                         zvector_tol=zvector_tol)
 
 
 class EOMCCT3(ExcitedStateCorrectionBase):

@@ -1,4 +1,5 @@
 python_sources = [
+  'dfmp2.py',
   'mbpt.py',
   '__init__.py',
   'mbgf.py'

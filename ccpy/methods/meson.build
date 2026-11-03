@@ -1,6 +1,8 @@
 python_sources = [
   '__init__.py',
   'base.py',
+  'adc.py',
+  'fno.py',
   'cc.py',
   'corrections.py',
   'eomcc.py',

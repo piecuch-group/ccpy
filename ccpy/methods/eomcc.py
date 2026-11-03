@@ -178,9 +178,18 @@ class EOMCCBase(InitialGuessMixin, MethodBase):
     # ------------------------------------------------------------------ energies
     def energy(self, root=None):
         """Total energies of the roots (or of one root), solving the equations if needed."""
+        total = self.raw_energy() + self._state_shifts(self.nroots, self.fno_sector, self.root_irreps)
+        return total if root is None else total[root]
+
+    def raw_energy(self, root=None):
         self.ensure_solved()
         total = self.reference_energy + self.hbar.correlation_energy + self.omega
         return total if root is None else total[root]
+
+    @property
+    def completed_omega(self):
+        """Completed target-minus-parent gaps; ``omega`` remains the raw eigenvalue."""
+        return self.energy() - self.cc.energy()
 
 
 
@@ -215,7 +224,16 @@ class PspaceEOMMixin:
         self.converged = False
 
     def _prepare_r3(self, excitations):
-        return {k: np.asfortranarray(np.array(v)) for k, v in excitations.items()}
+        excitations = {k: np.asfortranarray(np.array(v)) for k, v in excitations.items()}
+        particles = {s: s for s in self.r3_spincases}
+        holes = particles.copy()
+        difference = getattr(self, "num_particles", 0) - getattr(self, "num_holes", 0)
+        if difference > 0:
+            holes = {s: s[difference:] for s in self.r3_spincases}
+        elif difference < 0:
+            particles = {s: s[-difference:] for s in self.r3_spincases}
+        self._validate_working_excitations(excitations, particles, holes)
+        return excitations
 
     def _pspace_sizes(self):
         return [[self.r3_excitations[s].shape[0] for s in self.r3_spincases]]
@@ -226,6 +244,7 @@ class PspaceEOMMixin:
 
 # ---------------------------------------------------------------------- EE-EOMCC
 class EEEOMCCBase(EOMCCBase):
+    fno_sector = "EE"
     order = 2
 
     def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, **kwargs):
@@ -334,6 +353,7 @@ class EOMCCSDT_P(PspaceEOMMixin, EEEOMCCBase):
 
 # ---------------------------------------------------------------------- SF-EOMCC
 class SFEOMCCBase(EOMCCBase):
+    fno_sector = "SF"
     requires_df_port = True
     hbar_class = HBarCCSDLegacy
     default_guess = "sfcis"
@@ -415,6 +435,7 @@ class PspaceFockEOMMixin(PspaceEOMMixin):
 
 
 class IPEOMCCBase(FockEOMCCBase):
+    fno_sector = "IP"
     default_guess = "ipcisd"
     printer = "print_ip_amplitudes"
 
@@ -455,6 +476,7 @@ class IPEOMCCSDT_P(PspaceFockEOMMixin, IPEOMCCBase):
 
 
 class EAEOMCCBase(FockEOMCCBase):
+    fno_sector = "EA"
     default_guess = "eacisd"
     printer = "print_ea_amplitudes"
 
@@ -485,6 +507,7 @@ class EAEOM3_P(PspaceFockEOMMixin, EAEOMCCBase):
 
 
 class DIPEOMCCBase(FockEOMCCBase):
+    fno_sector = "DIP"
     default_guess = "dipcis"
     printer, summary = "print_dip_amplitudes", "dipeomcc_calculation_summary"
 
@@ -508,6 +531,7 @@ class DIPEOMCCSDTA(DIPEOMCCBase):
 
 
 class DEAEOMCCBase(FockEOMCCBase):
+    fno_sector = "DEA"
     default_guess = "deacis"
     printer, summary = "print_dea_amplitudes", "deaeomcc_calculation_summary"
 

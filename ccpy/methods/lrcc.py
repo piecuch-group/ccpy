@@ -31,6 +31,7 @@ class LRCCBase(MethodBase):
         super().__init__(upstream, nfrozen, ndelete, **options)
         self.cc = self.resolve_cc(self, upstream, self.cc_class)
         self.prop = prop
+        self._validate_property()
         self.T1 = None
         self.value = 0.0
 
@@ -44,6 +45,7 @@ class LRCCBase(MethodBase):
         from ccpy.utilities.printing import lrcc_calculation_summary
 
         self._warn_df_port()
+        self._validate_property()
         hbar = self.hbar
         self._print_header()
         print("   LR-CC calculation started on", get_timestamp())
@@ -58,6 +60,22 @@ class LRCCBase(MethodBase):
         self._finish_solve(converged, self.cc, hbar)
         return self
 
+    def _validate_property(self):
+        """Reject stale full-space operators before compiled contractions."""
+        import numpy as np
+
+        if getattr(self.prop, "reference", self.reference) is not self.reference:
+            raise ValueError("The property operator belongs to a different orbital reference.")
+        for s, no, nv in (("a", self.system.noccupied_alpha, self.system.nunoccupied_alpha),
+                           ("b", self.system.noccupied_beta, self.system.nunoccupied_beta)):
+            for block, shape in (("oo", (no, no)), ("ov", (no, nv)),
+                                  ("vo", (nv, no)), ("vv", (nv, nv))):
+                value = getattr(getattr(self.prop, s, None), block, None)
+                if (not isinstance(value, np.ndarray) or value.shape != shape or np.iscomplexobj(value) or
+                        not np.all(np.isfinite(value))):
+                    raise ValueError("Property integrals must be finite matrices in the method's working basis; "
+                                     "transform the AO operator with reference.one_body_operator_from_ao().")
+
     def property(self):
         """Correlation contribution to the expectation value of `prop`."""
         self.ensure_solved()
@@ -66,6 +84,9 @@ class LRCCBase(MethodBase):
     def energy(self):
         """Ground-state CC energy."""
         return self.cc.energy()
+
+    def raw_energy(self):
+        return self.cc.raw_energy()
 
 
 class LRCCSD(LRCCBase):

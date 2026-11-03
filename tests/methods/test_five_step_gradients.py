@@ -1,8 +1,9 @@
 """Five-step DF analytic gradients (ccpq_analytical_gradients.pdf): CR-CC(2,3)_A
-(ccpy/gradients/crcc23_gradient.py), CR-EOMCC(2,3)_A (ccpy/gradients/creomcc23_gradient.py) and
+(ccpy/gradients/crcc23_gradient.py), delta-CR-EOMCC(2,3)_A (ccpy/gradients/creomcc23_gradient.py) and
 EOMCCSD (ccpy/gradients/eomccsd_gradient.py), through the method API (gradient()) and the kernels.
 
-CR-CC(2,3)_A (RHF and UHF) is compared with the verified crcc23_gradient.py; CR-EOMCC(2,3)_A with central
+CR-CC(2,3)_A (RHF and UHF) is compared with the verified crcc23_gradient.py; delta-CR-EOMCC(2,3)_A (the
+size-intensive correction without the r0 ground-state moment, CREOMCC23.ddeltas) with central
 differences of ccpy's own EOMCCSD and CREOMCC23 energies, base and correction separately, for
 two roots of a nonplanar molecule (nonzero r0). The 2.5e-4 bohr step keeps the four-point
 truncation error, which grows near the second root, below 1e-9 Eh/bohr.
@@ -102,10 +103,10 @@ def nh3_eom():
 
     def energies(X):
         _, e, mm = _creomcc23(mol.with_geometry(X, unit="bohr"))
-        return np.array([[_quiet(e.energy)[k], mm.deltas[k]["A"]] for k in range(2)])
+        return np.array([[_quiet(e.energy)[k], mm.ddeltas[k]["A"], mm.deltas[k]["A"]] for k in range(2)])
 
     X0 = np.array([a[1] for a in mol.atoms], dtype=float)
-    fd = finite_difference(energies, X0, step=2.5e-4, npoints=4)          # (natoms, 3, root, base/corr)
+    fd = finite_difference(energies, X0, step=2.5e-4, npoints=4)  # (natoms, 3, root, base/ddelta/delta)
     return mf, eom, m, fd
 
 
@@ -130,10 +131,12 @@ def test_creomcc23_moments(nh3_eom, root):
 def test_creomcc23_gradient_vs_finite_difference(nh3_eom, root):
     _, eom, m, fd = nh3_eom
     g = _quiet(calc_creomcc23_gradient, eom.cc.T, eom.R[root], eom.r0[root], m.left.L[root], eom.omega[root],
-               eom.hbar.H, m.reference, delta=m.deltas[root]["A"], components=True, verbose=False)
+               eom.hbar.H, m.reference, delta=m.ddeltas[root]["A"], components=True, verbose=False)
     assert np.allclose(g["base"], fd[:, :, root, 0], atol=1.0e-9)
     assert np.allclose(g["correction"], fd[:, :, root, 1], atol=1.0e-10)
-    assert np.allclose(_quiet(m.gradient, root=root), fd[:, :, root].sum(axis=-1), atol=1.0e-9)
+    # the dropped r0 (ground-state moment) terms are not negligible here
+    assert np.abs(fd[:, :, root, 2] - fd[:, :, root, 1]).max() > 1.0e-6
+    assert np.allclose(_quiet(m.gradient, root=root), fd[:, :, root, :2].sum(axis=-1), atol=1.0e-9)
 
 
 @pytest.mark.parametrize("root", [0, 1])

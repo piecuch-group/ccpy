@@ -9,6 +9,7 @@ py3.install_sources(
 )
 
 subdir('cc')
+subdir('adc')
 subdir('cholesky')
 subdir('constants')
 subdir('density')

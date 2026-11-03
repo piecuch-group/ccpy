@@ -430,6 +430,14 @@ class STEOMCC(InitialGuessMixin, MethodBase):
 
     def energy(self, root=None):
         """Total excited-state energies; ``omega`` contains excitation energies."""
+        total = self.raw_energy() + self._state_shifts(self.nroots, "EE", self.root_irreps)
+        return total if root is None else total[root]
+
+    def raw_energy(self, root=None):
         self.ensure_solved()
         total = self.reference_energy + self.cc.correlation_energy + self.omega
         return total if root is None else total[root]
+
+    @property
+    def completed_omega(self):
+        return self.energy() - self.cc.energy()

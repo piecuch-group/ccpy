@@ -76,6 +76,10 @@ class LeftCCBase(MethodBase):
         self.ensure_solved()
         return self.cc.energy()
 
+    def raw_energy(self):
+        self.ensure_solved()
+        return self.cc.raw_energy()
+
     def has_analytic_gradient(self, **kwargs):
         return self.cc.has_analytic_gradient(**kwargs)
 
@@ -242,6 +246,10 @@ class LeftEOMCCBase(MethodBase):
     def energy(self, root=None):
         self.ensure_solved()
         return self.eom.energy(root)
+
+    def raw_energy(self, root=None):
+        self.ensure_solved()
+        return self.eom.raw_energy(root)
 
 
 class LeftEOMCCSD(LeftEOMCCBase):
