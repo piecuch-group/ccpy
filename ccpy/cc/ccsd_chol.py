@@ -5,9 +5,12 @@ Coupled-Cluster Method with Singles and Doubles (CCSD)
 
 import numpy as np
 from ccpy.lib.core import cc_loops2, vvvv_contraction
+from ccpy.cc.denominators import Denominators
 
 # @profile
-def update(T, dT, H, X, shift, flag_RHF):
+def update(T, dT, H, X, shift, flag_RHF, denominator="mp"):
+    # Jacobi denominators other than MP (see ccpy.cc.denominators), from T2 of this iteration
+    D = None if denominator == "mp" else Denominators(T, H, denominator)
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (
@@ -66,11 +69,15 @@ def update(T, dT, H, X, shift, flag_RHF):
 
     # update T1
     T, dT = update_t1a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "a", shift)
     if flag_RHF:
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
         T, dT = update_t1b(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "b", shift)
 
     # Adjust (vv) intermediates
     X.a.vv -= np.einsum("me,am->ae", X.a.ov, T.a, optimize=True)
@@ -106,12 +113,18 @@ def update(T, dT, H, X, shift, flag_RHF):
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aa", shift)
     T, dT = update_t2b(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "ab", shift)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
         T, dT = update_t2c(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "bb", shift)
     return T, dT
 
 # @profile

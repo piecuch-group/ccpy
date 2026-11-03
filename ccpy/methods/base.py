@@ -20,6 +20,7 @@ SOLVER_OPTIONS = {
     "amp_convergence": 1.0e-07,
     "energy_convergence": 1.0e-07,
     "energy_shift": 0.0,
+    "denominator": "mp",
     "diis_size": 6,
     "RHF_symmetry": None,
     "diis_out_of_core": False,

@@ -9,6 +9,7 @@ python_sources = [
   'ccd.py',
   'ccsd_chol.py',
   'ccsd.py',
+  'denominators.py',
   'ccsdt_p_chol.py',
   'ccsdt_p.py',
   'ccsdt.py',

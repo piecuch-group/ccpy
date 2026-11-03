@@ -7,30 +7,43 @@ import numpy as np
 from ccpy.hbar.hbar_ccs import get_pre_ccs_intermediates, get_ccs_intermediates_opt
 from ccpy.hbar.hbar_ccsd import get_ccsd_intermediates
 from ccpy.lib.core import cc_loops2
+from ccpy.cc.denominators import Denominators
 
-def update(T, dT, H, X, shift, flag_RHF):
+def update(T, dT, H, X, shift, flag_RHF, denominator="mp"):
+    # Jacobi denominators other than MP (see ccpy.cc.denominators), from T2 of this iteration
+    D = None if denominator == "mp" else Denominators(T, H, denominator)
 
     X = get_pre_ccs_intermediates(X, T, H, flag_RHF)
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "a", shift)
     if flag_RHF:
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
         T, dT = update_t1b(T, dT, H, X, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "b", shift)
 
     # CCS intermediates
     X = get_ccs_intermediates_opt(X, T, H, flag_RHF)
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aa", shift)
     T, dT = update_t2b(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "ab", shift)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
         T, dT = update_t2c(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "bb", shift)
 
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
@@ -38,7 +51,11 @@ def update(T, dT, H, X, shift, flag_RHF):
 
     # update T3
     T, dT = update_t3a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aaa", shift)
     T, dT = update_t3b(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aab", shift)
     if flag_RHF:
         T.abb = np.transpose(T.aab, (2, 1, 0, 5, 4, 3))
         dT.abb = np.transpose(dT.aab, (2, 1, 0, 5, 4, 3))
@@ -46,7 +63,11 @@ def update(T, dT, H, X, shift, flag_RHF):
         dT.bbb = dT.aaa.copy()
     else:
         T, dT = update_t3c(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "abb", shift)
         T, dT = update_t3d(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "bbb", shift)
 
     return T, dT
 

@@ -7,6 +7,7 @@
 
 ``energy()`` solves the CC equations if needed, restarting from the current ``cc.T``.
 """
+from functools import partial
 from importlib import import_module
 
 import numpy as np
@@ -36,9 +37,14 @@ class CCBase(MethodBase):
     order = 2
     hbar_class = HBarCCSD
     left_class = None
+    # Jacobi denominators the update of this level implements (option "denominator"; see
+    # ccpy.cc.denominators): "mp" (orbital energies), "epstein-nesbet", "quasilinear", "newton"
+    denominators = ("mp",)
 
     def __init__(self, upstream, nfrozen=None, ndelete=None, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
+        if self.options["denominator"] not in self.denominators:
+            raise ValueError(f"{type(self).__name__}: denominator must be one of {self.denominators}.")
         self.T = None
         self.correlation_energy = 0.0
         self._hbars = {}
@@ -109,6 +115,8 @@ class CCBase(MethodBase):
             self.T = self._new_operator()
             self._initialize(self.T)
         update = getattr(import_module(self.module), "update")
+        if self.options["denominator"] != "mp":
+            update = partial(update, denominator=self.options["denominator"])
         self.T, self.correlation_energy, converged = self._run(update, self._new_operator(), self._intermediates())
         cc_calculation_summary(self.T, self.reference_energy, self.correlation_energy, self.system,
                                self.options["amp_print_threshold"])
@@ -137,6 +145,7 @@ class CCSD(CCBase):
     """CCSD with DF/Cholesky integrals."""
     module = "ccpy.cc.ccsd_chol"
     order = 2
+    denominators = ("mp", "epstein-nesbet", "quasilinear", "newton")
     left_class = "LeftCCSD"
     gradient_module, gradient_function = "ccpy.gradients.ccsd_gradient", "calc_ccsd_gradient"
 
@@ -146,6 +155,7 @@ class CCSDT(CCBase):
     interfaces, not installed), so the four-index equations are used for now."""
     module = "ccpy.cc.ccsdt"
     order = 3
+    denominators = ("mp", "epstein-nesbet", "quasilinear", "newton")
     requires_df_port = True
     hbar_class = HBarCCSDT
     left_class = "LeftCCSDT"
@@ -203,6 +213,7 @@ class CCSDT_P(CCPBase):
     """CCSDT(P) (CCSD plus the triples of the P space) with DF/Cholesky integrals. Its analytic
     gradient needs the CC(P) densities of ccpy.density.ccsdt_p_rdm."""
     module = "ccpy.cc.ccsdt_p_chol"
+    denominators = ("mp", "epstein-nesbet", "quasilinear", "newton")
     order = 3
     hbar_class = HBarCCSDT_P
     left_class = "LeftCCSDT_P"

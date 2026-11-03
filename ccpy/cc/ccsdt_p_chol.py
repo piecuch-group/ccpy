@@ -13,6 +13,7 @@ from ccpy.models.integrals import Integral
 from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
 from ccpy.lib.core import vvvv_contraction
 from ccpy.lib.core import ccsdt_p_loops, ccsdt_p_chol_loops
+from ccpy.cc.denominators import Denominators
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,
@@ -20,7 +21,8 @@ def update(T: ClusterOperator,
            X: Integral,
            shift: float,
            flag_RHF: bool,
-           t3_excitations: Dict[str, np.ndarray]) -> Tuple[ClusterOperator, ClusterOperator]:
+           t3_excitations: Dict[str, np.ndarray],
+           denominator: str = "mp") -> Tuple[ClusterOperator, ClusterOperator]:
 
     # Check for empty spincases in t3 list. Remember that [1., 1., 1., 1., 1., 1.]
     # is defined as the "empty" state in the Fortran modules.
@@ -34,6 +36,8 @@ def update(T: ClusterOperator,
     if np.array_equal(t3_excitations["bbb"][0,:], np.array([1., 1., 1., 1., 1., 1.])):
         do_t3["bbb"] = False
     build_hbar = do_t3["aaa"] or do_t3["aab"] or do_t3["abb"] or do_t3["bbb"]
+    # Jacobi denominators other than MP (see ccpy.cc.denominators), from T2 of this iteration
+    D = None if denominator == "mp" else Denominators(T, H, denominator)
 
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (
@@ -92,11 +96,15 @@ def update(T: ClusterOperator,
 
     # update T1
     T, dT = update_t1a(T, dT, H, X, shift, t3_excitations)
+    if D is not None:
+        T, dT = D.correct(T, dT, "a", shift)
     if flag_RHF:
         T.b = T.a.copy()
         dT.b = dT.a.copy()
     else:
         T, dT = update_t1b(T, dT, H, X, shift, t3_excitations)
+        if D is not None:
+            T, dT = D.correct(T, dT, "b", shift)
 
     # Adjust (vv) intermediates
     X.a.vv -= np.einsum("me,am->ae", X.a.ov, T.a, optimize=True)
@@ -132,12 +140,18 @@ def update(T: ClusterOperator,
 
     # update T2
     T, dT = update_t2a(T, dT, X, H, shift, t3_excitations)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aa", shift)
     T, dT = update_t2b(T, dT, X, H, shift, t3_excitations)
+    if D is not None:
+        T, dT = D.correct(T, dT, "ab", shift)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
     else:
         T, dT = update_t2c(T, dT, X, H, shift, t3_excitations)
+        if D is not None:
+            T, dT = D.correct(T, dT, "bb", shift)
 
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
@@ -162,8 +176,12 @@ def update(T: ClusterOperator,
     # update T3
     if do_t3["aaa"]:
         T, dT, t3_excitations = update_t3a(T, dT, X, H, shift, t3_excitations)
+        if D is not None:
+            T, dT = D.correct(T, dT, "aaa", shift, t3_excitations["aaa"])
     if do_t3["aab"]:
         T, dT, t3_excitations = update_t3b(T, dT, X, H, shift, t3_excitations)
+        if D is not None:
+            T, dT = D.correct(T, dT, "aab", shift, t3_excitations["aab"])
     if flag_RHF:
        T.abb = T.aab.copy()
        dT.abb = dT.aab.copy()
@@ -174,8 +192,12 @@ def update(T: ClusterOperator,
     else:
         if do_t3["abb"]:
             T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations)
+            if D is not None:
+                T, dT = D.correct(T, dT, "abb", shift, t3_excitations["abb"])
         if do_t3["bbb"]:
             T, dT, t3_excitations = update_t3d(T, dT, X, H, shift, t3_excitations)
+            if D is not None:
+                T, dT = D.correct(T, dT, "bbb", shift, t3_excitations["bbb"])
 
     return T, dT
 
