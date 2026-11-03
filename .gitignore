@@ -119,3 +119,12 @@ ENV/
 *.mod
 *.o
 *.a
+
+*.pdf
+*.zip
+
+# calculation outputs
+*.json
+*.log
+*.xyz
+*.h5
