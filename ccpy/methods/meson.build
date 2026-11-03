@@ -11,6 +11,8 @@ python_sources = [
   'lrcc.py',
   'mbpt.py',
   'reference.py',
+  'steomcc.py',
+  'steomccsdt.py',
 ]
 
 py3.install_sources(

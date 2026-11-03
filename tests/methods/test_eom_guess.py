@@ -1,4 +1,4 @@
-"""roots_per_irrep initial guesses (ccpy.methods.guess) for every EOMCC family.
+"""roots_per_irrep initial guesses (ccpy.methods.guess) for every EOMCC family and STEOM-CCSD.
 
 For each family the roots of a symmetry-targeted guess must reproduce, energy and irrep, the
 same states found among the lowest roots of any symmetry (roots_per_irrep=n), whether the guess
@@ -12,7 +12,8 @@ import numpy as np
 import pytest
 from conftest import AUX, OPTS, WATER, converged_scf
 
-from ccpy import CCSD, DIPEOM3, EAEOM2, EOMCCSD, IPEOM2, ROHF, SFEOMCCSD, HBarCCSDTA, Molecule, RHF
+from ccpy import (CCSD, DIPEOM3, EAEOM2, EOMCCSD, IPEOM2, ROHF, SFEOMCCSD, STEOMCC, HBarCCSDTA, Molecule,
+                  RHF)
 
 
 def _quiet(f, *args, **kwargs):
@@ -77,6 +78,17 @@ def test_sf_by_irrep():
                    symmetry=True, verbose=False)
     mf = converged_scf(ROHF, mol)
     _targeted_matches_lowest(lambda up, **o: SFEOMCCSD(up, nfrozen=1, **o), mf, 3, [1, 2], multiplicity=1)
+
+
+def test_steom_targets_roots_by_irrep(water_cc):
+    lowest = STEOMCC(water_cc, nacto=2, nactu=2, **OPTS).initial_guess(roots_per_irrep=3, nacto=2, nactu=2)
+    energies = _quiet(lowest.energy)
+    irrep = lowest.root_irreps[2]
+    targeted = STEOMCC(water_cc, nacto=2, nactu=2, **OPTS).initial_guess(roots_per_irrep={irrep: 1}, nacto=2,
+                                                                         nactu=2)
+    assert targeted.nroots == 1 and np.isclose(_quiet(targeted.energy)[0], energies[2], atol=1.0e-8)
+    assert targeted.root_irreps == [irrep]
+    assert targeted.check_root_symmetry(targeted.R, targeted.root_irreps) == [irrep]
 
 
 def test_invalid_guesses(water_cc):

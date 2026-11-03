@@ -34,6 +34,8 @@ python_sources = [
 'sfeomcc23.py',
 'sfeomcc23_intermediates.py',
 'sfeomccsd.py',
+'steomccsd.py',
+'steomccsdt.py',
 'teaeom2.py',
 ]
 

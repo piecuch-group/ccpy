@@ -25,6 +25,8 @@ from ccpy.methods.eomcc import (DEAEOM2, DEAEOM3, DEAEOM4, DEAEOM4_P, DIPEOM3, D
                                 DIPEOMCCSDTA, EAEOM2, EAEOM3, EAEOM3_P, EAEOMCCSDT, EOMCC2, EOMCC3, EOMCCSD,
                                 EOMCCSDT, EOMCCSDT_P, EOMCCSDTA, IPEOM2, IPEOM3, IPEOM3_P, IPEOMCCSDT,
                                 IPEOMCCSDT_P, IPEOMCCSDTA, SFEOMCC23, SFEOMCCSD, EOMCCBase)
+from ccpy.methods.steomcc import STEOMCC
+from ccpy.methods.steomccsdt import STEOMCCSDT
 from ccpy.methods.hamiltonian import DFHamiltonian
 from ccpy.methods.hbar import (HBarBase, HBarCC2, HBarCC3, HBarCCSD, HBarCCSDLegacy, HBarCCSDT, HBarCCSDT1,
                                HBarCCSDTA, HBarCCSDT_P)
