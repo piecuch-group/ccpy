@@ -52,8 +52,10 @@ def calc_eomccsd_gradient(T, R, r0, L, Hbar, reference, zvector_tol=1.0e-10, ver
 def calc_eomccsd_density(T, R, r0, L, Hbar, H, reference, tol):
     """(D1, Y) of l r^T + z e0^T, with J^T z = -<L|[Hbar, tau]|R> (Eq. 7.15)."""
     LH = left_action(T, Hbar, reference.system)
+    # q_I = <L|[Hbar, tau_I]|R>, and sum_J z_J <J|Hbar - E0|I> = -q_I
     q = calc_pairing_t_gradient(0.0, L, r0, R, T, H, calc_reference_row(Hbar), LH, reference)
     z = solve_linear(LH, {c: -q[c] for c in SD}, T, Hbar, tol)
+    # <L|Hbar|R> = <(L . R) + r0 L + c + z|Hbar|0> + D_R <0|L Hbar|0>, c_J = <L|R|J>
     return add_densities(
         calc_bra_density(sd_dot(L, R), add_sd(scale_sd(r0, L), calc_c_singles(R, L), z), T, H, reference),
         calc_w_density(R, T, L, H, reference, l0=0.0),
@@ -66,8 +68,11 @@ def calc_eomccsd_density(T, R, r0, L, Hbar, H, reference, tol):
 def calc_pairing_t_gradient(b0, bP, w0, wP, T, H, e, LH, reference):
     """<b|[Hbar, tau_I]|w> for I in SD, b = b0 <0| + bP, w = w0 |0> + wP."""
     x0 = w0 * b0 + sd_dot(bP, wP)
+    # (J^T X)_I = <0|X (Hbar - E0)|I> for the de-excitation X = w0 bP + c, c_J = <bP|WP|J>
     JTx = apply_action(LH, add_sd(scale_sd(w0, bP), calc_c_singles(wP, bP)), T)
+    # <0|(b0 + bP)[[Hbar, tau_I], WP]|0>
     BTw = calc_BTw(wP, T, bP, H, reference, l0=b0)
+    # x0 <0|Hbar|I>
     return {c: JTx[c] + BTw[c] + x0 * e[c] for c in SD}
 
 

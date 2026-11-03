@@ -20,7 +20,7 @@ from ccpy.gradients import crcc23_gradient_reference as v1
 from ccpy.gradients.ccsd_gradient import calc_bra_density
 from ccpy.gradients.creomcc23_gradient import calc_creomcc23_gradient
 from ccpy.gradients.finite_difference import finite_difference
-from ccpy.gradients.density_gradient import SPINS
+from ccpy.gradients.density_gradient import get_bare_integrals
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 
 TIGHT = dict(OPTS, energy_convergence=1.0e-13, amp_convergence=1.0e-12)
@@ -36,7 +36,12 @@ def _quiet(f, *args, **kwargs):
 def _density_energy(DY, reference):
     """sum D1 . h + 1/2 sum Y . B (Euler's identity for amplitude-relaxed densities)."""
     D1, Y = DY
-    return float(sum(np.sum(D1[s] * reference.h_mo[s]) + 0.5 * np.sum(Y[s] * reference.B_mo[s]) for s in SPINS))
+    h, B = get_bare_integrals(reference)
+    return float(_pair(D1.a, h.a) + _pair(D1.b, h.b) + 0.5 * (_pair(Y.a, B.a) + _pair(Y.b, B.b)))
+
+
+def _pair(X, M):
+    return np.sum(X.oo * M.oo) + np.sum(X.ov * M.ov) + np.sum(X.vo * M.vo) + np.sum(X.vv * M.vv)
 
 
 # ---------------------------------------------------------------------- CR-CC(2,3)

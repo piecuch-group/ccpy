@@ -35,7 +35,8 @@ import numpy as np
 import scipy.sparse.linalg as spla
 
 from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_ccsd_rdm_derivative, calc_rdm2_vvvv_slice
-from ccpy.gradients.density_gradient import SPINS, build_DY, mo_slices, rotation_gradient
+from ccpy.gradients.density_gradient import (add_blocks, build_DY, commutator, get_bare_integrals, rotate_density,
+                                             rotation_gradient, zero_like)
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
 from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
@@ -63,8 +64,9 @@ def calc_ccsd_density(T, L, H, reference, rdm=None):
     """Amplitude-relaxed (D1, Y) of the CCSD Lagrangian (reference included), per spin, in the
     bare MO frame (H: build_hbar_ccs_chol)."""
     rdm1, rdm2 = rdm if rdm is not None else calc_ccsd_rdm(T, L, reference.system)
-    return build_DY(rdm1, rdm2, lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
-                    H.chol, T, reference.B_mo, reference, ref_weight=True)
+    _, B = get_bare_integrals(reference)
+    return build_DY(rdm1, rdm2, lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s), H.chol, T, B, reference,
+                    ref_weight=True)
 
 
 # ======================================================================================
@@ -85,14 +87,6 @@ def calc_c_singles(w, L):
     a = np.einsum("abij,bj->ai", L.aa, w.a, optimize=True) + np.einsum("abij,bj->ai", L.ab, w.b, optimize=True)
     b = np.einsum("baji,bj->ai", L.ab, w.a, optimize=True) + np.einsum("abij,bj->ai", L.bb, w.b, optimize=True)
     return SimpleNamespace(a=a, b=b, aa=np.zeros_like(L.aa), ab=np.zeros_like(L.ab), bb=np.zeros_like(L.bb))
-
-
-def embed_vo(x, reference, s):
-    """The (virtual, occupied) block x of spin s as an all-MO matrix."""
-    nmo, sl = reference.h_mo[s].shape[0], mo_slices(reference.system)[s]
-    W = np.zeros((nmo, nmo))
-    W[sl["v"], sl["o"]] = x
-    return W
 
 
 def right_action(T, Hbar, system):
@@ -142,13 +136,14 @@ def solve_linear(action, rhs, T, Hbar, tol):
         action(unpack(x, X), out)
         return np.concatenate([np.ravel(getattr(out, k)) for k in keys])
 
-    eo = {s: np.diag(getattr(Hbar, s).oo) for s in SPINS}
-    ev = {s: np.diag(getattr(Hbar, s).vv) for s in SPINS}
-    d = [ev["a"][:, None] - eo["a"][None, :], ev["b"][:, None] - eo["b"][None, :]]
-    for s, t in (("a", "a"), ("a", "b"), ("b", "b")):
-        d.append(ev[s][:, None, None, None] + ev[t][None, :, None, None]
-                 - eo[s][None, None, :, None] - eo[t][None, None, None, :])
-    diag = np.concatenate([np.ravel(x) for x in d])
+    eoa, eva = np.diag(Hbar.a.oo), np.diag(Hbar.a.vv)
+    eob, evb = np.diag(Hbar.b.oo), np.diag(Hbar.b.vv)
+    d1a = eva[:, None] - eoa[None, :]
+    d1b = evb[:, None] - eob[None, :]
+    d2aa = eva[:, None, None, None] + eva[None, :, None, None] - eoa[None, None, :, None] - eoa[None, None, None, :]
+    d2ab = eva[:, None, None, None] + evb[None, :, None, None] - eoa[None, None, :, None] - eob[None, None, None, :]
+    d2bb = evb[:, None, None, None] + evb[None, :, None, None] - eob[None, None, :, None] - eob[None, None, None, :]
+    diag = np.concatenate([d1a.ravel(), d1b.ravel(), d2aa.ravel(), d2ab.ravel(), d2bb.ravel()])
     n = sum(sizes)
     A = spla.LinearOperator((n, n), matvec=matvec, dtype=float)
     M = spla.LinearOperator((n, n), matvec=lambda x: x / diag, dtype=float)
@@ -168,27 +163,33 @@ def calc_bra_density(x0, X, T, H, reference):
     doubles); x0 = 1, X = Lambda is the CCSD Lagrangian."""
     system = reference.system
     vvvv = None
-    if any(np.any(getattr(X, c)) for c in ("aa", "ab", "bb")):
+    if np.any(X.aa) or np.any(X.ab) or np.any(X.bb):
         vvvv = lambda a, s: calc_rdm2_vvvv_slice(X, T, a, s)  # noqa: E731
-    return build_DY(*calc_ccsd_rdm(T, X, system, energy=x0), vvvv, H.chol, T, reference.B_mo, reference, ref_weight=x0)
+    _, B = get_bare_integrals(reference)
+    return build_DY(*calc_ccsd_rdm(T, X, system, energy=x0), vvvv, H.chol, T, B, reference, ref_weight=x0)
 
 
 def calc_w_density(w, T, L, H, reference, l0=1.0):
     """(D1, Y) of d/de <0|(l0 + Lambda) e^{-T-ew} H e^{T+ew}|0>: the T1 part of w rotates the
     Lagrangian densities, the T2 part comes from calc_ccsd_rdm_derivative."""
-    system = reference.system
-    W = SimpleNamespace(**{k: sd_block(w, k) for k in ("a", "b", "aa", "ab", "bb")})
-    W1 = {s: embed_vo(sd_block(w, s), reference, s) for s in SPINS}
+    system, nfz = reference.system, reference.nfrozen
+    W = SimpleNamespace(a=sd_block(w, "a"), b=sd_block(w, "b"), aa=sd_block(w, "aa"), ab=sd_block(w, "ab"),
+                        bb=sd_block(w, "bb"))
+    _, B = get_bare_integrals(reference)
     H1 = build_hbar_ccs_chol_derivative(W, H, system)
-    dB = {s: reference.B_mo[s] @ W1[s] - W1[s] @ reference.B_mo[s] for s in SPINS}
+    dB = commutator(B, W.a, W.b, nfz)
+    # densities of the Lagrangian <0|(l0 + Lambda) Hbar|0> (D_L), and of the same Lagrangian with
+    # the bare B rotated by W1, <0|(l0 + Lambda) Hbar([B, W1])|0>
     rdm1, rdm2 = calc_ccsd_rdm(T, L, system, energy=l0)
     vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
-    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, reference.B_mo, reference, ref_weight=l0)
+    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, B, reference, ref_weight=l0)
     _, YLdB = build_DY(rdm1, rdm2, vvvv, H1.chol, T, dB, reference, ref_weight=l0)
+    # T2 part of w: d/de <0|(l0 + Lambda) (H(T1) e^{T2 + e W2})_C|0>
     D1w, Yw = build_DY(*calc_ccsd_rdm_derivative(T, W, L, system, energy=l0),
-                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, reference.B_mo, reference)
-    D1 = {s: D1w[s] + D1L[s] @ W1[s].T - W1[s].T @ D1L[s] for s in SPINS}
-    Y = {s: Yw[s] + YL[s] @ W1[s].T - W1[s].T @ YL[s] + YLdB[s] for s in SPINS}
+                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, B, reference)
+    # T1 part of w: D_L rotated by W1 (D W1^T - W1^T D), plus the B rotation above
+    D1 = add_blocks(D1w, rotate_density(D1L, W.a, W.b, nfz))
+    Y = add_blocks(add_blocks(Yw, rotate_density(YL, W.a, W.b, nfz)), YLdB)
     return D1, Y
 
 
@@ -197,22 +198,28 @@ def calc_BTw(w, T, L, H, reference, l0=1.0):
     second derivative of the CCSD Lagrangian, the T1 part through H1 = [H, W1]. Singles:
     rotation derivatives of the directional densities and the double rotation
     D_L . [[H, W1], a+ i]."""
-    system = reference.system
-    W = SimpleNamespace(**{k: sd_block(w, k) for k in ("a", "b", "aa", "ab", "bb")})
-    W1 = {s: embed_vo(sd_block(w, s), reference, s) for s in SPINS}
+    system, nfz = reference.system, reference.nfrozen
+    W = SimpleNamespace(a=sd_block(w, "a"), b=sd_block(w, "b"), aa=sd_block(w, "aa"), ab=sd_block(w, "ab"),
+                        bb=sd_block(w, "bb"))
+    h, B = get_bare_integrals(reference)
     H1 = build_hbar_ccs_chol_derivative(W, H, system)
-    h1 = {s: reference.h_mo[s] @ W1[s] - W1[s] @ reference.h_mo[s] for s in SPINS}
-    dB = {s: reference.B_mo[s] @ W1[s] - W1[s] @ reference.B_mo[s] for s in SPINS}
+    h1 = commutator(h, W.a, W.b, nfz)
+    dB = commutator(B, W.a, W.b, nfz)
 
     rdm1, rdm2 = calc_ccsd_rdm(T, L, system, energy=l0)
     vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
-    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, reference.B_mo, reference, ref_weight=l0)
+    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, B, reference, ref_weight=l0)
     _, YLdB = build_DY(rdm1, rdm2, vvvv, H1.chol, T, dB, reference, ref_weight=l0)
     D1w, Yw = build_DY(*calc_ccsd_rdm_derivative(T, W, L, system, energy=l0),
-                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, reference.B_mo, reference)
-    r1 = rotation_gradient(D1w, Yw, reference.h_mo, reference.B_mo, reference)
+                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, B, reference)
+    # singles <0|(l0 + Lambda)[[Hbar, a+ i], W]|0>: the T1 derivative is the rotation H -> [H, a+ i],
+    #   r1: rotation of the W2-directional densities, d/de <0|(l0 + Lambda)(H(T1) e^{T2 + e W2})_C|0>
+    #   r2: rotation of D_L, Y_L against the W1-rotated integrals [h, W1], [B, W1]
+    #   r3: rotation of the densities of the W1-rotated B (the H1 dependence through B)
+    r1 = rotation_gradient(D1w, Yw, h, B, reference)
     r2 = rotation_gradient(D1L, YL, h1, dB, reference)
-    r3 = rotation_gradient({s: np.zeros_like(D1L[s]) for s in SPINS}, YLdB, reference.h_mo, reference.B_mo, reference)
+    r3 = rotation_gradient(zero_like(D1L), YLdB, h, B, reference)
+    # doubles <0|(l0 + Lambda)[[Hbar, tau(ab,ij)], W]|0>: build_BTw_2A-2C
 
     return {"a": r1["a"] + r2["a"] + r3["a"], "b": r1["b"] + r2["b"] + r3["b"],
             "aa": build_BTw_2A(W, T, L, H, H1, l0), "ab": build_BTw_2B(W, T, L, H, H1, l0),
@@ -220,44 +227,89 @@ def calc_BTw(w, T, L, H, reference, l0=1.0):
 
 
 def build_BTw_2A(W, T, L, H, H1, l0=1.0):
+    """(B^T w) (aa) doubles: <0|(l0 + Lambda)[[Hbar, tau(ab,ij)], W]|0>, the derivative of the left-CCSD
+    (aa) doubles residual <0|(l0 + Lambda)[Hbar, tau(ab,ij)]|0> along w = (W1, W2). W2 enters through
+    the T2^2 terms of the CCSD equations; W1 through H1 = d H(T1 + e W1)/de = [H(T1), W1].
+    Indices of every term are those of the stored tau(ab,ij), antisymmetrized at the end."""
+    # <0|L2 [(V_N T2^2)_C/2, tau(ab,ij)] along W2|0>: second T2 derivative
+    #     <mn||ef> w(af,mn) l(ab,ij)  -> (eb,ij)
     X = -0.25 * np.einsum("mnef,afmn,abij->ebij", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn||ef> w(eb,ij) l(ab,ij)  -> (af,mn)
     X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn~|ef~> w(af~,mn~) l(ab,ij)  -> (eb,ij)
     X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H.ab.oovv, W.ab, L.aa, optimize=True)
+    #     <mn||ef> w(ef,in) l(ab,ij)  -> (ab,mj)
     X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn||ef> w(ab,mj) l(ab,ij)  -> (ef,in)
     X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn~|ef~> w(ef~,in~) l(ab,ij)  -> (ab,mj)
     X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H.ab.oovv, W.ab, L.aa, optimize=True)
+    #     <mn||ef> w(af,in) l(ab,ij)  -> (eb,mj)
     X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn||ef> w(eb,mj) l(ab,ij)  -> (af,in)
     X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn~|ef~> w(af~,in~) l(ab,ij)  -> (eb,mj)
     X += np.einsum("mnef,afin,abij->ebmj", H.ab.oovv, W.ab, L.aa, optimize=True)
+    #     <mn||ef> w(ef,ij) l(ab,ij)  -> (ab,mn)
     X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn||ef> w(ab,mn) l(ab,ij)  -> (ef,ij)
     X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H.aa.oovv, W.aa, L.aa, optimize=True)
+    #     <mn||ef> w(eb~,ij~) l(ab~,ij~)  -> (af,mn)
     X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H.aa.oovv, W.ab, L.ab, optimize=True)
+    #     <mn||ef> w(ab~,mj~) l(ab~,ij~)  -> (ef,in)
     X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H.aa.oovv, W.ab, L.ab, optimize=True)
+    #     <mn||ef> w(fb~,nj~) l(ab~,ij~)  -> (ae,im)
     X += np.einsum("mnef,fbnj,abij->aeim", H.aa.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(f~b~,n~j~) l(ab~,ij~)  -> (ae,im)
     X += np.einsum("mnef,fbnj,abij->aeim", H.ab.oovv, W.bb, L.ab, optimize=True)
+    # <0|(l0 + L1 + L2)[H1, tau(ab,ij)]_C|0>, H1 = [H(T1), W1]
+    #     l0 <ij||ab>'
     X += 0.25 * l0 * H1.aa.oovv.transpose(2, 3, 0, 1)
+    #     f'(me) l(a,i)  -> (ae,im)
     X += np.einsum("me,ai->aeim", H1.a.ov, L.a, optimize=True)
+    #     <mn||if>' l(a,i)  -> (af,mn)
     X -= 0.5 * np.einsum("mnif,ai->afmn", H1.aa.ooov, L.a, optimize=True)
+    #     <an||ef>' l(a,i)  -> (ef,in)
     X += 0.5 * np.einsum("anef,ai->efin", H1.aa.vovv, L.a, optimize=True)
+    #     f'(ae) l(ab,ij)  -> (eb,ij)
     X += 0.5 * np.einsum("ae,abij->ebij", H1.a.vv, L.aa, optimize=True)
+    #     <mn||ef>' t(eb,ij) l(ab,ij)  -> (af,mn)
     X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn||ef>' t(af,mn) l(ab,ij)  -> (eb,ij)
     X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn~|ef~>' t(af~,mn~) l(ab,ij)  -> (eb,ij)
     X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    #     f'(mi) l(ab,ij)  -> (ab,mj)
     X -= 0.5 * np.einsum("mi,abij->abmj", H1.a.oo, L.aa, optimize=True)
+    #     <mn||ef>' t(ab,mj) l(ab,ij)  -> (ef,in)
     X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn||ef>' t(ef,in) l(ab,ij)  -> (ab,mj)
     X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn~|ef~>' t(ef~,in~) l(ab,ij)  -> (ab,mj)
     X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    #     <am||ie>' l(ab,ij)  -> (eb,mj)
     X += np.einsum("amie,abij->ebmj", H1.aa.voov, L.aa, optimize=True)
+    #     <mn||ef>' t(eb,mj) l(ab,ij)  -> (af,in)
     X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn||ef>' t(af,in) l(ab,ij)  -> (eb,mj)
     X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn~|ef~>' t(af~,in~) l(ab,ij)  -> (eb,mj)
     X += np.einsum("mnef,afin,abij->ebmj", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    #     <mn||ij>' l(ab,ij)  -> (ab,mn)
     X += 0.125 * np.einsum("mnij,abij->abmn", H1.aa.oooo, L.aa, optimize=True)
+    #     <mn||ef>' t(ab,mn) l(ab,ij)  -> (ef,ij)
     X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn||ef>' t(ef,ij) l(ab,ij)  -> (ab,mn)
     X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    #     <mn||ef>' t(eb~,ij~) l(ab~,ij~)  -> (af,mn)
     X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    #     <mn||ef>' t(ab~,mj~) l(ab~,ij~)  -> (ef,in)
     X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    #     <mn||ef>' t(fb~,nj~) l(ab~,ij~)  -> (ae,im)
     X += np.einsum("mnef,fbnj,abij->aeim", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ef~>' t(f~b~,n~j~) l(ab~,ij~)  -> (ae,im)
     X += np.einsum("mnef,fbnj,abij->aeim", H1.ab.oovv, T.bb, L.ab, optimize=True)
+    #     <mb~|ej~>' l(ab~,ij~)  -> (ae,im)
     X += np.einsum("mbej,abij->aeim", H1.ab.ovvo, L.ab, optimize=True)
     # vvvv of H1: 1/8 sum_ab L(abij) <ab||ef>' with <ab|ef>' = sum_x (dB_ae B_bf + B_ae dB_bf)
     for B1, B2 in ((H1.chol.a.vv, H.chol.a.vv), (H.chol.a.vv, H1.chol.a.vv)):
@@ -269,83 +321,167 @@ def build_BTw_2A(W, T, L, H, H1, l0=1.0):
 
 
 def build_BTw_2B(W, T, L, H, H1, l0=1.0):
+    """(B^T w) (ab) doubles: <0|(l0 + Lambda)[[Hbar, tau(ab~,ij~)], W]|0>, the derivative of the left-CCSD
+    (ab) doubles residual <0|(l0 + Lambda)[Hbar, tau(ab~,ij~)]|0> along w = (W1, W2). W2 enters through
+    the T2^2 terms of the CCSD equations; W1 through H1 = d H(T1 + e W1)/de = [H(T1), W1].
+    Indices of every term are those of the stored tau(ab,ij), antisymmetrized at the end."""
+    # <0|L2 [(V_N T2^2)_C/2, tau(ab~,ij~)] along W2|0>: second T2 derivative
+    #     <mn~|ef~> w(eb,ij) l(ab,ij)  -> (af~,mn~)
     X = -0.5 * np.einsum("mnef,ebij,abij->afmn", H.ab.oovv, W.aa, L.aa, optimize=True)
+    #     <mn~|ef~> w(ab,mj) l(ab,ij)  -> (ef~,in~)
     X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H.ab.oovv, W.aa, L.aa, optimize=True)
+    #     <mn~|ef~> w(eb,mj) l(ab,ij)  -> (af~,in~)
     X += np.einsum("mnef,ebmj,abij->afin", H.ab.oovv, W.aa, L.aa, optimize=True)
+    #     <m~n~||e~f~> w(af~,in~) l(ab,ij)  -> (be~,jm~)
     X += 0.5 * np.einsum("mnef,afin,abij->bejm", H.bb.oovv, W.ab, L.aa, optimize=True)
+    #     <m~n~||e~f~> w(be~,jm~) l(ab,ij)  -> (af~,in~)
     X += 0.5 * np.einsum("mnef,bejm,abij->afin", H.bb.oovv, W.ab, L.aa, optimize=True)
+    #     <mn||ef> w(af,mn) l(ab~,ij~)  -> (eb~,ij~)
     X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H.aa.oovv, W.aa, L.ab, optimize=True)
+    #     <mn~|ef~> w(af~,mn~) l(ab~,ij~)  -> (eb~,ij~)
     X -= np.einsum("mnef,afmn,abij->ebij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(eb~,ij~) l(ab~,ij~)  -> (af~,mn~)
     X -= np.einsum("mnef,ebij,abij->afmn", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(b~f~,m~n~) l(ab~,ij~)  -> (ae~,ij~)
     X -= 0.5 * np.einsum("mnef,bfmn,abij->aeij", H.bb.oovv, W.bb, L.ab, optimize=True)
+    #     <nm~|fe~> w(fb~,nm~) l(ab~,ij~)  -> (ae~,ij~)
     X -= np.einsum("nmfe,fbnm,abij->aeij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <nm~|fe~> w(ae~,ij~) l(ab~,ij~)  -> (fb~,nm~)
     X -= np.einsum("nmfe,aeij,abij->fbnm", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn||ef> w(ef,in) l(ab~,ij~)  -> (ab~,mj~)
     X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H.aa.oovv, W.aa, L.ab, optimize=True)
+    #     <mn~|ef~> w(ef~,in~) l(ab~,ij~)  -> (ab~,mj~)
     X -= np.einsum("mnef,efin,abij->abmj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(ab~,mj~) l(ab~,ij~)  -> (ef~,in~)
     X -= np.einsum("mnef,abmj,abij->efin", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(e~f~,j~n~) l(ab~,ij~)  -> (ab~,im~)
     X -= 0.5 * np.einsum("mnef,efjn,abij->abim", H.bb.oovv, W.bb, L.ab, optimize=True)
+    #     <nm~|fe~> w(fe~,nj~) l(ab~,ij~)  -> (ab~,im~)
     X -= np.einsum("nmfe,fenj,abij->abim", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <nm~|fe~> w(ab~,im~) l(ab~,ij~)  -> (fe~,nj~)
     X -= np.einsum("nmfe,abim,abij->fenj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn||ef> w(ae,im) l(ab~,ij~)  -> (fb~,nj~)
     X += np.einsum("mnef,aeim,abij->fbnj", H.aa.oovv, W.aa, L.ab, optimize=True)
+    #     <nm~|fe~> w(ae~,im~) l(ab~,ij~)  -> (fb~,nj~)
     X += np.einsum("nmfe,aeim,abij->fbnj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <nm~|fe~> w(fb~,nj~) l(ab~,ij~)  -> (ae~,im~)
     X += np.einsum("nmfe,fbnj,abij->aeim", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(f~b~,n~j~) l(ab~,ij~)  -> (ae~,im~)
     X += np.einsum("mnef,fbnj,abij->aeim", H.bb.oovv, W.bb, L.ab, optimize=True)
+    #     <mn~|ef~> w(af~,mj~) l(ab~,ij~)  -> (eb~,in~)
     X += np.einsum("mnef,afmj,abij->ebin", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(eb~,in~) l(ab~,ij~)  -> (af~,mj~)
     X += np.einsum("mnef,ebin,abij->afmj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(ef~,ij~) l(ab~,ij~)  -> (ab~,mn~)
     X += np.einsum("mnef,efij,abij->abmn", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(ab~,mn~) l(ab~,ij~)  -> (ef~,ij~)
     X += np.einsum("mnef,abmn,abij->efij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    #     <nm~|fe~> w(e~b~,i~j~) l(a~b~,i~j~)  -> (fa~,nm~)
     X -= 0.5 * np.einsum("nmfe,ebij,abij->fanm", H.ab.oovv, W.bb, L.bb, optimize=True)
+    #     <nm~|fe~> w(a~b~,m~j~) l(a~b~,i~j~)  -> (fe~,ni~)
     X -= 0.5 * np.einsum("nmfe,abmj,abij->feni", H.ab.oovv, W.bb, L.bb, optimize=True)
+    #     <mn~|ef~> w(a~f~,i~n~) l(a~b~,i~j~)  -> (eb~,mj~)
     X += np.einsum("mnef,afin,abij->ebmj", H.ab.oovv, W.bb, L.bb, optimize=True)
+    #     <mn||ef> w(fa~,ni~) l(a~b~,i~j~)  -> (eb~,mj~)
     X += 0.5 * np.einsum("mnef,fani,abij->ebmj", H.aa.oovv, W.ab, L.bb, optimize=True)
+    #     <mn||ef> w(eb~,mj~) l(a~b~,i~j~)  -> (fa~,ni~)
     X += 0.5 * np.einsum("mnef,ebmj,abij->fani", H.aa.oovv, W.ab, L.bb, optimize=True)
+    # <0|(l0 + L1 + L2)[H1, tau(ab~,ij~)]_C|0>, H1 = [H(T1), W1]
+    #     l0 <ij~|ab~>'
     X += l0 * H1.ab.oovv.transpose(2, 3, 0, 1)
+    #     f'(m~e~) l(a,i)  -> (ae~,im~)
     X += np.einsum("me,ai->aeim", H1.b.ov, L.a, optimize=True)
+    #     <mn~|if~>' l(a,i)  -> (af~,mn~)
     X -= np.einsum("mnif,ai->afmn", H1.ab.ooov, L.a, optimize=True)
+    #     <an~|ef~>' l(a,i)  -> (ef~,in~)
     X += np.einsum("anef,ai->efin", H1.ab.vovv, L.a, optimize=True)
+    #     f'(me) l(a~,i~)  -> (ea~,mi~)
     X += np.einsum("me,ai->eami", H1.a.ov, L.b, optimize=True)
+    #     <nm~|fi~>' l(a~,i~)  -> (fa~,nm~)
     X -= np.einsum("nmfi,ai->fanm", H1.ab.oovo, L.b, optimize=True)
+    #     <na~|fe~>' l(a~,i~)  -> (fe~,ni~)
     X += np.einsum("nafe,ai->feni", H1.ab.ovvv, L.b, optimize=True)
+    #     <mn~|ef~>' t(eb,ij) l(ab,ij)  -> (af~,mn~)
     X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    #     <mn~|ef~>' t(ab,mj) l(ab,ij)  -> (ef~,in~)
     X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    #     <mn~|ef~>' t(eb,mj) l(ab,ij)  -> (af~,in~)
     X += np.einsum("mnef,ebmj,abij->afin", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    #     <am~|ie~>' l(ab,ij)  -> (be~,jm~)
     X += np.einsum("amie,abij->bejm", H1.ab.voov, L.aa, optimize=True)
+    #     <m~n~||e~f~>' t(be~,jm~) l(ab,ij)  -> (af~,in~)
     X += 0.5 * np.einsum("mnef,bejm,abij->afin", H1.bb.oovv, T.ab, L.aa, optimize=True)
+    #     <m~n~||e~f~>' t(af~,in~) l(ab,ij)  -> (be~,jm~)
     X += 0.5 * np.einsum("mnef,afin,abij->bejm", H1.bb.oovv, T.ab, L.aa, optimize=True)
+    #     f'(ae) l(ab~,ij~)  -> (eb~,ij~)
     X += np.einsum("ae,abij->ebij", H1.a.vv, L.ab, optimize=True)
+    #     <mn||ef>' t(af,mn) l(ab~,ij~)  -> (eb~,ij~)
     X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    #     <mn~|ef~>' t(eb~,ij~) l(ab~,ij~)  -> (af~,mn~)
     X -= np.einsum("mnef,ebij,abij->afmn", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ef~>' t(af~,mn~) l(ab~,ij~)  -> (eb~,ij~)
     X -= np.einsum("mnef,afmn,abij->ebij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     f'(b~e~) l(ab~,ij~)  -> (ae~,ij~)
     X += np.einsum("be,abij->aeij", H1.b.vv, L.ab, optimize=True)
+    #     <m~n~||e~f~>' t(b~f~,m~n~) l(ab~,ij~)  -> (ae~,ij~)
     X -= 0.5 * np.einsum("mnef,bfmn,abij->aeij", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    #     <nm~|fe~>' t(ae~,ij~) l(ab~,ij~)  -> (fb~,nm~)
     X -= np.einsum("nmfe,aeij,abij->fbnm", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <nm~|fe~>' t(fb~,nm~) l(ab~,ij~)  -> (ae~,ij~)
     X -= np.einsum("nmfe,fbnm,abij->aeij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     f'(mi) l(ab~,ij~)  -> (ab~,mj~)
     X -= np.einsum("mi,abij->abmj", H1.a.oo, L.ab, optimize=True)
+    #     <mn||ef>' t(ef,in) l(ab~,ij~)  -> (ab~,mj~)
     X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    #     <mn~|ef~>' t(ab~,mj~) l(ab~,ij~)  -> (ef~,in~)
     X -= np.einsum("mnef,abmj,abij->efin", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ef~>' t(ef~,in~) l(ab~,ij~)  -> (ab~,mj~)
     X -= np.einsum("mnef,efin,abij->abmj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     f'(m~j~) l(ab~,ij~)  -> (ab~,im~)
     X -= np.einsum("mj,abij->abim", H1.b.oo, L.ab, optimize=True)
+    #     <m~n~||e~f~>' t(e~f~,j~n~) l(ab~,ij~)  -> (ab~,im~)
     X -= 0.5 * np.einsum("mnef,efjn,abij->abim", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    #     <nm~|fe~>' t(ab~,im~) l(ab~,ij~)  -> (fe~,nj~)
     X -= np.einsum("nmfe,abim,abij->fenj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <nm~|fe~>' t(fe~,nj~) l(ab~,ij~)  -> (ab~,im~)
     X -= np.einsum("nmfe,fenj,abij->abim", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <am||ie>' l(ab~,ij~)  -> (eb~,mj~)
     X += np.einsum("amie,abij->ebmj", H1.aa.voov, L.ab, optimize=True)
+    #     <mn||ef>' t(ae,im) l(ab~,ij~)  -> (fb~,nj~)
     X += np.einsum("mnef,aeim,abij->fbnj", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    #     <nm~|fe~>' t(fb~,nj~) l(ab~,ij~)  -> (ae~,im~)
     X += np.einsum("nmfe,fbnj,abij->aeim", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <nm~|fe~>' t(ae~,im~) l(ab~,ij~)  -> (fb~,nj~)
     X += np.einsum("nmfe,aeim,abij->fbnj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~>' t(f~b~,n~j~) l(ab~,ij~)  -> (ae~,im~)
     X += np.einsum("mnef,fbnj,abij->aeim", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    #     <b~m~||j~e~>' l(ab~,ij~)  -> (ae~,im~)
     X += np.einsum("bmje,abij->aeim", H1.bb.voov, L.ab, optimize=True)
+    #     <mb~|ie~>' l(ab~,ij~)  -> (ae~,mj~)
     X -= np.einsum("mbie,abij->aemj", H1.ab.ovov, L.ab, optimize=True)
+    #     <am~|ej~>' l(ab~,ij~)  -> (eb~,im~)
     X -= np.einsum("amej,abij->ebim", H1.ab.vovo, L.ab, optimize=True)
+    #     <mn~|ef~>' t(eb~,in~) l(ab~,ij~)  -> (af~,mj~)
     X += np.einsum("mnef,ebin,abij->afmj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ef~>' t(af~,mj~) l(ab~,ij~)  -> (eb~,in~)
     X += np.einsum("mnef,afmj,abij->ebin", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ij~>' l(ab~,ij~)  -> (ab~,mn~)
     X += np.einsum("mnij,abij->abmn", H1.ab.oooo, L.ab, optimize=True)
+    #     <mn~|ef~>' t(ab~,mn~) l(ab~,ij~)  -> (ef~,ij~)
     X += np.einsum("mnef,abmn,abij->efij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <mn~|ef~>' t(ef~,ij~) l(ab~,ij~)  -> (ab~,mn~)
     X += np.einsum("mnef,efij,abij->abmn", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    #     <nm~|fe~>' t(e~b~,i~j~) l(a~b~,i~j~)  -> (fa~,nm~)
     X -= 0.5 * np.einsum("nmfe,ebij,abij->fanm", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    #     <nm~|fe~>' t(a~b~,m~j~) l(a~b~,i~j~)  -> (fe~,ni~)
     X -= 0.5 * np.einsum("nmfe,abmj,abij->feni", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    #     <ma~|ei~>' l(a~b~,i~j~)  -> (eb~,mj~)
     X += np.einsum("maei,abij->ebmj", H1.ab.ovvo, L.bb, optimize=True)
+    #     <mn~|ef~>' t(a~f~,i~n~) l(a~b~,i~j~)  -> (eb~,mj~)
     X += np.einsum("mnef,afin,abij->ebmj", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    #     <mn||ef>' t(eb~,mj~) l(a~b~,i~j~)  -> (fa~,ni~)
     X += 0.5 * np.einsum("mnef,ebmj,abij->fani", H1.aa.oovv, T.ab, L.bb, optimize=True)
+    #     <mn||ef>' t(fa~,ni~) l(a~b~,i~j~)  -> (eb~,mj~)
     X += 0.5 * np.einsum("mnef,fani,abij->ebmj", H1.aa.oovv, T.ab, L.bb, optimize=True)
     # vvvv of H1: sum_ab L(abij) <ab|ef>'
     for B1, B2 in ((H1.chol.a.vv, H.chol.b.vv), (H.chol.a.vv, H1.chol.b.vv)):
@@ -354,44 +490,89 @@ def build_BTw_2B(W, T, L, H, H1, l0=1.0):
 
 
 def build_BTw_2C(W, T, L, H, H1, l0=1.0):
+    """(B^T w) (bb) doubles: <0|(l0 + Lambda)[[Hbar, tau(a~b~,i~j~)], W]|0>, the derivative of the left-CCSD
+    (bb) doubles residual <0|(l0 + Lambda)[Hbar, tau(a~b~,i~j~)]|0> along w = (W1, W2). W2 enters through
+    the T2^2 terms of the CCSD equations; W1 through H1 = d H(T1 + e W1)/de = [H(T1), W1].
+    Indices of every term are those of the stored tau(ab,ij), antisymmetrized at the end."""
+    # <0|L2 [(V_N T2^2)_C/2, tau(a~b~,i~j~)] along W2|0>: second T2 derivative
+    #     <m~n~||e~f~> w(ae~,ij~) l(ab~,ij~)  -> (b~f~,m~n~)
     X = -0.5 * np.einsum("mnef,aeij,abij->bfmn", H.bb.oovv, W.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(ab~,im~) l(ab~,ij~)  -> (e~f~,j~n~)
     X -= 0.5 * np.einsum("mnef,abim,abij->efjn", H.bb.oovv, W.ab, L.ab, optimize=True)
+    #     <mn~|ef~> w(ae,im) l(ab~,ij~)  -> (f~b~,n~j~)
     X += np.einsum("mnef,aeim,abij->fbnj", H.ab.oovv, W.aa, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(ae~,im~) l(ab~,ij~)  -> (f~b~,n~j~)
     X += np.einsum("mnef,aeim,abij->fbnj", H.bb.oovv, W.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~> w(a~f~,m~n~) l(a~b~,i~j~)  -> (e~b~,i~j~)
     X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(e~b~,i~j~) l(a~b~,i~j~)  -> (a~f~,m~n~)
     X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <nm~|fe~> w(fa~,nm~) l(a~b~,i~j~)  -> (e~b~,i~j~)
     X -= 0.5 * np.einsum("nmfe,fanm,abij->ebij", H.ab.oovv, W.ab, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(e~f~,i~n~) l(a~b~,i~j~)  -> (a~b~,m~j~)
     X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(a~b~,m~j~) l(a~b~,i~j~)  -> (e~f~,i~n~)
     X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <nm~|fe~> w(fe~,ni~) l(a~b~,i~j~)  -> (a~b~,m~j~)
     X -= 0.5 * np.einsum("nmfe,feni,abij->abmj", H.ab.oovv, W.ab, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(a~f~,i~n~) l(a~b~,i~j~)  -> (e~b~,m~j~)
     X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(e~b~,m~j~) l(a~b~,i~j~)  -> (a~f~,i~n~)
     X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <mn~|ef~> w(eb~,mj~) l(a~b~,i~j~)  -> (a~f~,i~n~)
     X += np.einsum("mnef,ebmj,abij->afin", H.ab.oovv, W.ab, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(e~f~,i~j~) l(a~b~,i~j~)  -> (a~b~,m~n~)
     X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H.bb.oovv, W.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~> w(a~b~,m~n~) l(a~b~,i~j~)  -> (e~f~,i~j~)
     X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H.bb.oovv, W.bb, L.bb, optimize=True)
+    # <0|(l0 + L1 + L2)[H1, tau(a~b~,i~j~)]_C|0>, H1 = [H(T1), W1]
+    #     l0 <i~j~||a~b~>'
     X += 0.25 * l0 * H1.bb.oovv.transpose(2, 3, 0, 1)
+    #     f'(m~e~) l(a~,i~)  -> (a~e~,i~m~)
     X += np.einsum("me,ai->aeim", H1.b.ov, L.b, optimize=True)
+    #     <m~n~||i~f~>' l(a~,i~)  -> (a~f~,m~n~)
     X -= 0.5 * np.einsum("mnif,ai->afmn", H1.bb.ooov, L.b, optimize=True)
+    #     <a~n~||e~f~>' l(a~,i~)  -> (e~f~,i~n~)
     X += 0.5 * np.einsum("anef,ai->efin", H1.bb.vovv, L.b, optimize=True)
+    #     <m~n~||e~f~>' t(ae~,ij~) l(ab~,ij~)  -> (b~f~,m~n~)
     X -= 0.5 * np.einsum("mnef,aeij,abij->bfmn", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    #     <m~n~||e~f~>' t(ab~,im~) l(ab~,ij~)  -> (e~f~,j~n~)
     X -= 0.5 * np.einsum("mnef,abim,abij->efjn", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    #     <am~|ie~>' l(ab~,ij~)  -> (e~b~,m~j~)
     X += np.einsum("amie,abij->ebmj", H1.ab.voov, L.ab, optimize=True)
+    #     <mn~|ef~>' t(ae,im) l(ab~,ij~)  -> (f~b~,n~j~)
     X += np.einsum("mnef,aeim,abij->fbnj", H1.ab.oovv, T.aa, L.ab, optimize=True)
+    #     <m~n~||e~f~>' t(ae~,im~) l(ab~,ij~)  -> (f~b~,n~j~)
     X += np.einsum("mnef,aeim,abij->fbnj", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    #     f'(a~e~) l(a~b~,i~j~)  -> (e~b~,i~j~)
     X += 0.5 * np.einsum("ae,abij->ebij", H1.b.vv, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(e~b~,i~j~) l(a~b~,i~j~)  -> (a~f~,m~n~)
     X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(a~f~,m~n~) l(a~b~,i~j~)  -> (e~b~,i~j~)
     X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <nm~|fe~>' t(fa~,nm~) l(a~b~,i~j~)  -> (e~b~,i~j~)
     X -= 0.5 * np.einsum("nmfe,fanm,abij->ebij", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    #     f'(m~i~) l(a~b~,i~j~)  -> (a~b~,m~j~)
     X -= 0.5 * np.einsum("mi,abij->abmj", H1.b.oo, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(a~b~,m~j~) l(a~b~,i~j~)  -> (e~f~,i~n~)
     X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(e~f~,i~n~) l(a~b~,i~j~)  -> (a~b~,m~j~)
     X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <nm~|fe~>' t(fe~,ni~) l(a~b~,i~j~)  -> (a~b~,m~j~)
     X -= 0.5 * np.einsum("nmfe,feni,abij->abmj", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    #     <a~m~||i~e~>' l(a~b~,i~j~)  -> (e~b~,m~j~)
     X += np.einsum("amie,abij->ebmj", H1.bb.voov, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(e~b~,m~j~) l(a~b~,i~j~)  -> (a~f~,i~n~)
     X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(a~f~,i~n~) l(a~b~,i~j~)  -> (e~b~,m~j~)
     X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <mn~|ef~>' t(eb~,mj~) l(a~b~,i~j~)  -> (a~f~,i~n~)
     X += np.einsum("mnef,ebmj,abij->afin", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    #     <m~n~||i~j~>' l(a~b~,i~j~)  -> (a~b~,m~n~)
     X += 0.125 * np.einsum("mnij,abij->abmn", H1.bb.oooo, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(a~b~,m~n~) l(a~b~,i~j~)  -> (e~f~,i~j~)
     X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    #     <m~n~||e~f~>' t(e~f~,i~j~) l(a~b~,i~j~)  -> (a~b~,m~n~)
     X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H1.bb.oovv, T.bb, L.bb, optimize=True)
     # vvvv of H1: 1/8 sum_ab L(abij) <ab||ef>'
     for B1, B2 in ((H1.chol.b.vv, H.chol.b.vv), (H.chol.b.vv, H1.chol.b.vv)):

@@ -40,13 +40,14 @@ import numpy as np
 import scipy.sparse.linalg as spla
 
 from ccpy.gradients.ccsd_gradient import (add_sd, apply_action, calc_bra_density, calc_c_singles, calc_w_density,
-                                          embed_vo, left_action, right_action, solve_linear)
+                                          left_action, right_action, solve_linear)
 from ccpy.gradients.crcc23_gradient import (add_rdm, antisymmetrize_doubles, backprop_triples_intermediates,
                                             build_triples_intermediates, calc_denominator_density, calc_triples)
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
 from ccpy.gradients.eomccsd_gradient import (SD, as_sd, calc_eomccsd_density, calc_pairing_t_gradient,
                                              calc_reference_row, scale_sd, sd_dot)
-from ccpy.gradients.density_gradient import SPINS, add_densities, build_DY, rotation_gradient
+from ccpy.gradients.density_gradient import (add_blocks, add_densities, build_DY, commutator, get_bare_integrals,
+                                             rotate_density, rotation_gradient, scale_density)
 from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 from ccpy.integrals import integrals
@@ -66,7 +67,11 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     e = calc_reference_row(Hbar)
     LH = left_action(T, Hbar, system)
 
-    # 1. sources
+    # 1. sources: delta = sum_K <L|Hbar|K> <K|(Hbar R)_C|0> / D_K, u = M/D, v = N/D, and at fixed state
+    #    F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0>,  F_rP(mu) = sum_K v_K d<K|(H(T1) e^T2)_C|0>/dt_mu
+    #    F_l(mu) = sum_K <mu|Hbar|K> u_K,          W = sum_K u_K v_K
+    #    F_t(mu) = sum_K v_K <K|[Hbar, tau_mu] R|0> + sum_K u_K <L|[Hbar, tau_mu]|K> + W <0|Hbar|mu>
+    #    with M = <K|(Hbar R)_C|0> = A sum_g (J_g t_g + X_g r_g), J_g = r0 X_g + X_g(T, H1) + X_g(R, H)
     X = build_triples_intermediates(T, H)
     XH1 = build_triples_intermediates(T, H1)
     XR = build_triples_intermediates(R, H, constant=False)
@@ -83,20 +88,21 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     dTR, *rdm_XR = backprop_triples_intermediates(tr["dXR"], T, H, system)
     _, *rdm_R2 = backprop_triples_intermediates(tr["dX"], R, H, system, constant=False)
     cprime = SimpleNamespace(**tr["cprime"])
-    rho_v0 = build_DY(*rdm_v0, None, H.chol, T, reference.B_mo, reference)                     # <V3|O|0>
+    h, B = get_bare_integrals(reference)
+    rho_v0 = build_DY(*rdm_v0, None, H.chol, T, B, reference)                                   # <V3|O|0>
     rho_vR = add_densities(scale_density(r0, rho_v0),                                    # <V3|O|R>
-                           build_DY(*add_rdm(rdm_XR, rdm_R2, system), None, H.chol, T, reference.B_mo, reference),
+                           build_DY(*add_rdm(rdm_XR, rdm_R2, system), None, H.chol, T, B, reference),
                            calc_rotation_density(*rdm_v0, R, T, H, reference),
                            calc_bra_density(0.0, cprime, T, H, reference))
-    rho_Lu = build_DY(*tr["rdm"], None, H.chol, T, reference.B_mo, reference)                  # <L|O|U3>
+    rho_Lu = build_DY(*tr["rdm"], None, H.chol, T, B, reference)                                # <L|O|U3>
     # F_r = (v . M3(T), d(v . M3)/dt), F_l = d(u . N)/dl
-    singles = rotation_gradient(*rho_v0, reference.h_mo, reference.B_mo, reference)
+    singles = rotation_gradient(*rho_v0, h, B, reference)
     F_r0 = tr["F_r0"]
     F_rP = {"a": singles["a"], "b": singles["b"],
             **antisymmetrize_doubles({c: dT0[c] + tr["dT"][c] for c in dT0})}
     F_l = {"a": tr["dL"]["a"], "b": tr["dL"]["b"], **antisymmetrize_doubles(tr["dL"])}
     # F_t: rotations of the densities (singles), T2 gradient of v . M plus (J^T c')_doubles, W e
-    singles = rotation_gradient(*add_densities(rho_vR, rho_Lu), reference.h_mo, reference.B_mo, reference)
+    singles = rotation_gradient(*add_densities(rho_vR, rho_Lu), h, B, reference)
     JTc = apply_action(LH, cprime, T)
     F_t2 = antisymmetrize_doubles({c: tr["dJT"][c] + r0 * dT0[c] + dTH1[c] + dTR[c] for c in dT0})
     F_t = {"a": singles["a"] + W * e["a"], "b": singles["b"] + W * e["b"],
@@ -144,19 +150,12 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
 def calc_rotation_density(rdm1, rdm2, R, T, H, reference):
     """d/de of the bare-frame (D1, Y) of fixed densities of H(T1) when T1 -> T1 + e R1 (the
     rotation part of calc_w_density)."""
-    system = reference.system
-    W1 = {s: embed_vo(getattr(R, s), reference, s) for s in SPINS}
-    H1 = build_hbar_ccs_chol_derivative(R, H, system)
-    dB = {s: reference.B_mo[s] @ W1[s] - W1[s] @ reference.B_mo[s] for s in SPINS}
-    D1, Y = build_DY(rdm1, rdm2, None, H.chol, T, reference.B_mo, reference)
-    _, YdB = build_DY(rdm1, rdm2, None, H1.chol, T, dB, reference)
-    return ({s: D1[s] @ W1[s].T - W1[s].T @ D1[s] for s in SPINS},
-            {s: Y[s] @ W1[s].T - W1[s].T @ Y[s] + YdB[s] for s in SPINS})
-
-
-def scale_density(c, DY):
-    D1, Y = DY
-    return {s: c * D1[s] for s in SPINS}, {s: c * Y[s] for s in SPINS}
+    nfz = reference.nfrozen
+    _, B = get_bare_integrals(reference)
+    H1 = build_hbar_ccs_chol_derivative(R, H, reference.system)
+    D1, Y = build_DY(rdm1, rdm2, None, H.chol, T, B, reference)
+    _, YdB = build_DY(rdm1, rdm2, None, H1.chol, T, commutator(B, R.a, R.b, nfz), reference)
+    return rotate_density(D1, R.a, R.b, nfz), add_blocks(rotate_density(Y, R.a, R.b, nfz), YdB)
 
 
 # ======================================================================================
@@ -190,13 +189,14 @@ def solve_state(rhs0, rhs, transpose, T, R, r0, L, omega, e, Hbar, system, tol):
             yP = {c: AX[c] - omega * getattr(xP, c) + lx * getattr(R, c) for c in SD}
         return np.concatenate([[y0]] + [np.ravel(yP[c]) for c in SD])
 
-    eo = {s: np.diag(getattr(Hbar, s).oo) for s in SPINS}
-    ev = {s: np.diag(getattr(Hbar, s).vv) for s in SPINS}
-    d = [np.array([0.0]), ev["a"][:, None] - eo["a"][None, :], ev["b"][:, None] - eo["b"][None, :]]
-    for s, t in (("a", "a"), ("a", "b"), ("b", "b")):
-        d.append(ev[s][:, None, None, None] + ev[t][None, :, None, None]
-                 - eo[s][None, None, :, None] - eo[t][None, None, None, :])
-    diag = np.concatenate([np.ravel(x) for x in d]) - omega
+    eoa, eva = np.diag(Hbar.a.oo), np.diag(Hbar.a.vv)
+    eob, evb = np.diag(Hbar.b.oo), np.diag(Hbar.b.vv)
+    d1a = eva[:, None] - eoa[None, :]
+    d1b = evb[:, None] - eob[None, :]
+    d2aa = eva[:, None, None, None] + eva[None, :, None, None] - eoa[None, None, :, None] - eoa[None, None, None, :]
+    d2ab = eva[:, None, None, None] + evb[None, :, None, None] - eoa[None, None, :, None] - eob[None, None, None, :]
+    d2bb = evb[:, None, None, None] + evb[None, :, None, None] - eob[None, None, :, None] - eob[None, None, None, :]
+    diag = np.concatenate([[0.0], d1a.ravel(), d1b.ravel(), d2aa.ravel(), d2ab.ravel(), d2bb.ravel()]) - omega
     diag = np.where(np.abs(diag) < 0.1, np.copysign(0.1, diag), diag)
     n = 1 + sum(sizes)
     A = spla.LinearOperator((n, n), matvec=matvec, dtype=float)

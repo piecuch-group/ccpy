@@ -56,6 +56,14 @@ def _quiet(f, *args, **kwargs):
         return f(*args, **kwargs)
 
 
+
+def _block_error(x, y):
+    """max |x - y| over the blocks oo, ov, vo, vv of one spin (y None: max |x|)."""
+    if y is None:
+        return float(max(np.abs(x.oo).max(), np.abs(x.ov).max(), np.abs(x.vo).max(), np.abs(x.vv).max()))
+    return float(max(np.abs(x.oo - y.oo).max(), np.abs(x.ov - y.ov).max(), np.abs(x.vo - y.vo).max(),
+                     np.abs(x.vv - y.vv).max()))
+
 class ResponseCase:
     """A converged CCSD / left-CCSD calculation plus reference response quantities."""
 
@@ -185,7 +193,7 @@ class ResponseCase:
     def reference_DY(self, piece):
         """The reference density piece ("triples", "z", "w") as (D1, Y) conjugate to the bare
         (h, B), the form the gradient uses (Y_x = dF/dB_x, spin resolved)."""
-        from ccpy.gradients.density_gradient import build_DY
+        from ccpy.gradients.density_gradient import build_DY, get_bare_integrals
         from ccpy.models.integrals import Integral
         g, G = self.ref[f"density_{piece}"]
         _, H0, reference = self.transformed
@@ -197,21 +205,28 @@ class ResponseCase:
             for blk in ("oo", "ov", "vo", "vv"):
                 setattr(getattr(rdm1, s), blk, g[s][sl(s, blk[0]), sl(s, blk[1])])
         # F = 1/4 sum Gamma_aa <pq||rs> + sum Gamma_ab <pq|rs> + 1/4 sum Gamma_bb <pq||rs>
+        vvvv = {}
         for spins, scale in (("aa", 0.25), ("ab", 1.0), ("bb", 0.25)):
             ss = (spins[0], spins[1], spins[0], spins[1])
             for blk in [p + q + r + t for p in "ov" for q in "ov" for r in "ov" for t in "ov"]:
-                setattr(getattr(rdm2, spins), blk, scale * G[spins][tuple(sl(x, c) for x, c in zip(ss, blk))])
-        return build_DY(rdm1, rdm2, None, H0.chol, None, reference.B_mo, reference)
+                block = scale * G[spins][tuple(sl(x, c) for x, c in zip(ss, blk))]
+                if blk == "vvvv":
+                    vvvv[spins] = block          # passed as slices, as build_DY takes vvvv densities
+                else:
+                    setattr(getattr(rdm2, spins), blk, block)
+
+        def vvvv_slice(a, spin):
+            return (vvvv["aa"][a], vvvv["ab"][a]) if spin == "a" else vvvv["bb"][a]
+
+        return build_DY(rdm1, rdm2, vvvv_slice, H0.chol, None, get_bare_integrals(reference)[1], reference)
 
     def compare_DY(self, mine, piece, verbose=True):
         """Max |error| of (D1, Y) per spin against the reference density piece."""
         ref = self.reference_DY(piece)
-        errors = {}
-        for s in ("a", "b"):
-            errors[f"D1_{s}"] = float(np.abs(mine[0][s] - ref[0][s]).max())
-            errors[f"Y_{s}"] = float(np.abs(mine[1][s] - ref[1][s]).max())
+        errors = {"D1_a": _block_error(mine[0].a, ref[0].a), "D1_b": _block_error(mine[0].b, ref[0].b),
+                  "Y_a": _block_error(mine[1].a, ref[1].a), "Y_b": _block_error(mine[1].b, ref[1].b)}
         if verbose:
-            scale = max(np.abs(ref[1][s]).max() for s in ("a", "b"))
+            scale = max(_block_error(ref[1].a, None), _block_error(ref[1].b, None))
             print(f"   density_{piece} [{self.name}]  (largest reference Y element {scale:.2e})")
             for k, e in errors.items():
                 print(f"      {k:<4} max |error| = {e:.2e}")
@@ -222,16 +237,13 @@ class ResponseCase:
         reference triples, z and w densities (validates the orbital response)."""
         from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_rdm2_vvvv_slice
         from ccpy.gradients.derivative_integrals import contract_derivative_integrals
-        from ccpy.gradients.density_gradient import build_DY
+        from ccpy.gradients.density_gradient import add_densities, build_DY, get_bare_integrals
         from ccpy.gradients.orbital_response import orbital_relaxation
         H, _, reference = self.transformed
         T, L = self.T, self.L
         D1, Y = build_DY(*calc_ccsd_rdm(T, L, self.system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
-                         H.chol, T, reference.B_mo, reference, ref_weight=True)
-        for piece in ("triples", "z", "w"):
-            d1, y = self.reference_DY(piece)
-            D1 = {s: D1[s] + d1[s] for s in ("a", "b")}
-            Y = {s: Y[s] + y[s] for s in ("a", "b")}
+                         H.chol, T, get_bare_integrals(reference)[1], reference, ref_weight=True)
+        D1, Y = add_densities((D1, Y), *(self.reference_DY(piece) for piece in ("triples", "z", "w")))
         D, Y, W = orbital_relaxation(D1, Y, reference, verbose=verbose)
         return contract_derivative_integrals(D, Y, W, reference)
 

@@ -17,7 +17,7 @@ import pytest
 from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_rdm2_vvvv_slice
 from ccpy.density.crcc23_rdm import calc_crcc23_rdm
 from ccpy.gradients import crcc23_gradient_reference as G
-from ccpy.gradients.density_gradient import build_DY
+from ccpy.gradients.density_gradient import add_densities, build_DY, get_bare_integrals
 from ccpy.gradients.finite_difference import fd_gradient
 from crcc23_harness import ResponseCase
 
@@ -129,9 +129,10 @@ def test_7a_density_triples(name):
     c = case(name)
     H, _, reference = c.transformed
     R3, L3 = _triples(c.ref["R3"]), _triples(c.ref["L3"])
-    D1, Y = build_DY(*calc_crcc23_rdm(R3, L3, c.T, c.L, c.system), None, H.chol, c.T, reference.B_mo, reference)
+    D1, Y = build_DY(*calc_crcc23_rdm(R3, L3, c.T, c.L, c.system), None, H.chol, c.T,
+                     get_bare_integrals(reference)[1], reference)
     D1d, Yd = G.calc_denominator_density(R3, L3, H, reference)
-    assert_DY_close(c, ({s: D1[s] + D1d[s] for s in "ab"}, {s: Y[s] + Yd[s] for s in "ab"}), "triples")
+    assert_DY_close(c, add_densities((D1, Y), (D1d, Yd)), "triples")
 
 
 @pytest.mark.parametrize("name", EXACT)
@@ -140,7 +141,7 @@ def test_7b_density_z(name):
     H, _, reference = c.transformed
     z = _amplitudes(c.ref["z"])
     DY = build_DY(*calc_ccsd_rdm(c.T, z, c.system, energy=False), lambda a, s: calc_rdm2_vvvv_slice(z, c.T, a, s),
-                  H.chol, c.T, reference.B_mo, reference)
+                  H.chol, c.T, get_bare_integrals(reference)[1], reference)
     assert_DY_close(c, DY, "z")
 
 

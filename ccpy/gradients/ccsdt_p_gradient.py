@@ -33,7 +33,7 @@ exact determinant-space reference.
 import time
 
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
-from ccpy.gradients.density_gradient import build_DY
+from ccpy.gradients.density_gradient import build_DY, get_bare_integrals
 from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol
 
@@ -67,4 +67,5 @@ def calc_ccsdt_p_density(T, L, t3_excitations, H, reference, rdm=None, vvvv_slic
         if vvvv_slice is None:
             vvvv_slice = lambda a, s: calc_ccsdt_p_rdm2_vvvv_slice(T, L, t3_excitations, a, s)  # noqa: E731
     rdm1, rdm2 = rdm
-    return build_DY(rdm1, rdm2, vvvv_slice, H.chol, T, reference.B_mo, reference, ref_weight=True)
+    _, B = get_bare_integrals(reference)
+    return build_DY(rdm1, rdm2, vvvv_slice, H.chol, T, B, reference, ref_weight=True)

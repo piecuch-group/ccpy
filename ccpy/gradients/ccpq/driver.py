@@ -241,12 +241,19 @@ class CCPQGradient:
         """
         from ccpy.gradients.orbital_response import orbital_relaxation
         from ccpy.gradients.derivative_integrals import contract_derivative_integrals
+        from ccpy.gradients.density_gradient import zero_density
         from ccpy.integrals import integrals
         from ccpy.methods.reference import Reference
         reference = Reference(self.mf, self.nfrozen)
         rho = rho.symmetrized()
-        D = {s: rho.D / 2 for s in ("a", "b")}
-        Y = {s: np.einsum("pqrs,xqs->xpr", rho.G, reference.B_mo[s], optimize=True) / 2 for s in ("a", "b")}
+        # determinant-space (full-MO) densities, half per spin, into ccpy's oo/ov/vo/vv blocks
+        Dfull = rho.D / 2
+        Yfull = np.einsum("pqrs,xqs->xpr", rho.G, reference.B_mo["a"], optimize=True) / 2
+        nocc = self.nfrozen + reference.system.noccupied_alpha
+        D, Y = zero_density(reference), zero_density(reference, Yfull.shape[0])
+        for X, full in ((D.a, Dfull), (D.b, Dfull), (Y.a, Yfull), (Y.b, Yfull)):
+            X.oo[...], X.ov[...] = full[..., :nocc, :nocc], full[..., :nocc, nocc:]
+            X.vo[...], X.vv[...] = full[..., nocc:, :nocc], full[..., nocc:, nocc:]
         relaxed = orbital_relaxation(D, Y, reference, verbose=self.verbose)
         grad = contract_derivative_integrals(*relaxed, reference)
         if not include_nuclear:

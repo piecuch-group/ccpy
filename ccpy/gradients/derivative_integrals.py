@@ -9,23 +9,28 @@ spin-free AO derivative integrals, are they added.
 
 import numpy as np
 
-from ccpy.gradients.density_gradient import SPINS
+from ccpy.gradients.density_gradient import get_bare_integrals
 from ccpy.integrals import integrals
 
 
 def contract_derivative_integrals(D, Y, W, reference):
-    """Nuclear gradient, shape (natoms, 3), Eh/bohr, of relaxed densities (D, Y, W) per spin.
+    """Nuclear gradient, shape (natoms, 3), Eh/bohr, of relaxed densities (D, Y, W) (blocks oo,
+    ov, vo, vv of each spin; Y with a leading auxiliary index).
 
     B[s] = X (Q|mn) C[s] C[s] with X = L^{-1}, M = (Q|Q') = L L^T, for density fitting and for
     Cholesky vectors alike (Q: auxiliary function or Cholesky pivot pair); only the derivative
     integrals of (Q|mn) and (Q|Q') differ. For a Cholesky decomposition the pivots are held fixed
     (the gradient is exact for that energy)."""
-    mol, C, B = reference.molecule, reference.mo_coeff, reference.B_mo
+    mol, nfz = reference.molecule, reference.nfrozen
+    _, B = get_bare_integrals(reference)
+    noa, nob = nfz + reference.system.noccupied_alpha, nfz + reference.system.noccupied_beta
+    Coa, Cva = reference.mo_coeff["a"][:, :noa], reference.mo_coeff["a"][:, noa:]
+    Cob, Cvb = reference.mo_coeff["b"][:, :nob], reference.mo_coeff["b"][:, nob:]
     natoms = mol.natoms
-    D_ao = sum(C[s] @ D[s] @ C[s].T for s in SPINS)
-    W_ao = sum(C[s] @ W[s] @ C[s].T for s in SPINS)
-    Y_ao = sum(np.einsum("mp,xpq,nq->xmn", C[s], Y[s], C[s], optimize=True) for s in SPINS)
-    BY = sum(np.einsum("xpq,ypq->xy", B[s], Y[s], optimize=True) for s in SPINS)
+    D_ao = _to_ao(D.a, Coa, Cva) + _to_ao(D.b, Cob, Cvb)
+    W_ao = _to_ao(W.a, Coa, Cva) + _to_ao(W.b, Cob, Cvb)
+    Y_ao = _to_ao(Y.a, Coa, Cva) + _to_ao(Y.b, Cob, Cvb)
+    BY = _overlap(B.a, Y.a) + _overlap(B.b, Y.b)
 
     grad = integrals.nuclear_repulsion_deriv(mol)
     grad += integrals.hcore_deriv(mol, D_ao).reshape(natoms, 3)
@@ -40,6 +45,17 @@ def contract_derivative_integrals(D, Y, W, reference):
         grad += integrals.coulomb_3c_deriv(mol, W3).reshape(natoms, 3)
         grad += integrals.coulomb_2c_deriv(mol, W2).reshape(natoms, 3)
     return grad
+
+
+def _to_ao(M, Co, Cv):
+    """sum_pq C_mp M_pq C_nq over the blocks (M may carry a leading auxiliary index)."""
+    return (Co @ M.oo @ Co.T + Co @ M.ov @ Cv.T + Cv @ M.vo @ Co.T + Cv @ M.vv @ Cv.T)
+
+
+def _overlap(B, Y):
+    """sum_pq B_x[p, q] Y_y[p, q] over the blocks."""
+    return (np.einsum("xpq,ypq->xy", B.oo, Y.oo, optimize=True) + np.einsum("xpq,ypq->xy", B.ov, Y.ov, optimize=True)
+            + np.einsum("xpq,ypq->xy", B.vo, Y.vo, optimize=True) + np.einsum("xpq,ypq->xy", B.vv, Y.vv, optimize=True))
 
 
 def print_gradient(mol, grad, title, elapsed):
