@@ -20,11 +20,11 @@ containing subroutines that are callable from Python and interoperable with Nump
    :caption: Contents:
 
    installation
-   getting_started
-   computational_options
+   methods/index
    fno
    adc
-   walkthrough
+   steomcc
+   legacy
    references
    contact_information
 

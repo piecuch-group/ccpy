@@ -1,6 +1,10 @@
 Getting Started
 ###############
 
+For the native object-oriented interface (``Molecule``, ``CCSD``, ``EOMCCSD``
+and related methods), start with :doc:`methods/index`. The examples below
+describe the older ``Driver`` interface and its PySCF integration.
+
 Using the PySCF Interface
 *************************
 Let's build a simple example showing how we can run a ground-state

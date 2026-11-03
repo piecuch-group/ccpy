@@ -1,4 +1,4 @@
-"""Geometry and transition-state optimization of any ccpy method through pysisyphus
+"""Geometry optimization, transition states and IRCs through pysisyphus
 (https://github.com/eljost/pysisyphus).
 
 The method is given as one Python callable of a ccpy.integrals.Molecule that returns the
@@ -23,10 +23,16 @@ are central differences of the gradient.
 
 The Molecule must be built with symmetry=False, since every geometry step is a new
 Molecule made with Molecule.with_geometry.
+
+``run_irc(method_at_saddle)`` or ``run_irc(molecule, callback)`` integrates both
+IRC directions and returns IRCResult with native endpoint molecules. Set
+``state`` for an electronic root and ``root`` for a Hessian mode independently.
 """
 
 import time
 from dataclasses import dataclass
+from numbers import Integral
+from pathlib import Path
 
 import numpy as np
 
@@ -130,6 +136,48 @@ class OptimizationResult:
     ncycles: int
     optimizer: object         # the pysisyphus optimizer, for its full history
     hessian_eigenvalues: object = None  # TS search only: eigenvalues of the final Cartesian Hessian
+
+
+@dataclass
+class IRCBranch:
+    """One integrated branch, ordered from its initial displacement to its endpoint.
+
+    Coordinates are Cartesian bohr, energies Eh, gradients Eh/bohr. Convergence
+    flags retain pysisyphus' criteria; a converged branch need not be a minimum.
+    ``molecule`` is the unoptimized last stored geometry.
+    """
+
+    molecule: object
+    coordinates: np.ndarray
+    energies: np.ndarray
+    gradients: np.ndarray
+    converged: bool
+    energy_converged: bool
+    energy_increased: bool
+    ncycles: int
+
+    @property
+    def gradient_rms(self):
+        """RMS Cartesian gradient at the last stored point, in Eh/bohr."""
+        return float(np.sqrt(np.mean(self.gradients[-1] ** 2)))
+
+
+@dataclass
+class IRCResult:
+    """IRC data and native endpoint molecules; no endpoint optimization is implied."""
+
+    start_molecule: object
+    start_energy: float
+    branches: dict
+    irc: object
+
+    @property
+    def converged(self):
+        return bool(self.branches) and all(branch.converged for branch in self.branches.values())
+
+    @property
+    def endpoints(self):
+        return {name: branch.molecule for name, branch in self.branches.items()}
 
 
 def _geometry(molecule, coord_type):
@@ -238,5 +286,123 @@ def optimize_transition_state(molecule, energy_and_gradient=None, coord_type="re
         print("   Lowest Cartesian Hessian eigenvalues (Eh/bohr^2):",
               np.array2string(eigenvalues[:8], precision=5))
     return _finish(calc, geom, opt, extra=eigenvalues)
+
+
+def run_irc(molecule, energy_and_gradient=None, *, state=None, root=0,
+            forward=True, backward=True, downhill=False, step_length=0.1,
+            max_cycles=125, rms_grad_thresh=1.e-3, hessian_init="calc",
+            hessian_step=5.e-3, out_dir=".", prefix="", verbose=True, **irc_kwargs):
+    """Integrate an Euler predictor-corrector IRC with pysisyphus.
+
+    Parameters
+    ----------
+    molecule : Molecule or MethodBase
+        Starting saddle (symmetry=False), or a method defined on that geometry.
+        Method inputs are rebuilt with at_geometry at each evaluation.
+    energy_and_gradient : callable, optional
+        Required with a Molecule: returns a scalar energy (Eh) and a real finite
+        Cartesian gradient of shape (natoms, 3) (Eh/bohr). Do not negate it.
+    state : int, optional
+        Returned electronic root for a method input, passed as root to its energy
+        and gradient methods. Required for array-valued excited-state energies.
+        For callback inputs select the electronic state inside the callback.
+    root : int
+        Hessian mode for the initial displacement, distinct from electronic state.
+    forward, backward : bool
+        Integrate both directions by default. At least one must be enabled unless
+        downhill=True, which instead runs one branch from a nonstationary point.
+    step_length, max_cycles, rms_grad_thresh
+        EulerPC integration controls; max_cycles applies separately to each branch.
+    hessian_init : str or path
+        "calc" or a Hessian file supported by pysisyphus. Calculated Hessians are
+        central differences of gradients using hessian_step (bohr).
+    out_dir, prefix
+        IRC output directory and filename prefix. Some pysisyphus files can still
+        be written in the process working directory; use a dedicated directory.
+    **irc_kwargs
+        Extra EulerPC/IRC settings, e.g. displ="length", displ_length=0.1,
+        hessian_recalc, energy_thresh or dump_every.
+
+    Returns
+    -------
+    IRCResult
+        Copies of per-branch trajectories, native endpoint molecules, convergence
+        diagnostics and the underlying pysisyphus integrator. A cycle-limited run
+        returns converged=False rather than being labeled successful. Endpoint
+        minimization and vibrational characterization remain separate steps.
+    """
+    from ccpy.methods.base import MethodBase
+
+    for name, value in (("root", root), ("max_cycles", max_cycles), ("state", state)):
+        if value is None and name == "state":
+            continue
+        if not isinstance(value, Integral) or isinstance(value, bool) or value < (1 if name == "max_cycles" else 0):
+            raise ValueError(f"{name} must be a {'positive' if name == 'max_cycles' else 'nonnegative'} integer.")
+    for name, value in (("step_length", step_length), ("rms_grad_thresh", rms_grad_thresh),
+                        ("hessian_step", hessian_step)):
+        if not np.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be finite and positive.")
+    if not downhill and not (forward or backward):
+        raise ValueError("Enable forward or backward, or set downhill=True.")
+    if isinstance(molecule, MethodBase):
+        method = molecule
+        if energy_and_gradient is not None:
+            raise ValueError("Pass either a method or a Molecule with an energy_and_gradient callable.")
+        molecule = method.molecule
+
+        def evaluate(mol):
+            calculation = method.at_geometry(mol)
+            kwargs = {} if state is None else {"root": state}
+            energy = calculation.energy(**kwargs)
+            if np.ndim(energy) != 0:
+                raise ValueError("IRC requires a scalar energy; select a returned electronic root with state=... .")
+            gradient = calculation.gradient(**kwargs)
+            if not calculation.converged:
+                raise RuntimeError("IRC electronic calculation did not converge.")
+            return energy, gradient
+
+        function = evaluate
+    else:
+        if state is not None:
+            raise ValueError("Select the electronic state inside the callback; state is for method inputs.")
+        molecule, function = _resolve_target(molecule, energy_and_gradient)
+    if molecule.symmetry:
+        raise ValueError("Build the Molecule with symmetry=False for IRC integration.")
+
+    def checked_function(mol):
+        energy, gradient = function(mol)
+        energy, gradient = np.asarray(energy), np.asarray(gradient)
+        if energy.ndim != 0 or np.iscomplexobj(energy) or not np.isfinite(energy):
+            raise ValueError("IRC callback must return one finite real scalar energy.")
+        if (gradient.shape != (mol.natoms, 3) or np.iscomplexobj(gradient)
+                or not np.all(np.isfinite(gradient))):
+            raise ValueError("IRC gradient must be finite and real with shape (natoms, 3), in Eh/bohr.")
+        return float(energy), np.asarray(gradient, dtype=float)
+
+    _import_pysisyphus()
+    from pysisyphus.irc.EulerPC import EulerPC
+
+    geom = _geometry(molecule, "cart")
+    calc = make_calculator(molecule, checked_function, hessian_step=hessian_step, verbose=verbose)
+    geom.set_calculator(calc)
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    irc = EulerPC(geom, root=root, forward=forward, backward=backward, downhill=downhill,
+                  step_length=step_length, max_cycles=max_cycles, rms_grad_thresh=rms_grad_thresh,
+                  hessian_init=None if hessian_init is None else str(hessian_init),
+                  out_dir=out_dir, prefix=prefix, **irc_kwargs)
+    irc.run()
+    directions = ("downhill",) if downhill else tuple(name for name, enabled in
+                                                    (("forward", forward), ("backward", backward)) if enabled)
+    branches = {}
+    for name in directions:
+        coords = np.asarray(getattr(irc, f"{name}_coords"), dtype=float).reshape(-1, molecule.natoms, 3).copy()
+        gradients = np.asarray(getattr(irc, f"{name}_gradients"), dtype=float).reshape(coords.shape).copy()
+        branches[name] = IRCBranch(
+            molecule.with_geometry(coords[-1], unit="bohr"), coords,
+            np.asarray(getattr(irc, f"{name}_energies"), dtype=float).copy(), gradients,
+            bool(getattr(irc, f"{name}_is_converged")), bool(getattr(irc, f"{name}_energy_converged")),
+            bool(getattr(irc, f"{name}_energy_increased")), int(getattr(irc, f"{name}_cycle")) + 1,
+        )
+    return IRCResult(molecule, float(irc.ts_energy), branches, irc)
 
 

@@ -67,11 +67,13 @@ from ccpy.lib.core import crcc23_gradient_loops
 from ccpy.models.integrals import Integral
 
 
-def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10, components=False, verbose=True):
+def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10, components=False, perturbation=None,
+                         verbose=True):
     """Analytic CR-CC(2,3)_A nuclear gradient, (natoms, 3) in Eh/bohr, from converged CCSD (T),
     left-CCSD (L) and the CCSD HBar (Hbar) on the SCF reference (ccpy.methods.Reference).
     components=True returns a dict with the base (CCSD, nuclear repulsion included), correction
-    and total gradients."""
+    and total gradients. perturbation: AO one-electron operator(s), for which dE/dlambda is
+    returned instead (see contract_derivative_integrals)."""
     if reference.system.cholesky:
         from ccpy.left.left_ccsd_chol import LH_fun
     else:
@@ -259,13 +261,15 @@ def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10,
 
     # 4. orbital relaxation and 5. derivative integrals
     D, Yr, W = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
-    grad = contract_derivative_integrals(D, Yr, W, reference)
+    grad = contract_derivative_integrals(D, Yr, W, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "CR-CC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
     if not components:
         return grad
     D, Yr, W = orbital_relaxation(D1c, Yc, reference, zvector_tol=zvector_tol, verbose=False)
-    grad_corr = contract_derivative_integrals(D, Yr, W, reference) - integrals.nuclear_repulsion_deriv(reference.molecule)
+    grad_corr = contract_derivative_integrals(D, Yr, W, reference, perturbation)
+    if perturbation is None:
+        grad_corr -= integrals.nuclear_repulsion_deriv(reference.molecule)
     return {"base": grad - grad_corr, "correction": grad_corr, "total": grad}
 
 

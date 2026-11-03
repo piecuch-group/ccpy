@@ -1,5 +1,5 @@
 Spin-integrated STEOM-CCSD
-=========================
+==========================
 
 ``STEOMCC`` is available from ``ccpy`` and ``ccpy.methods``. It requires a
 closed-shell restricted reference and computes singlet (``multiplicity=1``) or
@@ -149,7 +149,7 @@ cache invalidation and failure handling. These checks do not replace a broad
 comparison against published excitation-energy benchmarks.
 
 Higher-rank auxiliaries and an SD-sized neutral problem
-------------------------------------------------------
+-------------------------------------------------------
 
 ``STEOMCC(..., level="sdt")`` dispatches to ``STEOMCCSDT``. The ground-state
 operator remains CCSD. The new level solves IP-EOMCCSD(3h-2p) and
@@ -317,7 +317,7 @@ neutral two-electron limit, higher-rank full/P-space agreement, satellite roots,
 Arnoldi diagonalization, and failure handling.
 
 Targeting neutral CIS or CISd roots
-----------------------------------
+-----------------------------------
 
 Both STEOM levels support ``initial_guess("cis", ...)`` and
 ``initial_guess("cisd", ...)``. CISd retains all singles and active doubles and

@@ -39,17 +39,19 @@ from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol
 
 
 def calc_ccsdt_p_gradient(T, L, t3_excitations, reference, rdm=None, vvvv_slice=None, zvector_tol=1.0e-10,
-                          verbose=True):
+                          perturbation=None, verbose=True):
     """Analytic CC(P) nuclear gradient from converged CC(P) (T) and left-CC(P) (L) amplitudes.
 
     rdm, vvvv_slice : (rdm1, rdm2) and vvvv_slice(a, spin) to use instead of
         ccpy.density.ccsdt_p_rdm (e.g. reference densities, or a partial implementation)
+    perturbation : AO one-electron operator(s) (see contract_derivative_integrals); dE/dlambda is
+        returned instead of the nuclear gradient
     """
     t0 = time.perf_counter()
     H = build_hbar_ccs_chol(T, reference.H, reference.system)
     D1, Y = calc_ccsdt_p_density(T, L, t3_excitations, H, reference, rdm=rdm, vvvv_slice=vvvv_slice)
     D, Y, W = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
-    grad = contract_derivative_integrals(D, Y, W, reference)
+    grad = contract_derivative_integrals(D, Y, W, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "CC(P) Analytic Gradient", time.perf_counter() - t0)
     return grad

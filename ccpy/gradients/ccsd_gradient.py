@@ -28,11 +28,13 @@ from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol
 
 
-def calc_ccsd_gradient(T, L, reference, rdm=None, zvector_tol=1.0e-10, verbose=True):
+def calc_ccsd_gradient(T, L, reference, rdm=None, zvector_tol=1.0e-10, perturbation=None, verbose=True):
     """Analytic CCSD nuclear gradient, (natoms, 3) in Eh/bohr, from converged CCSD (T) and
     left-CCSD (L) amplitudes on the SCF reference (ccpy.methods.Reference).
 
     rdm : (rdm1, rdm2) of ccpy.density.ccsd_rdm.calc_ccsd_rdm(T, L, system), if available
+    perturbation : AO one-electron operator(s) (see contract_derivative_integrals); dE/dlambda is
+        returned instead of the nuclear gradient
     """
     t0 = time.perf_counter()
     if T.order != 2:
@@ -49,7 +51,7 @@ def calc_ccsd_gradient(T, L, reference, rdm=None, zvector_tol=1.0e-10, verbose=T
 
     # orbital relaxation and derivative integrals
     D, Y, W = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
-    grad = contract_derivative_integrals(D, Y, W, reference)
+    grad = contract_derivative_integrals(D, Y, W, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "CCSD Analytic Gradient", time.perf_counter() - t0)
     return grad

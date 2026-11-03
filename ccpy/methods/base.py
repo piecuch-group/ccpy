@@ -177,13 +177,26 @@ class MethodBase:
     def is_current(self):
         return self.converged and all(dep.version == v for dep, v in self._dependencies)
 
-    def gradient(self, **kwargs):
+    def gradient(self, perturbation=None, **kwargs):
         """Nuclear gradient (natoms, 3) in Eh/bohr: analytic when available, otherwise by
-        central differences of energy()."""
+        central differences of energy(). With perturbation (AO integrals V, (nao, nao) or
+        (ncomp, nao, nao), of one-electron operators added to h with strengths lambda), the
+        analytic dE/dlambda, (ncomp,), from the same orbital-relaxed density."""
         if self.has_analytic_gradient(**kwargs):
-            return self._analytic_gradient(**kwargs)
+            return self._analytic_gradient(perturbation=perturbation, **kwargs)
+        if perturbation is not None:
+            raise NotImplementedError(f"{type(self).__name__} has no analytic gradient for this reference.")
         print(f"   {type(self).__name__}: no analytic gradient available; using finite differences.")
         return self.fd_gradient(**kwargs)
+
+    def multipole_moments(self, order=1, origin=None, **kwargs):
+        """Orbital-relaxed Cartesian multipole moments (atomic units, not traceless) of orders
+        1..order (<= 3) about origin (bohr), as {"x": ..., "xx": ..., ...}: the analytic derivatives
+        of the energy with respect to the electronic moment operators, plus the nuclear moments."""
+        from ccpy.gradients.derivative_integrals import multipole_integrals, multipole_moments
+
+        _, V = multipole_integrals(self.molecule, order, origin)
+        return multipole_moments(self.gradient(perturbation=V, **kwargs), self.molecule, order, origin)
 
     def energy_and_gradient(self, **kwargs):
         return self.energy(**kwargs), self.gradient(**kwargs)

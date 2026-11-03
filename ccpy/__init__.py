@@ -5,6 +5,7 @@
 from ccpy.integrals.molecule import Molecule
 from ccpy.scf import RHF, ROHF, UHF
 from ccpy.methods import *
+from ccpy.optimize import IRCBranch, IRCResult, run_irc
 from ccpy.drivers.driver import Driver
 from ccpy.drivers.adaptive import AdaptDriver, AdaptEOMDriver, AdaptEOMDriverSS
 from ccpy.utilities.pspace import (get_active_triples_pspace,

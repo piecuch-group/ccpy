@@ -1,5 +1,5 @@
 Specific Walkthroughs
-###################
+#####################
 
 Here, we walkthrough some code for performing a few of the standard
 CC calculations that are possible using CCpy. In all cases, we will 
@@ -9,7 +9,7 @@ system is specified within :code:`driver.system` and the molecular
 orbital integrals are loaded and available in :code:`driver.hamiltonian`.
 
 Completely Renormalized (CR) CC Calculations
-********************************
+********************************************
 Here is an example of how to perform a CR-CC(2,3) calculation in order to 
 obtain the nonperturbative correction to the CCSD energetics for the 
 effects of missing triples using moment energy expansions. ::
@@ -44,7 +44,7 @@ energy denominator, is generally most accurate and often simply referred to as t
 CR-CC(2,3) energy (or by its former name, CR-CCSD(T)\ :sub:`L`\).
 
 Active-Orbital-Based CC(*P*; *Q*) Calculations
-********************************
+**********************************************
 Here is an example of how to perform a CC(t;3) calculation in order to 
 obtain the nonperturbative correction to the CCSDt energetics for the 
 effects of missing triples using the CC(P;Q) moment expansions. ::
@@ -128,10 +128,10 @@ CCSDT energetics to within a fraction of a millihartree, even in challenging sit
 many-electron correlation effects where :math:`T_3` clusters become large and nonperturbative.
 
 Adaptive CC(*P*; *Q*) Calculations
-********************************
+**********************************
 
 CIPSI-Driven CC(*P*; *Q*) Calculations
-********************************
+**************************************
 
 CIPSI-Based Externally Corrected (ec) CC Calculations
-********************************
+*****************************************************

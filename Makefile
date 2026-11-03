@@ -11,6 +11,8 @@ BLACK := black $(SRC)
 AUTOFLAKE := autoflake -ir --remove-all-unused-imports --ignore-init-module-imports --remove-unused-variables $(SRC)
 MYPY := mypy ccpy
 PYLINT := pylint ccpy
+PYTHON ?= python
+SPHINXOPTS ?=
 
 ##@ Getting Started
 
@@ -23,6 +25,14 @@ bootstrap: ## Bootstrap project development
 install: ## Install the Python Package
 	pip install -e .
 .PHONY: install
+
+##@ Documentation
+
+docs: ## Build HTML documentation in docs/_build/html
+	$(PYTHON) -m sphinx -b html $(SPHINXOPTS) docs docs/_build/html
+	@echo "Documentation: $(CURDIR)/docs/_build/html/index.html"
+	@echo "Methods guide: $(CURDIR)/docs/_build/html/methods/index.html"
+.PHONY: docs
 
 ##@ QA
 

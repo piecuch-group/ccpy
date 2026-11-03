@@ -48,10 +48,11 @@ from ccpy.gradients.orbital_response import orbital_relaxation
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 
 
-def calc_eomccsd_gradient(T, R, r0, L, Hbar, reference, zvector_tol=1.0e-10, verbose=True):
+def calc_eomccsd_gradient(T, R, r0, L, Hbar, reference, zvector_tol=1.0e-10, perturbation=None, verbose=True):
     """Analytic EOMCCSD nuclear gradient of one root, (natoms, 3) in Eh/bohr, from the CCSD T,
     the root's R, r0 and left vector L, and the CCSD HBar, on the SCF reference
-    (ccpy.methods.Reference)."""
+    (ccpy.methods.Reference). perturbation: AO one-electron operator(s), for which dE/dlambda is
+    returned instead (see contract_derivative_integrals)."""
     if reference.system.cholesky:
         from ccpy.left.left_ccsd_chol import LH_fun
     else:
@@ -159,7 +160,7 @@ def calc_eomccsd_gradient(T, R, r0, L, Hbar, reference, zvector_tol=1.0e-10, ver
 
     # 4. orbital relaxation and 5. derivative integrals
     D, Y, W = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
-    grad = contract_derivative_integrals(D, Y, W, reference)
+    grad = contract_derivative_integrals(D, Y, W, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "EOMCCSD Analytic Gradient", time.perf_counter() - t0)
     return grad

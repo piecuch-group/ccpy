@@ -1,5 +1,5 @@
 Density-fitted ADC(2)
-====================
+=====================
 
 ``ADC2``, ``IPADC2`` and ``EAADC2`` implement strict second-order ADC for
 neutral excitation, ionization and electron attachment from real RHF, ROHF
@@ -48,7 +48,7 @@ IP roots are ionization potentials, while positive electron affinities equal
 ``-ea.omega``. Root indices and irrep selection follow the EOMCC interface.
 
 Formulations and root targeting
-------------------------------
+-------------------------------
 
 All three methods accept ``formulation="folded"`` (default) or
 ``formulation="full"``. Folded mode targets states dominated by singles (EE),
