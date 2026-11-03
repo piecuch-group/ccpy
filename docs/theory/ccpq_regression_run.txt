@@ -1,0 +1,33 @@
+........................................................................ [ 50%]
+........................................................................ [100%]
+=============================== warnings summary ===============================
+tests/gradients/test_ccpq_excited_optimized.py::test_excited_full_ccp3_against_optimized_fd[0-A-mp-1]
+  ccpy/methods/eomcc.py:154: DFPortWarning: EOMCCSDT_P still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self._warn_df_port()
+
+tests/gradients/test_ccpq_excited_optimized.py::test_excited_full_ccp3_against_optimized_fd[0-A-mp-1]
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[df]
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[cholesky]
+  ccpy/methods/hbar.py:62: DFPortWarning: HBarCCSDT_P still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self.build()
+
+tests/gradients/test_ccpq_excited_optimized.py::test_excited_full_ccp3_against_optimized_fd[0-A-mp-1]
+  ccpy/methods/corrections.py:571: DFPortWarning: EOMCCP3 still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self._warn_df_port()
+
+tests/gradients/test_ccpq_excited_optimized.py::test_excited_full_ccp3_against_optimized_fd[0-A-mp-1]
+  ccpy/methods/left.py:204: DFPortWarning: LeftEOMCCSDT_P still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self._warn_df_port()
+
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[df]
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[cholesky]
+  ccpy/methods/corrections.py:97: DFPortWarning: CCP3 still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self._warn_df_port()
+
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[df]
+tests/gradients/test_ccpq_factorized.py::test_full_selected_triples_matches_independent_optimized_finite_difference[cholesky]
+  ccpy/methods/left.py:55: DFPortWarning: LeftCCSDT_P still uses four-index integrals (vvvv included) built from the DF vectors; its equations need to be ported to DF.
+    self._warn_df_port()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+144 passed, 10 warnings in 279.11s (0:04:39)

@@ -1,0 +1,196 @@
+{
+  "generated_utc": "2026-11-03T00:38:58.799654+00:00",
+  "description": "Local implementation/report snapshot. Content hashes, rather than a clean Git revision, identify the modified workspace sources.",
+  "files": [
+    {
+      "path": "ccpy/gradients/ccpq/__init__.py",
+      "sha256": "cd097cea7a7d77dab122ed66bf1d5d0e4da37ab5c960ab4598c3cccf07d80c08",
+      "bytes": 482
+    },
+    {
+      "path": "ccpy/gradients/ccpq/amplitudes.py",
+      "sha256": "9a2e7bd34b67e45d0f834eab88061ee74a3bf3e1496d907fbe3a169906b46daa",
+      "bytes": 10427
+    },
+    {
+      "path": "ccpy/gradients/ccpq/densities.py",
+      "sha256": "adab5d17cb997c372ed73e0bedf86e41a72943568cff0f28d434014e941b06f0",
+      "bytes": 3605
+    },
+    {
+      "path": "ccpy/gradients/ccpq/determinants.py",
+      "sha256": "c98f8ce9e1260c24baae7f44852e324e6b202a43c2bef2e4219e5b507c92f209",
+      "bytes": 10361
+    },
+    {
+      "path": "ccpy/gradients/ccpq/driver.py",
+      "sha256": "370414d5cd57d0dcd4dddbb199cfa7fe7a9ef38e7c8493a5c788abc8a3dd9df7",
+      "bytes": 16123
+    },
+    {
+      "path": "ccpy/gradients/ccpq/eom_oracle.py",
+      "sha256": "690f44427e045974c800ade662c132c40f8fae166f905dc60a3ea65b5e2cbc59",
+      "bytes": 2204
+    },
+    {
+      "path": "ccpy/gradients/ccpq/fcipy_adapter.py",
+      "sha256": "df480bed00dc858ca080b6ad5819dd84d59a07229a6b874e3be137000ac44efd",
+      "bytes": 6796
+    },
+    {
+      "path": "ccpy/gradients/ccpq/fortran/fcipy_connected.f90",
+      "sha256": "d57f82971fb21943b75f9047633190c0150304eea3b0fe3720e4f927e40e41ac",
+      "bytes": 11410
+    },
+    {
+      "path": "ccpy/gradients/ccpq/matrix_free.py",
+      "sha256": "f8a190db694a16081b48c4f2b3d6afe6c4a64bedf5347e4c24634da28173a0e6",
+      "bytes": 29372
+    },
+    {
+      "path": "ccpy/gradients/ccpq/nuclear_gradient.py",
+      "sha256": "5027eb30600914d921a97ab7c7db276154a33dd5fc050937fc2b48d5c3ded790",
+      "bytes": 1306
+    },
+    {
+      "path": "ccpy/gradients/ccpq/orbital_response.py",
+      "sha256": "33bbbb88225711fad1e81a10e5cdb831b5d4d6a2940251e3188aa1fc47288c07",
+      "bytes": 3901
+    },
+    {
+      "path": "ccpy/gradients/ccpq/scf.py",
+      "sha256": "8c6bef96b698068e2bd53b8fc2eb642020772c9ca758b6b2ea6db7a5f43c8f62",
+      "bytes": 4277
+    },
+    {
+      "path": "ccpy/gradients/ccpq/spaces.py",
+      "sha256": "5444165b3e74bfafa6b24172e5d5f1b770e838ade76c0a2d0115872925f33cb6",
+      "bytes": 4826
+    },
+    {
+      "path": "ccpy/gradients/ccpq/state_oracle.py",
+      "sha256": "341e984cfe262b5d56b515042f4fd68dfd2ee720784c071a4e9406d1e741c5d4",
+      "bytes": 9435
+    },
+    {
+      "path": "ccpy/gradients/ccpq_gradients_revised.pdf",
+      "sha256": "1dcb87794dbbe16c2c97e06c316d452f13072f91ef1a18880f309bd45ee07546",
+      "bytes": 553703
+    },
+    {
+      "path": "ccpy/gradients/derivative_integrals.py",
+      "sha256": "97402c1aa5441afd6e4d4e420998314d08036278421d858c619ff16285a5d29a",
+      "bytes": 2459
+    },
+    {
+      "path": "ccpy/gradients/orbital_response.py",
+      "sha256": "853b2cf82d7517a789e609f87cc91b8366086c4774615b4560e44a7849e53a90",
+      "bytes": 8185
+    },
+    {
+      "path": "ccpy/methods/corrections.py",
+      "sha256": "fbb8dde53e9929c3e9de4a84bdc76293bf91d157e3bd198354d9058b47e75da9",
+      "bytes": 34696
+    },
+    {
+      "path": "ccpy/moments/ccp3.py",
+      "sha256": "8cfe138e0772a0f47e503a7d730fffc670b8ec842720bbe60921cd8c4773afec",
+      "bytes": 121519
+    },
+    {
+      "path": "devtools/build_ccpq_theory_evidence.py",
+      "sha256": "32db138240eb8733e1cf0931039985530503ee9da96933f6b6ddc5369ae091e0",
+      "bytes": 11755
+    },
+    {
+      "path": "devtools/check_ccpq_lean_response.py",
+      "sha256": "26cf21f917c8ef5ba4e9b764e42bc7ffdd220b17a2c4ff61139a0b0ec64d2617",
+      "bytes": 2844
+    },
+    {
+      "path": "devtools/check_ccpq_theory.py",
+      "sha256": "520601a73a4baa12839d7e0f3a5bba6263adfc5b422bcfe5a5bada44bc97f6d2",
+      "bytes": 6553
+    },
+    {
+      "path": "docs/theory/ccpq_analytical_gradients.tex",
+      "sha256": "472a9cc2b4794c243e67e3e5a8511f0abde63db7b5b4362ab17c98c0b036fa7c",
+      "bytes": 51531
+    },
+    {
+      "path": "docs/theory/ccpq_formula_checks.json",
+      "sha256": "ac7f002cb36853cd30fdc1265cfa1206fa033addbbd02f628f319d4475d4d0ee",
+      "bytes": 6152
+    },
+    {
+      "path": "docs/theory/ccpq_lean_implementation.md",
+      "sha256": "af80f54095cc5422ad25bebe4e2f103d77eff5399b9b11ce0a318757b5c0f560",
+      "bytes": 5793
+    },
+    {
+      "path": "docs/theory/ccpq_lean_response.tex",
+      "sha256": "ef16ec059f2a3bebb3a18063bda6fdec6e20fea878b407e9882a94711cffa747",
+      "bytes": 9686
+    },
+    {
+      "path": "docs/theory/ccpq_lean_response_checks.json",
+      "sha256": "0fccc3d1f8e9eaeb3d8620cee26058a59a6098c51a85f55381598be3b7a683cf",
+      "bytes": 1279
+    },
+    {
+      "path": "docs/theory/ccpq_validation_tables.tex",
+      "sha256": "e91aac69db61c7da47485d6e557cdf67a3f25be571427568dbdee838c978d951",
+      "bytes": 7710
+    },
+    {
+      "path": "examples/results/h2o_631g_excited_optimized.json",
+      "sha256": "f06323e07a58a6d87d909ce4a6b045c6d46d03be8707b2e742a436bb374454cb",
+      "bytes": 239812
+    },
+    {
+      "path": "examples/results/h2o_631g_frozen_core.json",
+      "sha256": "511ac2e31c5de0313ef33a077b24e99e9b695633baa1db58c3575af5b4ceb6d1",
+      "bytes": 843517
+    },
+    {
+      "path": "examples/results/h2o_631g_optimized_df.json",
+      "sha256": "8738a94ed5de0b2d324136d0322cd5147bfc6e1748c2f2e7b35fd5f2185a7e19",
+      "bytes": 222213
+    },
+    {
+      "path": "examples/results/h2o_631g_reduced_all_components.json",
+      "sha256": "107bd010abebddbfbd4008ddbb1adc7f3e86877df07b3aafe555820697109b4e",
+      "bytes": 60968
+    },
+    {
+      "path": "examples/results/h4_631g_excited_optimized.json",
+      "sha256": "568b0712d16cf79eb758dcf4941020f327fee579b8d9013953757f697b81d35b",
+      "bytes": 63778
+    },
+    {
+      "path": "examples/results/h4_631g_excited_step_convergence.json",
+      "sha256": "b2a4f988859e7fdc97bb89f0cfe98017b6baa94ec50263f91667bda84637bea7",
+      "bytes": 2980
+    },
+    {
+      "path": "examples/results/h6_healthy_v6.json",
+      "sha256": "2e68fc11290b71de2d703cff37750b9ce1bec0c01279b7f53ec6e8b30da15521",
+      "bytes": 367311
+    },
+    {
+      "path": "examples/results/h6_healthy_v7.json",
+      "sha256": "2b4482d9de25a9fb31011609ddecf017c025c62015fc32631263d18f9fbe23e9",
+      "bytes": 367351
+    }
+  ],
+  "formula_checks": {
+    "configurations": 12,
+    "max_error": 8.881784197001252e-16
+  },
+  "lean_response_checks": {
+    "configurations": 8,
+    "max_error": 5.551115123125783e-15,
+    "scope": "Fixed-Fock bare-Hamiltonian total-gradient coefficient; retain the unchanged explicit MP Fock density"
+  },
+  "gradient_regression": "144 passed; saved in ccpq_regression_run.txt"
+}

@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "configurations": 8,
+  "max_error": 5.551115123125783e-15,
+  "scope": "Fixed-Fock bare-Hamiltonian total-gradient coefficient; retain the unchanged explicit MP Fock density",
+  "records": [
+    {
+      "closed_P": true,
+      "denominator": "full",
+      "state": 1,
+      "coefficient_error": 2.275957200481571e-15
+    },
+    {
+      "closed_P": true,
+      "denominator": "full",
+      "state": 2,
+      "coefficient_error": 5.495603971894525e-15
+    },
+    {
+      "closed_P": true,
+      "denominator": "mp",
+      "state": 1,
+      "coefficient_error": 2.3314683517128287e-15
+    },
+    {
+      "closed_P": true,
+      "denominator": "mp",
+      "state": 2,
+      "coefficient_error": 5.551115123125783e-15
+    },
+    {
+      "closed_P": false,
+      "denominator": "full",
+      "state": 1,
+      "coefficient_error": 4.385380947269368e-15
+    },
+    {
+      "closed_P": false,
+      "denominator": "full",
+      "state": 2,
+      "coefficient_error": 1.942890293094024e-15
+    },
+    {
+      "closed_P": false,
+      "denominator": "mp",
+      "state": 1,
+      "coefficient_error": 4.440892098500626e-15
+    },
+    {
+      "closed_P": false,
+      "denominator": "mp",
+      "state": 2,
+      "coefficient_error": 1.9984014443252818e-15
+    }
+  ]
+}

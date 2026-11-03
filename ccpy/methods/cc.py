@@ -122,6 +122,10 @@ class CCBase(MethodBase):
         return self.total_energy
 
     # ------------------------------------------------------------------ gradients
+    def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
+        left = self.left.ensure_solved()
+        return self._gradient_function()(self.T, left.L, self.reference, zvector_tol=zvector_tol)
+
     def rdm1(self):
         return self.left.rdm1()
 
@@ -134,19 +138,7 @@ class CCSD(CCBase):
     module = "ccpy.cc.ccsd_chol"
     order = 2
     left_class = "LeftCCSD"
-
-    def has_analytic_gradient(self, **kwargs):
-        from ccpy.scf.rhf import RHF
-        from ccpy.scf.uhf import UHF
-
-        return isinstance(self.reference.scf, (RHF, UHF)) and self.reference.ndelete == 0
-
-    def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
-        from ccpy.gradients.ccsd_gradient import ccsd_gradient_from_amplitudes
-
-        left = self.left.ensure_solved()
-        return ccsd_gradient_from_amplitudes(self.reference.scf, self.system, self.T, left.L, H0=self.reference.H,
-                                             rdm=(left.rdm1(), left.rdm2()), zvector_tol=zvector_tol)
+    gradient_module, gradient_function = "ccpy.gradients.ccsd_gradient", "calc_ccsd_gradient"
 
 
 class CCSDT(CCBase):
@@ -201,13 +193,25 @@ class CCPBase(CCBase):
         # t3_excitations is reordered in place along with T
         return cc_jacobi(update, self.T, dT, self.hamiltonian, X, self.options, self.t3_excitations)
 
+    def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
+        left = self.left.ensure_solved()
+        return self._gradient_function()(self.T, left.L, self.t3_excitations, self.reference,
+                                         zvector_tol=zvector_tol)
+
 
 class CCSDT_P(CCPBase):
-    """CCSDT(P) (CCSD plus the triples of the P space) with DF/Cholesky integrals."""
+    """CCSDT(P) (CCSD plus the triples of the P space) with DF/Cholesky integrals. Its analytic
+    gradient needs the CC(P) densities of ccpy.density.ccsdt_p_rdm."""
     module = "ccpy.cc.ccsdt_p_chol"
     order = 3
     hbar_class = HBarCCSDT_P
     left_class = "LeftCCSDT_P"
+    gradient_module, gradient_function = "ccpy.gradients.ccsdt_p_gradient", "calc_ccsdt_p_gradient"
+
+    def has_analytic_gradient(self, **kwargs):
+        from importlib.util import find_spec
+
+        return super().has_analytic_gradient(**kwargs) and find_spec("ccpy.density.ccsdt_p_rdm") is not None
 
 
 # ---------------------------------------------------------------------- legacy levels

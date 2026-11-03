@@ -2380,14 +2380,22 @@ class Driver:
                                            t4_excitations,
                                            self.options["RHF_symmetry"])
 
-    def run_gradient(self, method, zvector_tol=1.0e-10):
-        """Analytic nuclear gradient (natoms x 3, Eh/bohr)"""
+    def run_gradient(self, method, zvector_tol=1.0e-10, verbose=True):
+        """Analytic nuclear gradient (natoms x 3, Eh/bohr) after run_cc, run_hbar and run_leftcc
+        (ccsd or ccsd_chol variants), for a driver built with from_scf (RHF or UHF)."""
+        from ccpy.methods.reference import Reference
+
+        if self.T is None or self.L[0] is None:
+            raise RuntimeError("Run CC, the HBar, and left-CC before the gradient.")
+        reference = Reference(self.scf, self.system.nfrozen, self.system.ndelete)
+        reference.system = self.system      # the driver's amplitudes, HBar and solvers (DF or four-index)
         if method.lower() == "ccsd":
-            from ccpy.gradients.ccsd_gradient import ccsd_gradient
-            self.gradient = ccsd_gradient(self, zvector_tol=zvector_tol)
+            from ccpy.gradients.ccsd_gradient import calc_ccsd_gradient
+            self.gradient = calc_ccsd_gradient(self.T, self.L[0], reference, zvector_tol=zvector_tol, verbose=verbose)
         elif method.lower() == "crcc23a":
-            from ccpy.gradients.crcc23_gradient import crcc23A_gradient
-            self.gradient = crcc23A_gradient(self, zvector_tol=zvector_tol)
+            from ccpy.gradients.crcc23_gradient import calc_crcc23_gradient
+            self.gradient = calc_crcc23_gradient(self.T, self.L[0], self.hamiltonian, reference, zvector_tol=zvector_tol,
+                                                 verbose=verbose)
         else:
             raise NotImplementedError(f"Analytic gradients are not available for {method}.")
         return self.gradient

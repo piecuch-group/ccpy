@@ -1,4 +1,6 @@
-from ccpy.gradients.ccsd_gradient import ccsd_gradient, ccsd_gradient_from_amplitudes
-from ccpy.gradients.crcc23_gradient import crcc23A_gradient, crcc23A_gradient_from_amplitudes
+from ccpy.gradients.ccsd_gradient import calc_ccsd_gradient
+from ccpy.gradients.crcc23_gradient import calc_crcc23_gradient
+from ccpy.gradients.creomcc23_gradient import calc_creomcc23_gradient
+from ccpy.gradients.eomccsd_gradient import calc_eomccsd_gradient
 from ccpy.gradients.finite_difference import central_stencil, fd_gradient, finite_difference
 from ccpy.gradients.hessian import fd_hessian, harmonic_analysis, vibrational_analysis

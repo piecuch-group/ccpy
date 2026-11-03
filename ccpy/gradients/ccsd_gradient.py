@@ -15,69 +15,401 @@ so the densities are those of ccpy.density.ccsd_rdm (dL/d(blocks of H(T1))). The
 assembled in three stages, each per spin:
 
   1. calc_ccsd_density: amplitude-relaxed D1[s] = dL/dh[s], Y[s] = dL/dB[s] in the bare MO
-     frame (ccpy.gradients.mo_density.build_DY);
+     frame (ccpy.gradients.density_gradient.build_DY);
   2. ccpy.gradients.orbital_response.orbital_relaxation: Z-vector of the reference conditions,
      giving the relaxed D[s], Y[s] and the energy-weighted W[s];
   3. ccpy.gradients.derivative_integrals.contract_derivative_integrals.
+
+The CCSD-level kernels below are shared by the gradients built on CCSD (EOMCCSD, CR-CC(2,3),
+CR-EOMCC(2,3)): the actions of the CCSD Jacobian (EOMCCSD HR) and its transpose (left-CCSD
+LH_fun) and a GMRES solver for them; the bare-frame densities of <0|(x0 + X) Hbar|0>
+(calc_bra_density) and of the T-directional derivative of <0|(l0 + Lambda) Hbar|0>
+(calc_w_density); and <0|(l0 + Lambda)[[Hbar, tau_I], W]|0> (calc_BTw).
 """
 
+import copy
 import time
+from types import SimpleNamespace
 
-from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_rdm2_vvvv_slice
+import numpy as np
+import scipy.sparse.linalg as spla
+
+from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_ccsd_rdm_derivative, calc_rdm2_vvvv_slice
+from ccpy.gradients.density_gradient import SPINS, build_DY, mo_slices, rotation_gradient
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
-from ccpy.gradients.mo_density import build_bare_hamiltonian, build_DY, get_mo_integrals
 from ccpy.gradients.orbital_response import orbital_relaxation
-from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol
+from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 
 
-def ccsd_gradient(driver, meanfield=None, zvector_tol=1.0e-10, verbose=True):
-    """Analytic CCSD nuclear gradient, shape (natoms, 3), in Eh/bohr.
+def calc_ccsd_gradient(T, L, reference, rdm=None, zvector_tol=1.0e-10, verbose=True):
+    """Analytic CCSD nuclear gradient, (natoms, 3) in Eh/bohr, from converged CCSD (T) and
+    left-CCSD (L) amplitudes on the SCF reference (ccpy.methods.Reference).
 
-    Parameters
-    ----------
-    driver : Driver
-        Built with ``Driver.from_scf`` from a ccpy.scf RHF or UHF object (density fitting or
-        Cholesky), after ``run_cc``, ``run_hbar`` and ``run_leftcc`` (ccsd or ccsd_chol variants).
-    meanfield : ccpy.scf.RHF or ccpy.scf.UHF, optional
-        Defaults to the SCF object stored on the driver by ``from_scf``.
-    zvector_tol : float
-        Convergence threshold of the Z-vector (conjugate-gradient) solver.
-    """
-    mf = meanfield if meanfield is not None else getattr(driver, "scf", None)
-    if driver.T is None or driver.L[0] is None:
-        raise RuntimeError("Run CCSD, the CCSD HBar, and left-CCSD before the gradient.")
-    return ccsd_gradient_from_amplitudes(mf, driver.system, driver.T, driver.L[0], zvector_tol=zvector_tol,
-                                         verbose=verbose)
-
-
-def ccsd_gradient_from_amplitudes(meanfield, system, T, L, H0=None, rdm=None, zvector_tol=1.0e-10, verbose=True):
-    """Analytic CCSD nuclear gradient from converged CCSD (T) and left-CCSD (L) amplitudes.
-
-    Parameters
-    ----------
-    meanfield : ccpy.scf.RHF or ccpy.scf.UHF
-    system : System of the correlated calculation
-    H0 : bare Cholesky Hamiltonian (with H0.chol; built from the MO integrals if not given)
     rdm : (rdm1, rdm2) of ccpy.density.ccsd_rdm.calc_ccsd_rdm(T, L, system), if available
     """
     t0 = time.perf_counter()
     if T.order != 2:
         raise NotImplementedError("Only CCSD gradients are implemented.")
-    mo = get_mo_integrals(meanfield, system)
-    if H0 is None or getattr(H0, "chol", None) is None:
-        H0 = build_bare_hamiltonian(mo, system)
-    H = build_hbar_ccs_chol(T, H0, system)
-    D1, Y = calc_ccsd_density(T, L, H, mo, system, rdm=rdm)
-    D, Y, W = orbital_relaxation(D1, Y, mo, zvector_tol=zvector_tol, verbose=verbose)
-    grad = contract_derivative_integrals(meanfield.mol, D, Y, W, mo)
+    H = build_hbar_ccs_chol(T, reference.H, reference.system)
+    D1, Y = calc_ccsd_density(T, L, H, reference, rdm=rdm)
+    D, Y, W = orbital_relaxation(D1, Y, reference, zvector_tol=zvector_tol, verbose=verbose)
+    grad = contract_derivative_integrals(D, Y, W, reference)
     if verbose:
-        print_gradient(meanfield.mol, grad, "CCSD Analytic Gradient", time.perf_counter() - t0)
+        print_gradient(reference.molecule, grad, "CCSD Analytic Gradient", time.perf_counter() - t0)
     return grad
 
 
-def calc_ccsd_density(T, L, H, mo, system, rdm=None):
+def calc_ccsd_density(T, L, H, reference, rdm=None):
     """Amplitude-relaxed (D1, Y) of the CCSD Lagrangian (reference included), per spin, in the
     bare MO frame (H: build_hbar_ccs_chol)."""
-    rdm1, rdm2 = rdm if rdm is not None else calc_ccsd_rdm(T, L, system)
+    rdm1, rdm2 = rdm if rdm is not None else calc_ccsd_rdm(T, L, reference.system)
     return build_DY(rdm1, rdm2, lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s),
-                    H.chol, T, mo["B"], mo, system, reference=True)
+                    H.chol, T, reference.B_mo, reference, ref_weight=True)
+
+
+# ======================================================================================
+# CCSD-level kernels shared by the gradients built on CCSD
+# ======================================================================================
+def sd_block(x, k):
+    """Block k ("a", "b", "aa", "ab", "bb") of a singles-and-doubles vector (dict or namespace)."""
+    return x[k] if isinstance(x, dict) else getattr(x, k)
+
+
+def add_sd(*xs):
+    """Sum of singles-and-doubles vectors."""
+    return SimpleNamespace(**{c: sum(sd_block(x, c) for x in xs) for c in ("a", "b", "aa", "ab", "bb")})
+
+
+def calc_c_singles(w, L):
+    """c_J = <L|W|J>: singles only, c_i^a = sum_jb lambda_ij^ab w_j^b."""
+    a = np.einsum("abij,bj->ai", L.aa, w.a, optimize=True) + np.einsum("abij,bj->ai", L.ab, w.b, optimize=True)
+    b = np.einsum("baji,bj->ai", L.ab, w.a, optimize=True) + np.einsum("abij,bj->ai", L.bb, w.b, optimize=True)
+    return SimpleNamespace(a=a, b=b, aa=np.zeros_like(L.aa), ab=np.zeros_like(L.ab), bb=np.zeros_like(L.bb))
+
+
+def embed_vo(x, reference, s):
+    """The (virtual, occupied) block x of spin s as an all-MO matrix."""
+    nmo, sl = reference.h_mo[s].shape[0], mo_slices(reference.system)[s]
+    W = np.zeros((nmo, nmo))
+    W[sl["v"], sl["o"]] = x
+    return W
+
+
+def right_action(T, Hbar, system):
+    """X -> B X = (Hbar - E0) X on singles and doubles (EOMCCSD HR)."""
+    if system.cholesky:
+        from ccpy.eomcc.eomccsd_chol import HR
+    else:
+        from ccpy.eomcc.eomccsd import HR
+    return lambda X, out: HR(out, X, T, Hbar, False, system)
+
+
+def left_action(T, Hbar, system):
+    """X -> X (Hbar - E0) on singles and doubles (left-CCSD LH without the inhomogeneous
+    terms)."""
+    if system.cholesky:
+        from ccpy.left.left_ccsd_chol import LH_fun
+    else:
+        from ccpy.left.left_ccsd import LH_fun
+    return lambda X, out: LH_fun(out, X, T, Hbar, False, system)
+
+
+def apply_action(action, x, T):
+    """action (right_action or left_action) applied to one singles-and-doubles vector."""
+    X, out = copy.deepcopy(T), copy.deepcopy(T)
+    for c in ("a", "b", "aa", "ab", "bb"):
+        setattr(X, c, np.asfortranarray(sd_block(x, c)))
+    action(X, out)
+    return {c: np.array(getattr(out, c)) for c in ("a", "b", "aa", "ab", "bb")}
+
+
+def solve_linear(action, rhs, T, Hbar, tol):
+    """x with action(x) = rhs (singles and doubles, full antisymmetric arrays), by GMRES
+    preconditioned with the Hbar(oo, vv) diagonal."""
+    keys = ("a", "b", "aa", "ab", "bb")
+    shapes = [getattr(T, k).shape for k in keys]
+    sizes = [int(np.prod(s)) for s in shapes]
+    X, out = copy.deepcopy(T), copy.deepcopy(T)
+
+    def unpack(x, target):
+        k0 = 0
+        for k, shp, n in zip(keys, shapes, sizes):
+            setattr(target, k, np.asfortranarray(x[k0:k0 + n].reshape(shp)))
+            k0 += n
+        return target
+
+    def matvec(x):
+        action(unpack(x, X), out)
+        return np.concatenate([np.ravel(getattr(out, k)) for k in keys])
+
+    eo = {s: np.diag(getattr(Hbar, s).oo) for s in SPINS}
+    ev = {s: np.diag(getattr(Hbar, s).vv) for s in SPINS}
+    d = [ev["a"][:, None] - eo["a"][None, :], ev["b"][:, None] - eo["b"][None, :]]
+    for s, t in (("a", "a"), ("a", "b"), ("b", "b")):
+        d.append(ev[s][:, None, None, None] + ev[t][None, :, None, None]
+                 - eo[s][None, None, :, None] - eo[t][None, None, None, :])
+    diag = np.concatenate([np.ravel(x) for x in d])
+    n = sum(sizes)
+    A = spla.LinearOperator((n, n), matvec=matvec, dtype=float)
+    M = spla.LinearOperator((n, n), matvec=lambda x: x / diag, dtype=float)
+    b = np.concatenate([np.ravel(rhs[k]) for k in keys])
+    x, info = spla.gmres(A, b, M=M, rtol=tol, atol=0.0, restart=60, maxiter=200)
+    if info != 0:
+        raise RuntimeError(f"The response equations did not converge (gmres info = {info}).")
+    k0, sol = 0, SimpleNamespace()
+    for k, shp, nk in zip(keys, shapes, sizes):
+        setattr(sol, k, x[k0:k0 + nk].reshape(shp))
+        k0 += nk
+    return sol
+
+
+def calc_bra_density(x0, X, T, H, reference):
+    """(D1, Y) of <0|(x0 + X) e^{-T} H e^{T}|0> for a de-excitation operator X (singles and
+    doubles); x0 = 1, X = Lambda is the CCSD Lagrangian."""
+    system = reference.system
+    vvvv = None
+    if any(np.any(getattr(X, c)) for c in ("aa", "ab", "bb")):
+        vvvv = lambda a, s: calc_rdm2_vvvv_slice(X, T, a, s)  # noqa: E731
+    return build_DY(*calc_ccsd_rdm(T, X, system, energy=x0), vvvv, H.chol, T, reference.B_mo, reference, ref_weight=x0)
+
+
+def calc_w_density(w, T, L, H, reference, l0=1.0):
+    """(D1, Y) of d/de <0|(l0 + Lambda) e^{-T-ew} H e^{T+ew}|0>: the T1 part of w rotates the
+    Lagrangian densities, the T2 part comes from calc_ccsd_rdm_derivative."""
+    system = reference.system
+    W = SimpleNamespace(**{k: sd_block(w, k) for k in ("a", "b", "aa", "ab", "bb")})
+    W1 = {s: embed_vo(sd_block(w, s), reference, s) for s in SPINS}
+    H1 = build_hbar_ccs_chol_derivative(W, H, system)
+    dB = {s: reference.B_mo[s] @ W1[s] - W1[s] @ reference.B_mo[s] for s in SPINS}
+    rdm1, rdm2 = calc_ccsd_rdm(T, L, system, energy=l0)
+    vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
+    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, reference.B_mo, reference, ref_weight=l0)
+    _, YLdB = build_DY(rdm1, rdm2, vvvv, H1.chol, T, dB, reference, ref_weight=l0)
+    D1w, Yw = build_DY(*calc_ccsd_rdm_derivative(T, W, L, system, energy=l0),
+                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, reference.B_mo, reference)
+    D1 = {s: D1w[s] + D1L[s] @ W1[s].T - W1[s].T @ D1L[s] for s in SPINS}
+    Y = {s: Yw[s] + YL[s] @ W1[s].T - W1[s].T @ YL[s] + YLdB[s] for s in SPINS}
+    return D1, Y
+
+
+def calc_BTw(w, T, L, H, reference, l0=1.0):
+    """<0|(l0 + Lambda)[[Hbar, tau_I], W]|0> for I in SD. Doubles: the T2 part of w through the
+    second derivative of the CCSD Lagrangian, the T1 part through H1 = [H, W1]. Singles:
+    rotation derivatives of the directional densities and the double rotation
+    D_L . [[H, W1], a+ i]."""
+    system = reference.system
+    W = SimpleNamespace(**{k: sd_block(w, k) for k in ("a", "b", "aa", "ab", "bb")})
+    W1 = {s: embed_vo(sd_block(w, s), reference, s) for s in SPINS}
+    H1 = build_hbar_ccs_chol_derivative(W, H, system)
+    h1 = {s: reference.h_mo[s] @ W1[s] - W1[s] @ reference.h_mo[s] for s in SPINS}
+    dB = {s: reference.B_mo[s] @ W1[s] - W1[s] @ reference.B_mo[s] for s in SPINS}
+
+    rdm1, rdm2 = calc_ccsd_rdm(T, L, system, energy=l0)
+    vvvv = lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s)
+    D1L, YL = build_DY(rdm1, rdm2, vvvv, H.chol, T, reference.B_mo, reference, ref_weight=l0)
+    _, YLdB = build_DY(rdm1, rdm2, vvvv, H1.chol, T, dB, reference, ref_weight=l0)
+    D1w, Yw = build_DY(*calc_ccsd_rdm_derivative(T, W, L, system, energy=l0),
+                       lambda a, s: calc_rdm2_vvvv_slice(L, W, a, s), H.chol, T, reference.B_mo, reference)
+    r1 = rotation_gradient(D1w, Yw, reference.h_mo, reference.B_mo, reference)
+    r2 = rotation_gradient(D1L, YL, h1, dB, reference)
+    r3 = rotation_gradient({s: np.zeros_like(D1L[s]) for s in SPINS}, YLdB, reference.h_mo, reference.B_mo, reference)
+
+    return {"a": r1["a"] + r2["a"] + r3["a"], "b": r1["b"] + r2["b"] + r3["b"],
+            "aa": build_BTw_2A(W, T, L, H, H1, l0), "ab": build_BTw_2B(W, T, L, H, H1, l0),
+            "bb": build_BTw_2C(W, T, L, H, H1, l0)}
+
+
+def build_BTw_2A(W, T, L, H, H1, l0=1.0):
+    X = -0.25 * np.einsum("mnef,afmn,abij->ebij", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H.ab.oovv, W.ab, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H.ab.oovv, W.ab, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X += np.einsum("mnef,afin,abij->ebmj", H.ab.oovv, W.ab, L.aa, optimize=True)
+    X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H.aa.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H.aa.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H.aa.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H.aa.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H.ab.oovv, W.bb, L.ab, optimize=True)
+    X += 0.25 * l0 * H1.aa.oovv.transpose(2, 3, 0, 1)
+    X += np.einsum("me,ai->aeim", H1.a.ov, L.a, optimize=True)
+    X -= 0.5 * np.einsum("mnif,ai->afmn", H1.aa.ooov, L.a, optimize=True)
+    X += 0.5 * np.einsum("anef,ai->efin", H1.aa.vovv, L.a, optimize=True)
+    X += 0.5 * np.einsum("ae,abij->ebij", H1.a.vv, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mi,abij->abmj", H1.a.oo, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    X += np.einsum("amie,abij->ebmj", H1.aa.voov, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X += np.einsum("mnef,afin,abij->ebmj", H1.ab.oovv, T.ab, L.aa, optimize=True)
+    X += 0.125 * np.einsum("mnij,abij->abmn", H1.aa.oooo, L.aa, optimize=True)
+    X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H1.aa.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H1.aa.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H1.ab.oovv, T.bb, L.ab, optimize=True)
+    X += np.einsum("mbej,abij->aeim", H1.ab.ovvo, L.ab, optimize=True)
+    # vvvv of H1: 1/8 sum_ab L(abij) <ab||ef>' with <ab|ef>' = sum_x (dB_ae B_bf + B_ae dB_bf)
+    for B1, B2 in ((H1.chol.a.vv, H.chol.a.vv), (H.chol.a.vv, H1.chol.a.vv)):
+        Y = cholesky_ladder(L.aa, B1, B2)
+        X += 0.125 * (Y - Y.transpose(1, 0, 2, 3))
+    X -= np.transpose(X, (1, 0, 2, 3))
+    X -= np.transpose(X, (0, 1, 3, 2))
+    return X
+
+
+def build_BTw_2B(W, T, L, H, H1, l0=1.0):
+    X = -0.5 * np.einsum("mnef,ebij,abij->afmn", H.ab.oovv, W.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H.ab.oovv, W.aa, L.aa, optimize=True)
+    X += np.einsum("mnef,ebmj,abij->afin", H.ab.oovv, W.aa, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->bejm", H.bb.oovv, W.ab, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,bejm,abij->afin", H.bb.oovv, W.ab, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H.aa.oovv, W.aa, L.ab, optimize=True)
+    X -= np.einsum("mnef,afmn,abij->ebij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= np.einsum("mnef,ebij,abij->afmn", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,bfmn,abij->aeij", H.bb.oovv, W.bb, L.ab, optimize=True)
+    X -= np.einsum("nmfe,fbnm,abij->aeij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= np.einsum("nmfe,aeij,abij->fbnm", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H.aa.oovv, W.aa, L.ab, optimize=True)
+    X -= np.einsum("mnef,efin,abij->abmj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= np.einsum("mnef,abmj,abij->efin", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efjn,abij->abim", H.bb.oovv, W.bb, L.ab, optimize=True)
+    X -= np.einsum("nmfe,fenj,abij->abim", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= np.einsum("nmfe,abim,abij->fenj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H.aa.oovv, W.aa, L.ab, optimize=True)
+    X += np.einsum("nmfe,aeim,abij->fbnj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("nmfe,fbnj,abij->aeim", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H.bb.oovv, W.bb, L.ab, optimize=True)
+    X += np.einsum("mnef,afmj,abij->ebin", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,ebin,abij->afmj", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,efij,abij->abmn", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,abmn,abij->efij", H.ab.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,ebij,abij->fanm", H.ab.oovv, W.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,abmj,abij->feni", H.ab.oovv, W.bb, L.bb, optimize=True)
+    X += np.einsum("mnef,afin,abij->ebmj", H.ab.oovv, W.bb, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,fani,abij->ebmj", H.aa.oovv, W.ab, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->fani", H.aa.oovv, W.ab, L.bb, optimize=True)
+    X += l0 * H1.ab.oovv.transpose(2, 3, 0, 1)
+    X += np.einsum("me,ai->aeim", H1.b.ov, L.a, optimize=True)
+    X -= np.einsum("mnif,ai->afmn", H1.ab.ooov, L.a, optimize=True)
+    X += np.einsum("anef,ai->efin", H1.ab.vovv, L.a, optimize=True)
+    X += np.einsum("me,ai->eami", H1.a.ov, L.b, optimize=True)
+    X -= np.einsum("nmfi,ai->fanm", H1.ab.oovo, L.b, optimize=True)
+    X += np.einsum("nafe,ai->feni", H1.ab.ovvv, L.b, optimize=True)
+    X -= 0.5 * np.einsum("mnef,ebij,abij->afmn", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abmj,abij->efin", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    X += np.einsum("mnef,ebmj,abij->afin", H1.ab.oovv, T.aa, L.aa, optimize=True)
+    X += np.einsum("amie,abij->bejm", H1.ab.voov, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,bejm,abij->afin", H1.bb.oovv, T.ab, L.aa, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->bejm", H1.bb.oovv, T.ab, L.aa, optimize=True)
+    X += np.einsum("ae,abij->ebij", H1.a.vv, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,afmn,abij->ebij", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    X -= np.einsum("mnef,ebij,abij->afmn", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("mnef,afmn,abij->ebij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("be,abij->aeij", H1.b.vv, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,bfmn,abij->aeij", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    X -= np.einsum("nmfe,aeij,abij->fbnm", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("nmfe,fbnm,abij->aeij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("mi,abij->abmj", H1.a.oo, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efin,abij->abmj", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    X -= np.einsum("mnef,abmj,abij->efin", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("mnef,efin,abij->abmj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("mj,abij->abim", H1.b.oo, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,efjn,abij->abim", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    X -= np.einsum("nmfe,abim,abij->fenj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= np.einsum("nmfe,fenj,abij->abim", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("amie,abij->ebmj", H1.aa.voov, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H1.aa.oovv, T.aa, L.ab, optimize=True)
+    X += np.einsum("nmfe,fbnj,abij->aeim", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("nmfe,aeim,abij->fbnj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,fbnj,abij->aeim", H1.bb.oovv, T.bb, L.ab, optimize=True)
+    X += np.einsum("bmje,abij->aeim", H1.bb.voov, L.ab, optimize=True)
+    X -= np.einsum("mbie,abij->aemj", H1.ab.ovov, L.ab, optimize=True)
+    X -= np.einsum("amej,abij->ebim", H1.ab.vovo, L.ab, optimize=True)
+    X += np.einsum("mnef,ebin,abij->afmj", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,afmj,abij->ebin", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnij,abij->abmn", H1.ab.oooo, L.ab, optimize=True)
+    X += np.einsum("mnef,abmn,abij->efij", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,efij,abij->abmn", H1.ab.oovv, T.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,ebij,abij->fanm", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,abmj,abij->feni", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    X += np.einsum("maei,abij->ebmj", H1.ab.ovvo, L.bb, optimize=True)
+    X += np.einsum("mnef,afin,abij->ebmj", H1.ab.oovv, T.bb, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->fani", H1.aa.oovv, T.ab, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,fani,abij->ebmj", H1.aa.oovv, T.ab, L.bb, optimize=True)
+    # vvvv of H1: sum_ab L(abij) <ab|ef>'
+    for B1, B2 in ((H1.chol.a.vv, H.chol.b.vv), (H.chol.a.vv, H1.chol.b.vv)):
+        X += cholesky_ladder(L.ab, B1, B2)
+    return X
+
+
+def build_BTw_2C(W, T, L, H, H1, l0=1.0):
+    X = -0.5 * np.einsum("mnef,aeij,abij->bfmn", H.bb.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abim,abij->efjn", H.bb.oovv, W.ab, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H.ab.oovv, W.aa, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H.bb.oovv, W.ab, L.ab, optimize=True)
+    X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,fanm,abij->ebij", H.ab.oovv, W.ab, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,feni,abij->abmj", H.ab.oovv, W.ab, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X += np.einsum("mnef,ebmj,abij->afin", H.ab.oovv, W.ab, L.bb, optimize=True)
+    X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H.bb.oovv, W.bb, L.bb, optimize=True)
+    X += 0.25 * l0 * H1.bb.oovv.transpose(2, 3, 0, 1)
+    X += np.einsum("me,ai->aeim", H1.b.ov, L.b, optimize=True)
+    X -= 0.5 * np.einsum("mnif,ai->afmn", H1.bb.ooov, L.b, optimize=True)
+    X += 0.5 * np.einsum("anef,ai->efin", H1.bb.vovv, L.b, optimize=True)
+    X -= 0.5 * np.einsum("mnef,aeij,abij->bfmn", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    X -= 0.5 * np.einsum("mnef,abim,abij->efjn", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    X += np.einsum("amie,abij->ebmj", H1.ab.voov, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H1.ab.oovv, T.aa, L.ab, optimize=True)
+    X += np.einsum("mnef,aeim,abij->fbnj", H1.bb.oovv, T.ab, L.ab, optimize=True)
+    X += 0.5 * np.einsum("ae,abij->ebij", H1.b.vv, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,ebij,abij->afmn", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,afmn,abij->ebij", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,fanm,abij->ebij", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("mi,abij->abmj", H1.b.oo, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,abmj,abij->efin", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X -= 0.25 * np.einsum("mnef,efin,abij->abmj", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X -= 0.5 * np.einsum("nmfe,feni,abij->abmj", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    X += np.einsum("amie,abij->ebmj", H1.bb.voov, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,ebmj,abij->afin", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X += 0.5 * np.einsum("mnef,afin,abij->ebmj", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X += np.einsum("mnef,ebmj,abij->afin", H1.ab.oovv, T.ab, L.bb, optimize=True)
+    X += 0.125 * np.einsum("mnij,abij->abmn", H1.bb.oooo, L.bb, optimize=True)
+    X += 0.0625 * np.einsum("mnef,abmn,abij->efij", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    X += 0.0625 * np.einsum("mnef,efij,abij->abmn", H1.bb.oovv, T.bb, L.bb, optimize=True)
+    # vvvv of H1: 1/8 sum_ab L(abij) <ab||ef>'
+    for B1, B2 in ((H1.chol.b.vv, H.chol.b.vv), (H.chol.b.vv, H1.chol.b.vv)):
+        Y = cholesky_ladder(L.bb, B1, B2)
+        X += 0.125 * (Y - Y.transpose(1, 0, 2, 3))
+    X -= np.transpose(X, (1, 0, 2, 3))
+    X -= np.transpose(X, (0, 1, 3, 2))
+    return X
+
+
+def cholesky_ladder(L2, B1, B2, max_elements=2 ** 26):
+    """sum_x sum_ab L2[a,b,i,j] B1[x,a,e] B2[x,b,f] -> [e,f,i,j] (a vvvv contraction through
+    Cholesky vectors), in chunks of the auxiliary index so that the x-resolved intermediate
+    never exceeds max_elements."""
+    nx = B1.shape[0]
+    chunk = max(1, max_elements // max(1, L2.size // L2.shape[0] * B1.shape[2]))
+    out = np.zeros((B1.shape[2], B2.shape[2]) + L2.shape[2:])
+    for x0 in range(0, nx, chunk):
+        LB = np.einsum("abij,xae->xebij", L2, B1[x0:x0 + chunk], optimize=True)
+        out += np.einsum("xebij,xbf->efij", LB, B2[x0:x0 + chunk], optimize=True)
+    return out

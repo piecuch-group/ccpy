@@ -9,23 +9,23 @@ spin-free AO derivative integrals, are they added.
 
 import numpy as np
 
-from ccpy.gradients.mo_density import SPINS
+from ccpy.gradients.density_gradient import SPINS
 from ccpy.integrals import integrals
 
 
-def contract_derivative_integrals(mol, D, Y, W, mo):
+def contract_derivative_integrals(D, Y, W, reference):
     """Nuclear gradient, shape (natoms, 3), Eh/bohr, of relaxed densities (D, Y, W) per spin.
 
     B[s] = X (Q|mn) C[s] C[s] with X = L^{-1}, M = (Q|Q') = L L^T, for density fitting and for
     Cholesky vectors alike (Q: auxiliary function or Cholesky pivot pair); only the derivative
     integrals of (Q|mn) and (Q|Q') differ. For a Cholesky decomposition the pivots are held fixed
     (the gradient is exact for that energy)."""
-    C = mo["C"]
+    mol, C, B = reference.molecule, reference.mo_coeff, reference.B_mo
     natoms = mol.natoms
     D_ao = sum(C[s] @ D[s] @ C[s].T for s in SPINS)
     W_ao = sum(C[s] @ W[s] @ C[s].T for s in SPINS)
     Y_ao = sum(np.einsum("mp,xpq,nq->xmn", C[s], Y[s], C[s], optimize=True) for s in SPINS)
-    BY = sum(np.einsum("xpq,ypq->xy", mo["B"][s], Y[s], optimize=True) for s in SPINS)
+    BY = sum(np.einsum("xpq,ypq->xy", B[s], Y[s], optimize=True) for s in SPINS)
 
     grad = integrals.nuclear_repulsion_deriv(mol)
     grad += integrals.hcore_deriv(mol, D_ao).reshape(natoms, 3)

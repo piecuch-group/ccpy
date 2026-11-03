@@ -4,7 +4,14 @@ Every method exposes ``solve()``, ``energy()``, ``gradient()`` and
 ``energy_and_gradient()``. ``energy()`` (and ``gradient()``) call ``solve()`` whenever the
 method is not converged or one of the quantities it was solved with (T, HBar, L, ...)
 has changed since; ``solve()`` always restarts from the current amplitudes, if any.
+
+Analytic gradients follow the energies: a method names its gradient kernel with
+``gradient_module`` and ``gradient_function`` (as ``module`` and ``function`` name the energy
+kernels), and its scheme's ``_analytic_gradient`` passes it the converged quantities and the
+Reference, e.g. calc_crcc23_gradient(T, L, Hbar, reference, delta=...).
 """
+from importlib import import_module
+
 from ccpy.methods.reference import Reference, warn_df_port
 
 # options understood by the iterative solvers of ccpy.drivers.solvers
@@ -45,6 +52,8 @@ class MethodBase:
     name = None
     # True for methods whose equations still need four-index integrals (see DFPortWarning)
     requires_df_port = False
+    # analytic gradient kernel (ccpy.gradients), if there is one
+    gradient_module = gradient_function = None
 
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
@@ -114,7 +123,16 @@ class MethodBase:
         return self.energy(**kwargs), self.gradient(**kwargs)
 
     def has_analytic_gradient(self, **kwargs):
-        return False
+        """True when the method has a gradient kernel and the reference supports it (RHF or UHF
+        orbitals, no deleted virtuals)."""
+        from ccpy.scf.rhf import RHF
+        from ccpy.scf.uhf import UHF
+
+        return (self.gradient_function is not None and isinstance(self.reference.scf, (RHF, UHF))
+                and self.reference.ndelete == 0)
+
+    def _gradient_function(self):
+        return getattr(import_module(self.gradient_module), self.gradient_function)
 
     def _analytic_gradient(self, **kwargs):
         raise NotImplementedError

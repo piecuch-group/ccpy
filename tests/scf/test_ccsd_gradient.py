@@ -5,7 +5,6 @@ import pytest
 
 from ccpy import Driver
 from ccpy.integrals import Molecule
-from ccpy.gradients import ccsd_gradient, crcc23A_gradient
 from ccpy.scf import RHF, UHF
 
 H2O = "O 0.0 0.05 0.1173; H 0.0 0.7572 -0.4692; H 0.1 -0.7572 -0.4692"
@@ -63,7 +62,7 @@ def _uhf_ccsd_crcc23(mol, nfrozen, gradient=False):
     energies = np.array([e_ccsd, e_ccsd + driver.deltap3[0]["A"]])
     if not gradient:
         return energies
-    return energies, ccsd_gradient(driver, verbose=False), crcc23A_gradient(driver, verbose=False)
+    return energies, driver.run_gradient("ccsd", verbose=False), driver.run_gradient("crcc23a", verbose=False)
 
 
 @pytest.mark.parametrize("nfrozen", [0, 1])

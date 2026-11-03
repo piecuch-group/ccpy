@@ -17,8 +17,9 @@ import numpy as np
 from ccpy.models.integrals import Integral
 
 def calc_ccsd_rdm(T, L, system, energy=True):
-    """Densities of E(T2; H) + sum_mu L_mu R_mu(T2; H) at T1 = 0 (energy=False drops E: the
-    density of sum_mu z_mu R_mu for a response vector L = z). Only T2 of T is used."""
+    """Densities of energy * E(T2; H) + sum_mu L_mu R_mu(T2; H) at T1 = 0 (energy=False drops E:
+    the density of sum_mu z_mu R_mu for a response vector L = z; a number weights it). Only T2
+    of T is used."""
     rdm1 = Integral.from_empty(system, 1, use_none=True)
     rdm2 = Integral.from_empty(system, 2, use_none=True)
 
@@ -48,10 +49,7 @@ def calc_ccsd_rdm(T, L, system, energy=True):
 
     rdm2.aa.ooov = -0.5 * np.einsum("afmn,ai->mnif", T.aa, L.a, optimize=True)
 
-    if energy:
-        rdm2.aa.oovv = 0.25 * T.aa.transpose(2, 3, 0, 1)
-    else:
-        rdm2.aa.oovv = 0.0
+    rdm2.aa.oovv = 0.25 * energy * T.aa.transpose(2, 3, 0, 1)
     rdm2.aa.oovv -= 0.25 * np.einsum("afmn,ebij,abij->mnef", T.aa, T.aa, L.aa, optimize=True)
     rdm2.aa.oovv -= 0.25 * np.einsum("efin,abmj,abij->mnef", T.aa, T.aa, L.aa, optimize=True)
     rdm2.aa.oovv += 0.5 * np.einsum("afin,ebmj,abij->mnef", T.aa, T.aa, L.aa, optimize=True)
@@ -74,10 +72,7 @@ def calc_ccsd_rdm(T, L, system, energy=True):
 
     rdm2.ab.oovo = -np.einsum("fanm,ai->nmfi", T.ab, L.b, optimize=True)
 
-    if energy:
-        rdm2.ab.oovv = T.ab.transpose(2, 3, 0, 1).copy()
-    else:
-        rdm2.ab.oovv = 0.0
+    rdm2.ab.oovv = energy * T.ab.transpose(2, 3, 0, 1)
     rdm2.ab.oovv -= 0.5 * np.einsum("afmn,ebij,abij->mnef", T.ab, T.aa, L.aa, optimize=True)
     rdm2.ab.oovv -= 0.5 * np.einsum("efin,abmj,abij->mnef", T.ab, T.aa, L.aa, optimize=True)
     rdm2.ab.oovv += np.einsum("afin,ebmj,abij->mnef", T.ab, T.aa, L.aa, optimize=True)
@@ -113,10 +108,7 @@ def calc_ccsd_rdm(T, L, system, energy=True):
 
     rdm2.bb.ooov = -0.5 * np.einsum("afmn,ai->mnif", T.bb, L.b, optimize=True)
 
-    if energy:
-        rdm2.bb.oovv = 0.25 * T.bb.transpose(2, 3, 0, 1)
-    else:
-        rdm2.bb.oovv = 0.0
+    rdm2.bb.oovv = 0.25 * energy * T.bb.transpose(2, 3, 0, 1)
     rdm2.bb.oovv += 0.5 * np.einsum("afin,bejm,abij->mnef", T.ab, T.ab, L.aa, optimize=True)
     rdm2.bb.oovv -= 0.5 * np.einsum("bfmn,aeij,abij->mnef", T.bb, T.ab, L.ab, optimize=True)
     rdm2.bb.oovv -= 0.5 * np.einsum("efjn,abim,abij->mnef", T.bb, T.ab, L.ab, optimize=True)
@@ -163,10 +155,7 @@ def calc_ccsd_rdm_derivative(T, W, L, system, energy=True):
 
     rdm2.aa.ooov = -0.5 * np.einsum("afmn,ai->mnif", W.aa, L.a, optimize=True)
 
-    if energy:
-        rdm2.aa.oovv = 0.25 * W.aa.transpose(2, 3, 0, 1)
-    else:
-        rdm2.aa.oovv = 0.0
+    rdm2.aa.oovv = 0.25 * energy * W.aa.transpose(2, 3, 0, 1)
     rdm2.aa.oovv -= 0.25 * np.einsum("afmn,ebij,abij->mnef", W.aa, T.aa, L.aa, optimize=True)
     rdm2.aa.oovv -= 0.25 * np.einsum("afmn,ebij,abij->mnef", T.aa, W.aa, L.aa, optimize=True)
     rdm2.aa.oovv -= 0.25 * np.einsum("efin,abmj,abij->mnef", W.aa, T.aa, L.aa, optimize=True)
@@ -195,10 +184,7 @@ def calc_ccsd_rdm_derivative(T, W, L, system, energy=True):
 
     rdm2.ab.oovo = -np.einsum("fanm,ai->nmfi", W.ab, L.b, optimize=True)
 
-    if energy:
-        rdm2.ab.oovv = W.ab.transpose(2, 3, 0, 1).copy()
-    else:
-        rdm2.ab.oovv = 0.0
+    rdm2.ab.oovv = energy * W.ab.transpose(2, 3, 0, 1)
     rdm2.ab.oovv -= 0.5 * np.einsum("afmn,ebij,abij->mnef", W.ab, T.aa, L.aa, optimize=True)
     rdm2.ab.oovv -= 0.5 * np.einsum("afmn,ebij,abij->mnef", T.ab, W.aa, L.aa, optimize=True)
     rdm2.ab.oovv -= 0.5 * np.einsum("efin,abmj,abij->mnef", W.ab, T.aa, L.aa, optimize=True)
@@ -246,10 +232,7 @@ def calc_ccsd_rdm_derivative(T, W, L, system, energy=True):
 
     rdm2.bb.ooov = -0.5 * np.einsum("afmn,ai->mnif", W.bb, L.b, optimize=True)
 
-    if energy:
-        rdm2.bb.oovv = 0.25 * W.bb.transpose(2, 3, 0, 1)
-    else:
-        rdm2.bb.oovv = 0.0
+    rdm2.bb.oovv = 0.25 * energy * W.bb.transpose(2, 3, 0, 1)
     rdm2.bb.oovv += 0.5 * np.einsum("afin,bejm,abij->mnef", W.ab, T.ab, L.aa, optimize=True)
     rdm2.bb.oovv += 0.5 * np.einsum("afin,bejm,abij->mnef", T.ab, W.ab, L.aa, optimize=True)
     rdm2.bb.oovv -= 0.5 * np.einsum("bfmn,aeij,abij->mnef", W.bb, T.ab, L.ab, optimize=True)

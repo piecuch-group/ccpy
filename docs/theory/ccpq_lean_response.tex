@@ -1,0 +1,208 @@
+\section{Reduced total-gradient implementation for an excited state}
+\label{sec:lean}
+The separate stationary functionals are useful for derivation and diagnostic
+component checks. They do not require two complete production response and
+density calculations when only the total gradient is requested. We now
+reduce their sum algebraically, keeping the same full moment energy,
+independent-energy denominator response, and reference+$P$ eigenvectors.
+This section describes a verified algebraic route; it has not replaced the
+current oracle and is not a measured production speedup.
+
+\subsection{Projected correction responses}
+For a fixed isolated excited root, suppress $\mu$ on the vectors and set
+\begin{equation}
+ \mathsf B_\mu=\mathsf A-E_\mu\mathbf1,\qquad
+ g_r=\bH_{Q,\{0,P\}}^{\T}\bm v,\qquad
+ g_l=\bH_{\{0,P\},Q}\bm u.
+ \label{eq:leanB}
+\end{equation}
+The operator $\mathsf B_\mu$ is the shifted projected EOM operator; it is
+not the ground CC residual Jacobian J, and is not the ground-state B in
+Eq.~\eqref{eq:JBe}. All state and response vectors in this section have
+$1+|P|$ components, including the reference component.
+
+The correction is separately linear in $\bm l$ and $\bm r$ at fixed
+$T,E,f$, hence
+\begin{equation}
+ \bm l^{\T}g_l=\bm r^{\T}g_r=\delta_\mu.
+ \label{eq:leansolvability}
+\end{equation}
+Define right and left projected responses by
+\begin{align}
+ \mathsf B_\mu\bm x&=-(g_l-\delta_\mu\bm r),
+       &\bm l^{\T}\bm x&=0,\\
+ \mathsf B_\mu^{\T}\bm y&=-(g_r-\delta_\mu\bm l),
+       &\bm r^{\T}\bm y&=0.
+ \label{eq:leanresponses}
+\end{align}
+Equation~\eqref{eq:leansolvability} guarantees that the first right-hand
+side is orthogonal to the left null vector and the second to the right
+null vector. An ordinary inverse of $\mathsf B_\mu$ is inappropriate:
+its null vector is the target eigenstate. Use a projected or bordered solve.
+For example, define
+\begin{equation}
+ \mathsf K_\mu=\begin{pmatrix}\mathsf B_\mu&\bm r\\
+                                  \bm l^{\T}&0\end{pmatrix}.
+\end{equation}
+Then the two responses follow from the same bordered operator and its
+transpose:
+\begin{align}
+ \mathsf K_\mu\begin{pmatrix}\bm x\\\xi\end{pmatrix}
+ &=\begin{pmatrix}-(g_l-\delta_\mu\bm r)\\0\end{pmatrix},\\
+ \mathsf K_\mu^{\T}\begin{pmatrix}\bm y\\\eta\end{pmatrix}
+ &=\begin{pmatrix}-(g_r-\delta_\mu\bm l)\\0\end{pmatrix}.
+ \label{eq:leanborders}
+\end{align}
+At a consistent converged solution $\xi=\eta=0$. The borders impose the
+normalization-side conditions without requiring a dense projected matrix.
+In a selected-tensor implementation, operator actions and preconditioning
+can reuse the corresponding EOM right/left machinery.
+
+\subsection{Recovery of the original adjoints and gauge}
+For the total objective $F=F_b+F_c$, the on-shell state sources are
+\begin{equation}
+ F_r=E_\mu\bm l+g_r,\quad F_l=E_\mu\bm r+g_l,
+ \quad F_E=-W_Q,
+ \quad \nu_{\rm tot}=-E_\mu-\delta_\mu.
+ \label{eq:leantotalsources}
+\end{equation}
+A convenient representative of the original adjoints is
+\begin{equation}
+ \bm a=\bm y-W_Q\bm l,\qquad \bm b=\bm x.
+ \label{eq:leanadjoints}
+\end{equation}
+Substitution into Eqs.~\eqref{eq:adjr}--\eqref{eq:adjenergy} gives
+\begin{align}
+ \mathsf B_\mu^{\T}\bm a+F_r+\nu_{\rm tot}\bm l
+ &=\mathsf B_\mu^{\T}\bm y+g_r-\delta_\mu\bm l=0,\\
+ \mathsf B_\mu\bm b+F_l+\nu_{\rm tot}\bm r
+ &=\mathsf B_\mu\bm x+g_l-\delta_\mu\bm r=0,\\
+ \bm a^{\T}\bm r+\bm b^{\T}\bm l&=-W_Q.
+ \label{eq:leanadjointproof}
+\end{align}
+The last equality uses $\bm r^{\T}\bm y=\bm l^{\T}\bm x=0$ and
+$\bm l^{\T}\bm r=1$. It preserves the denominator's independent-energy
+response exactly; that response has not been frozen or discarded.
+
+The representative in Eq.~\eqref{eq:leanadjoints} need not have $b_q=0$.
+To recover the original pivot convention, set
+\begin{equation}
+ \theta=\frac{x_q}{r_q},\qquad
+ \bm a'=\bm a+\theta\bm l,\qquad
+ \bm b'=\bm b-\theta\bm r.
+ \label{eq:leanpivot}
+\end{equation}
+Then $b'_q=0$, the energy equation is unchanged, and
+\begin{equation}
+ \bm a'\bm r^{\T}+\bm l(\bm b')^{\T}
+ =\bm a\bm r^{\T}+\bm l\bm b^{\T}.
+\end{equation}
+The corresponding cluster source is invariant for the same reason. Thus
+the projected-response gauge and the original constrained pivot gauge give
+the identical stationary Hbar coefficient and derivative.
+
+For the base objective alone, Eq.~\eqref{eq:baseeomsimplified} already
+provides $\bm a_b=\bm b_b=0$, $\nu_b=-E_\mu$. There is no need to
+numerically solve a generic base-state bordered response problem.
+
+\subsection{One combined cluster adjoint and three density factors}
+Embed all state/response vectors on reference+$P$ and the divided moments
+on Q. Add the base and correction coefficients in
+Eqs.~\eqref{eq:excrawcoeff} and \eqref{eq:exccoeff}, then use
+Eq.~\eqref{eq:leanadjoints}. Before cluster response, the coefficient is
+\begin{align}
+ \mathcal A_{\rm pre}
+ &=\bm l\bm r^{\T}+\bm v_Q\bm r^{\T}+\bm l\bm u_Q^{\T}
+   +(\bm y-W_Q\bm l)\bm r^{\T}+\bm l\bm x^{\T}
+   +\mathcal D_\mu\\
+ &=\big[(1-W_Q)\bm l+\bm y+\bm v_Q\big]\bm r^{\T}
+                 +\bm l(\bm x+\bm u_Q)^{\T}+\mathcal D_\mu.
+ \label{eq:leanpre}
+\end{align}
+Here
+\begin{equation}
+ \mathcal D_\mu^{\rm full}=\sum_{K\in Q}w_K\ket K\bra K,
+ \qquad \mathcal D_\mu^{\rm mp}=W_Q\ket0\bra0.
+ \label{eq:leandiagonal}
+\end{equation}
+The factor $1-W_Q$ is the chain-rule contribution from the uncorrected
+state energy in the denominator. It is not an additional energy
+renormalization and does not change Eq.~\eqref{eq:energy}.
+
+A single combined cluster multiplier now solves
+\begin{equation}
+ \boxed{J^{\T}\bm z_t=-\bm q_t,\qquad
+ (q_t)_I=\sum_{AB}(\mathcal A_{\rm pre})_{AB}H^I_{AB}.}
+ \label{eq:leancluster}
+\end{equation}
+All state vectors, divided moments, weights and adjoints in this contraction
+are held fixed. Their implicit response has already been eliminated by
+stationarity. The final coefficient is
+\begin{equation}
+ \boxed{\mathcal A_{\rm tot}
+ =\big[(1-W_Q)\bm l+\bm y+\bm v_Q\big]\bm r^{\T}
+ +\bm l(\bm x+\bm u_Q)^{\T}+\bm z_t\evec^{\T}+\mathcal D_\mu.}
+ \label{eq:leanthreefactors}
+\end{equation}
+There are three outer products plus the separate denominator diagonal.
+Their pullback and transition-density contractions are those of
+Sec.~\ref{sec:densities}. Multiplying two effective ``corrected'' state
+vectors together would introduce cross terms absent from
+Eq.~\eqref{eq:leanthreefactors}; that is not this reduction.
+For MP, the explicit $d_p=-\sum_Kw_K\chi_{Kp}$ Fock density in
+Sec.~\ref{sec:fock} must still be added.
+
+\subsection{Production work sequence and reuse}
+For a total gradient, the resulting sequence at a fixed geometry is:
+\begin{enumerate}
+ \item Reuse converged T, Hbar and the target right/left eigenstate from the
+       uncorrected energy calculation. Preserve the reference component.
+ \item Construct Q moments, denominators and response sources in bulk.
+       No response solve is required per Q determinant or Cartesian coordinate.
+ \item Solve the two projected state equations in Eq.~\eqref{eq:leanresponses}.
+ \item Form the merged source and solve the single cluster equation in
+       Eq.~\eqref{eq:leancluster}.
+ \item Accumulate one total density from the three factors and denominator
+       terms, then solve one total orbital response and contract one set of
+       AO derivatives, including overlap and fitted-metric terms.
+\end{enumerate}
+For fixed SD/selected-T ranks, a production realization should evaluate these
+objects through connected tensor or selected-list kernels. Full-CI support
+and dense full-space coefficient matrices are not required by the equations.
+An exact asymptotic tensor scaling or wall-time speedup requires a separate
+contraction/implementation audit.
+
+At a fixed geometry and selection, T, Hbar, J and the HF response operator
+can be shared across roots and denominator variants. R/L are shared across
+denominator variants for a given root. Different denominators change the
+correction sources, so their response solutions are not interchangeable.
+The shifted/projected EOM operator also remains root-specific, although its
+underlying action and preconditioning structure can be reused.
+
+If separate gradient components are needed, compute the base response once
+and cache it. Its state adjoint is analytic; only its cluster response and
+density need to be evaluated. Otherwise, the combined route avoids separate
+base/correction cluster solves, density builds and orbital-response solves.
+This changes the implementation schedule, not the two-functional theory.
+
+\subsection{Algebraic verification and current implementation status}
+\label{sec:leanvalidation}
+The prototype compares the merged total bare-Hamiltonian gradient
+coefficient with the independent
+dense constrained oracle for closed/nonclosed P, two excited roots, and
+full/MP denominators: eight cases. The maximum coefficient discrepancy is
+$\ee{5.551}{-15}$. The checker and saved results are:
+\begin{quote}\small
+\path{devtools/check_ccpq_lean_response.py}\\
+\path{docs/theory/ccpq_lean_response_checks.json}.
+\end{quote}
+The explicit MP Fock density is retained separately; coefficient agreement
+at fixed Fock must not be misreported as permission to omit it.
+
+The original molecular tables continue to document the existing oracle's
+validated gradients. They are not timings or independent molecular tests
+of a newly optimized implementation. The reduction above is algebraically
+verified, but has not replaced the production/oracle path; no measured
+speedup or globally minimal implementation is claimed. A production change
+should retain the original route as a correctness reference, compare the
+resulting densities and nuclear gradients, and record phase-resolved timings.

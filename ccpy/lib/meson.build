@@ -135,6 +135,7 @@ fortran_sources = [
   'fortran/crcc24_loops.f90',
   'fortran/crcc24_opt_loops.f90',
   'fortran/crcc_loops.f90',
+  'fortran/crcc23_gradient_loops.f90',
   'fortran/creacc_loops.f90',
   'fortran/cripcc_loops.f90',
   'fortran/deaeom4_p_loops.f90',

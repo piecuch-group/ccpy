@@ -1,0 +1,183 @@
+{
+  "passed": true,
+  "configurations": 12,
+  "max_error": 8.881784197001252e-16,
+  "records": [
+    {
+      "closed_P": true,
+      "state": 0,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 4.336808689942018e-19,
+        "base_pullback": 0.0,
+        "base_euler": 4.440892098500626e-16,
+        "correction_pullback": 3.469446951953614e-18,
+        "correction_euler": 1.3010426069826053e-18,
+        "ground_lambda_grad": 1.3877787807814457e-17,
+        "ground_sigma": 2.168404344971009e-19,
+        "ground_pi": 8.673617379884035e-19,
+        "lambda_defect_identity": 6.938893903907228e-18
+      }
+    },
+    {
+      "closed_P": true,
+      "state": 1,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 3.469446951953614e-18,
+        "normalization_multiplier_base": 4.440892098500626e-16,
+        "normalization_multiplier_correction": 1.3552527156068805e-20,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 0.0,
+        "correction_pullback": 2.2589839307680156e-18,
+        "correction_euler": 8.131516293641283e-20
+      }
+    },
+    {
+      "closed_P": true,
+      "state": 2,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 1.3877787807814457e-17,
+        "normalization_multiplier_base": 0.0,
+        "normalization_multiplier_correction": 0.0,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 9.71445146547012e-17,
+        "correction_euler": 2.0816681711721685e-17
+      }
+    },
+    {
+      "closed_P": true,
+      "state": 0,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 8.673617379884035e-19,
+        "base_pullback": 0.0,
+        "base_euler": 4.440892098500626e-16,
+        "correction_pullback": 6.938893903907228e-18,
+        "correction_euler": 8.673617379884035e-19,
+        "ground_lambda_grad": 1.3877787807814457e-17,
+        "ground_sigma": 2.710505431213761e-20,
+        "ground_pi": 4.336808689942018e-19,
+        "lambda_defect_identity": 6.938893903907228e-18
+      }
+    },
+    {
+      "closed_P": true,
+      "state": 1,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 3.469446951953614e-18,
+        "normalization_multiplier_base": 4.440892098500626e-16,
+        "normalization_multiplier_correction": 2.710505431213761e-20,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 0.0,
+        "correction_pullback": 2.905614176657869e-18,
+        "correction_euler": 8.131516293641283e-20
+      }
+    },
+    {
+      "closed_P": true,
+      "state": 2,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 1.0408340855860843e-17,
+        "normalization_multiplier_base": 0.0,
+        "normalization_multiplier_correction": 8.673617379884035e-19,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 1.6653345369377348e-16,
+        "correction_euler": 4.597017211338539e-17
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 0,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 5.421010862427522e-20,
+        "base_pullback": 0.0,
+        "base_euler": 4.440892098500626e-16,
+        "correction_pullback": 4.336808689942018e-19,
+        "correction_euler": 6.776263578034403e-21,
+        "ground_lambda_grad": 4.85722573273506e-17,
+        "ground_sigma": 3.3881317890172014e-21,
+        "ground_pi": 4.0657581468206416e-20,
+        "lambda_defect_identity": 4.074228476293185e-18
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 1,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 2.168404344971009e-19,
+        "normalization_multiplier_base": 8.881784197001252e-16,
+        "normalization_multiplier_correction": 0.0,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 1.0408340855860843e-17,
+        "correction_euler": 2.2768245622195593e-18
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 2,
+      "denominator": "full",
+      "errors": {
+        "expanded_correction_source": 2.168404344971009e-19,
+        "normalization_multiplier_base": 0.0,
+        "normalization_multiplier_correction": 0.0,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 3.469446951953614e-18,
+        "correction_euler": 1.0842021724855044e-19
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 0,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 2.710505431213761e-20,
+        "base_pullback": 0.0,
+        "base_euler": 4.440892098500626e-16,
+        "correction_pullback": 4.336808689942018e-19,
+        "correction_euler": 6.776263578034403e-21,
+        "ground_lambda_grad": 4.85722573273506e-17,
+        "ground_sigma": 6.776263578034403e-21,
+        "ground_pi": 4.0657581468206416e-20,
+        "lambda_defect_identity": 4.074228476293185e-18
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 1,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 4.336808689942018e-19,
+        "normalization_multiplier_base": 8.881784197001252e-16,
+        "normalization_multiplier_correction": 0.0,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 1.214306433183765e-17,
+        "correction_euler": 2.2768245622195593e-18
+      }
+    },
+    {
+      "closed_P": false,
+      "state": 2,
+      "denominator": "mp",
+      "errors": {
+        "expanded_correction_source": 2.168404344971009e-19,
+        "normalization_multiplier_base": 0.0,
+        "normalization_multiplier_correction": 1.0842021724855044e-19,
+        "base_pullback": 5.551115123125783e-17,
+        "base_euler": 2.220446049250313e-16,
+        "correction_pullback": 2.6020852139652106e-18,
+        "correction_euler": 1.0842021724855044e-19
+      }
+    }
+  ]
+}

@@ -1,22 +1,14 @@
-"""Amplitude-relaxed densities of CC functionals in the bare MO frame, per spin.
+"""Amplitude-relaxed densities of CC functionals in the bare MO frame, per spin: the step
+shared by the CC, CR-CC(2,3), CR-EOMCC(2,3) and CC(P;Q) gradients that takes the densities of
+ccpy.density (conjugate to the stored blocks of H(T1) = e^{-T1} H e^{T1},
+ccpy.hbar.hbar_ccs_chol) to D1[s] = dL/dh[s] and Y[s] = dL/dB[s] over all MOs (frozen core
+included), the input of ccpy.gradients.orbital_response. The bare MO quantities (h_mo, B_mo,
+mo_coeff, mo_energy, keyed by spin) and the System come from ccpy.methods.Reference.
 
-A CC gradient goes through three stages:
-
-  1. amplitude-relaxed densities (this module + the method's ccpy.density modules): the
-     derivatives of the CC Lagrangian (amplitude equations included) with respect to the bare
-     MO Hamiltonian, D1[s] = dL/dh[s] and Y[s] = dL/dB[s], separately for each spin s;
-  2. orbital relaxation (ccpy.gradients.orbital_response): the Z-vector of the reference
-     conditions, giving the relaxed D[s], Y[s] and the energy-weighted W[s];
-  3. contraction with the derivative integrals (ccpy.gradients.derivative_integrals).
-
-The densities of ccpy.density are conjugate to the stored blocks of H(T1) =
-e^{-T1} H e^{T1} (ccpy.hbar.hbar_ccs_chol); build_DY takes them to the bare frame over all MOs
-(frozen core included). Two-body densities only ever appear contracted with the three-index
-vectors, Y_x[p, r] = sum_qs D2[p,q,r,s] B_x[q,s] (<pq|rs> = sum_x B_x[p,r] B_x[q,s]), and
-nothing with four virtual indices is stored.
-
-Everything is spin-integrated: alpha and beta orbitals, densities, and Y are kept apart (for
-an RHF reference the two spins share the MOs, but the code never assumes so).
+Two-body densities only ever appear contracted with the three-index vectors,
+Y_x[p, r] = sum_qs D2[p,q,r,s] B_x[q,s] (<pq|rs> = sum_x B_x[p,r] B_x[q,s]), and nothing with
+four virtual indices is stored. Alpha and beta orbitals, densities and Y are kept apart (for an
+RHF reference the two spins share the MOs, but the code never assumes so).
 """
 
 import numpy as np
@@ -25,52 +17,22 @@ BLOCKS = [p + q + r + s for p in "ov" for q in "ov" for r in "ov" for s in "ov"]
 SPINS = ("a", "b")
 
 
-def get_mo_integrals(meanfield, system):
-    """Bare MO quantities over all MOs (frozen core included), keyed by spin: orbitals C,
-    orbital energies eps, core Hamiltonian h, Cholesky vectors B, occupied projectors P, the
-    number of occupied orbitals, the correlated orbital slices, and the reference type."""
-    if system.ndelete != 0:
-        raise NotImplementedError("Gradients with deleted virtual orbitals are not implemented.")
-    nfz = system.nfrozen
-    restricted = len(meanfield.C) == 1
-    C = [meanfield.C[0], meanfield.C[0]] if restricted else list(meanfield.C)
-    eps = [meanfield.eps[0], meanfield.eps[0]] if restricted else list(meanfield.eps)
-    nmo = C[0].shape[1]
+def mo_slices(system):
+    """Correlated occupied and virtual orbitals of each spin, as slices of all MOs."""
+    nfz, end = system.nfrozen, system.nfrozen + system.norbitals
     nocc = {"a": nfz + system.noccupied_alpha, "b": nfz + system.noccupied_beta}
-    end = nfz + system.norbitals
-    mo = {"reference": type(meanfield).__name__, "nmo": nmo, "nfrozen": nfz, "nocc": nocc, "C": {}, "eps": {}, "h": {}, "B": {}, "P": {},
-          "slices": {s: {"o": slice(nfz, nocc[s]), "v": slice(nocc[s], end)} for s in SPINS}}
-    hcore = meanfield.get_hcore()
-    for k, s in enumerate(SPINS):
-        mo["C"][s] = C[k]
-        mo["eps"][s] = eps[k]
-        mo["h"][s] = C[k].T @ hcore @ C[k]
-        mo["B"][s] = mo["B"]["a"] if (s == "b" and restricted) else meanfield.mol.df.mo_cholesky_vectors(C[k])
-        mo["P"][s] = np.diag((np.arange(nmo) < nocc[s]).astype(float))
-    return mo
+    return {s: {"o": slice(nfz, nocc[s]), "v": slice(nocc[s], end)} for s in SPINS}
 
 
-def build_bare_hamiltonian(mo, system):
-    """Bare Cholesky Hamiltonian of the correlated orbitals, per spin: the normal-ordered Fock
-    blocks f[s] = h[s] + sum_t J[P[t]] - K[P[s]] and the Cholesky blocks H0.chol (the input of
-    ccpy.hbar.hbar_ccs_chol.build_hbar_ccs_chol)."""
-    from ccpy.models.integrals import Integral
-
-    H0 = Integral.from_empty(system, 1, use_none=True)
-    H0.chol = Integral.from_empty(system, 1, use_none=True)
-    B, P = mo["B"], mo["P"]
-    rho = sum(np.einsum("xqs,qs->x", B[s], P[s], optimize=True) for s in SPINS)
-    for s in SPINS:
-        f = mo["h"][s] + np.einsum("xpq,x->pq", B[s], rho, optimize=True) - np.einsum("xpr,rs,xsq->pq", B[s], P[s], B[s], optimize=True)
-        sl = mo["slices"][s]
-        for blk in ("oo", "ov", "vo", "vv"):
-            p, q = sl[blk[0]], sl[blk[1]]
-            setattr(getattr(H0, s), blk, f[p, q])
-            setattr(getattr(H0.chol, s), blk, B[s][:, p, q])
-    return H0
+def occupied_projectors(reference):
+    """Projectors onto the occupied orbitals (frozen core included) of each spin, over all MOs."""
+    nmo = reference.h_mo["a"].shape[0]
+    nocc = {"a": reference.nfrozen + reference.system.noccupied_alpha,
+            "b": reference.nfrozen + reference.system.noccupied_beta}
+    return {s: np.diag((np.arange(nmo) < nocc[s]).astype(float)) for s in SPINS}
 
 
-def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, mo, system, reference=False):
+def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, reference, ref_weight=False):
     """Bare-frame (D1, Y) over all MOs of a functional F(H(T1)) whose densities rdm1, rdm2
     (ccpy.density) are conjugate to the stored blocks of H(T1) (rdm1 to the normal-ordered Fock
     blocks f = h + sum_i <pi||qi>, rdm2 to H.aa.pqrs = <pq||rs>, H.ab.pqrs = <pq|rs>, ...).
@@ -80,9 +42,12 @@ def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, mo, system, reference=False):
          vvvv_slice(a, spin) (vvvv densities one first index at a time, or None)
     T  : T1 of the transformation (None for a functional of the bare H)
     B  : bare Cholesky vectors {spin: (x, nmo, nmo)} for the separable (and reference) terms
-    reference=True adds the reference determinant E_ref = sum_i h_ii + 1/2 sum_ij <ij||ij>.
+         (reference.B_mo, or a rotated copy)
+    reference : ccpy.methods.Reference
+    ref_weight=True adds the reference determinant E_ref = sum_i h_ii + 1/2 sum_ij <ij||ij> (a
+    number weights it).
     Returns D1 = dF/dh and Y = dF/dB, per spin."""
-    sl, nmo = mo["slices"], mo["nmo"]
+    sl, nmo = mo_slices(reference.system), reference.h_mo["a"].shape[0]
     naux = B["a"].shape[0]
     Y = {s: np.zeros((naux, nmo, nmo)) for s in SPINS}
 
@@ -118,21 +83,34 @@ def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, mo, system, reference=False):
         Yt["b"][:, q, t] += np.einsum("pqrs,xpr->xqs", G, Bc["a"][:, p, r], optimize=True)
     if vvvv_slice is not None:
         va, vb = cs["a"]["v"], cs["b"]["v"]
-        Ba, Bb = Bt.a.vv, Bt.b.vv
-        for a in range(nvir["a"]):
+        # one vvvv slice at a time, each contraction a single GEMM on (x, vv) matrices; the
+        # (vv, v) @ (v, x) orientation avoids a slow small-k path of some BLAS builds
+        Ba = np.ascontiguousarray(Bt.a.vv)
+        Bb = np.ascontiguousarray(Bt.b.vv)
+        nx, na, nb = Ba.shape[0], nvir["a"], nvir["b"]
+        Ba2, Bb2 = Ba.reshape(nx, na * na), Bb.reshape(nx, nb * nb)
+        Ba_a = np.ascontiguousarray(Ba.transpose(1, 0, 2))    # Ba_a[a] = B[:, a, :], contiguous for BLAS
+        Bb_a = np.ascontiguousarray(Bb.transpose(1, 0, 2))
+        for a in range(na):
             G_aa, G_ab = vvvv_slice(a, "a")
-            Yt["a"][:, va.start + a, va] += np.einsum("bcd,xbd->xc", G_aa, Ba, optimize=True)
-            Yt["a"][:, va, va] += np.einsum("bcd,xc->xbd", G_aa, Ba[:, a, :], optimize=True)
-            Yt["a"][:, va.start + a, va] -= np.einsum("bcd,xbc->xd", G_aa, Ba, optimize=True)
-            Yt["a"][:, va, va] -= np.einsum("bcd,xd->xbc", G_aa, Ba[:, a, :], optimize=True)
-            Yt["a"][:, va.start + a, va] += np.einsum("bcd,xbd->xc", G_ab, Bb, optimize=True)
-            Yt["b"][:, vb, vb] += np.einsum("bcd,xc->xbd", G_ab, Ba[:, a, :], optimize=True)
-        for a in range(nvir["b"]):
-            G_bb = vvvv_slice(a, "b")
-            Yt["b"][:, vb.start + a, vb] += np.einsum("bcd,xbd->xc", G_bb, Bb, optimize=True)
-            Yt["b"][:, vb, vb] += np.einsum("bcd,xc->xbd", G_bb, Bb[:, a, :], optimize=True)
-            Yt["b"][:, vb.start + a, vb] -= np.einsum("bcd,xbc->xd", G_bb, Bb, optimize=True)
-            Yt["b"][:, vb, vb] -= np.einsum("bcd,xd->xbc", G_bb, Bb[:, a, :], optimize=True)
+            G_aa = np.ascontiguousarray(G_aa)
+            G_cbd = np.ascontiguousarray(G_aa.transpose(1, 0, 2)).reshape(na, na * na)       # [c, bd]
+            G_bcd = G_aa.reshape(na * na, na)                                                 # [bc, d]
+            Yt["a"][:, va.start + a, va] += Ba2 @ G_cbd.T                                     # bcd,xbd->xc
+            Yt["a"][:, va, va] += (G_cbd.T @ Ba_a[a].T).T.reshape(nx, na, na)                   # bcd,xc->xbd
+            Yt["a"][:, va.start + a, va] -= Ba2 @ G_bcd                                       # bcd,xbc->xd
+            Yt["a"][:, va, va] -= (G_bcd @ Ba_a[a].T).T.reshape(nx, na, na)                 # bcd,xd->xbc
+            G_ab = np.ascontiguousarray(np.asarray(G_ab).transpose(1, 0, 2)).reshape(na, nb * nb)  # [c, bd]
+            Yt["a"][:, va.start + a, va] += Bb2 @ G_ab.T                                      # bcd,xbd->xc
+            Yt["b"][:, vb, vb] += (G_ab.T @ Ba_a[a].T).T.reshape(nx, nb, nb)                    # bcd,xc->xbd
+        for a in range(nb):
+            G_bb = np.ascontiguousarray(vvvv_slice(a, "b"))
+            G_cbd = np.ascontiguousarray(G_bb.transpose(1, 0, 2)).reshape(nb, nb * nb)
+            G_bcd = G_bb.reshape(nb * nb, nb)
+            Yt["b"][:, vb.start + a, vb] += Bb2 @ G_cbd.T
+            Yt["b"][:, vb, vb] += (G_cbd.T @ Bb_a[a].T).T.reshape(nx, nb, nb)
+            Yt["b"][:, vb.start + a, vb] -= Bb2 @ G_bcd
+            Yt["b"][:, vb, vb] -= (G_bcd @ Bb_a[a].T).T.reshape(nx, nb, nb)
 
     # back to the bare frame: (1 - t1)^T . (1 + t1)^T on the correlated orbitals
     corr = {s: slice(sl[s]["o"].start, sl[s]["v"].stop) for s in SPINS}
@@ -153,12 +131,11 @@ def build_DY(rdm1, rdm2, vvvv_slice, Bt, T, B, mo, system, reference=False):
         gamma[s][corr[s], corr[s]] = X.T @ g @ Yd.T
 
     # one-body and separable terms (the reference projector of H(T1) is P + t1^T in the bare frame)
-    P = {}
+    P = occupied_projectors(reference)
     for s in SPINS:
-        P[s] = mo["P"][s].copy()
         P[s][corr[s], corr[s]] += t1[s].T
-    D1 = {s: gamma[s] + (P[s] if reference else 0.0) for s in SPINS}
-    for g, scale in ((gamma, 1.0),) + (((P, 0.5),) if reference else ()):
+    D1 = {s: gamma[s] + ref_weight * P[s] for s in SPINS}
+    for g, scale in ((gamma, 1.0),) + (((P, 0.5 * ref_weight),) if ref_weight else ()):
         # D2_ss = P_qs g_pr - P_qr g_ps - P_ps g_qr + P_pr g_qs,  D2_st = P^t_qs g^s_pr + P^s_pr g^t_qs
         PB = sum(np.einsum("qs,xqs->x", P[u], B[u], optimize=True) for u in SPINS)
         gB = sum(np.einsum("qs,xqs->x", g[u], B[u], optimize=True) for u in SPINS)
@@ -176,13 +153,14 @@ def add_densities(*pieces):
             {s: sum(p[1][s] for p in pieces) for s in SPINS})
 
 
-def rotation_gradient(D1, Y, h, B, mo):
+def rotation_gradient(D1, Y, h, B, reference):
     """dF/dt_i^a of a functional F(h, B) with dF/dh = D1 and dF/dB = Y, where t_i^a rotates
     the Hamiltonian as H -> H + e [H, a+ i] ([M, E] = M E - E M for h and each B_x):
     (h^T D1 - D1 h^T)[a, i] + sum_x (B_x^T Y_x - Y_x B_x^T)[a, i], per spin."""
+    sl = mo_slices(reference.system)
     out = {}
     for s in SPINS:
-        o, v = mo["slices"][s]["o"], mo["slices"][s]["v"]
+        o, v = sl[s]["o"], sl[s]["v"]
         out[s] = (h[s][:, v].T @ D1[s][:, o] - D1[s][v, :] @ h[s][o, :].T
                   + np.einsum("xqa,xqi->ai", B[s][:, :, v], Y[s][:, :, o], optimize=True)
                   - np.einsum("xaq,xiq->ai", Y[s][:, v, :], B[s][:, o, :], optimize=True))

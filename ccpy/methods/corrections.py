@@ -31,6 +31,7 @@ class CorrectionBase(MethodBase):
     variants = ("A", "B", "C", "D")
     default_variant = "D"
     module = function = None
+    gradient_variants = ()          # variants with an analytic gradient
 
     def __init__(self, upstream, variant=None, nfrozen=None, ndelete=None, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
@@ -48,6 +49,9 @@ class CorrectionBase(MethodBase):
 
     def solve(self):
         return self.build()
+
+    def has_analytic_gradient(self, **kwargs):
+        return super().has_analytic_gradient(**kwargs) and self.variant in self.gradient_variants
 
 
 class GroundStateCorrectionBase(CorrectionBase):
@@ -116,10 +120,21 @@ class GroundStateCorrectionBase(CorrectionBase):
         self.ensure_solved()
         return self.reference_energy + self.cc.correlation_energy + self.deltas[self.variant]
 
+    def has_analytic_gradient(self, **kwargs):
+        return super().has_analytic_gradient(**kwargs) and self.stochastic is None
+
+    def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
+        self.ensure_solved()
+        hbar, left = self.hbar, self.left
+        return self._gradient_function()(hbar.T, left.L, hbar.H, self.reference, delta=self.deltas[self.variant],
+                                         zvector_tol=zvector_tol)
+
 
 class CRCC23(GroundStateCorrectionBase):
     """CR-CC(2,3) triples correction to CCSD (DF/Cholesky); semi-stochastic with ``stochastic``."""
     module, function = "ccpy.moments.crcc23_chol", "calc_crcc23"
+    gradient_module, gradient_function = "ccpy.gradients.crcc23_gradient", "calc_crcc23_gradient"
+    gradient_variants = ("A",)
     supports_stochastic = True
 
     def _compute(self, cc, hbar, left):
@@ -129,19 +144,6 @@ class CRCC23(GroundStateCorrectionBase):
 
         return self._compute_stochastic(calc_crcc23_stochastic, hbar.T, left.L, hbar.correlation_energy, hbar.H,
                                         self._fock(), self.system, self.options["RHF_symmetry"])
-
-    def has_analytic_gradient(self, **kwargs):
-        from ccpy.scf.rhf import RHF
-        from ccpy.scf.uhf import UHF
-
-        return self.variant == "A" and isinstance(self.reference.scf, (RHF, UHF)) and self.reference.ndelete == 0
-
-    def _analytic_gradient(self, zvector_tol=1.0e-10, **kwargs):
-        from ccpy.gradients.crcc23_gradient import crcc23A_gradient_from_amplitudes
-
-        self.ensure_solved()
-        return crcc23A_gradient_from_amplitudes(self.reference.scf, self.system, self.cc.T, self.left.L,
-                                                self.hbar.H, H0=self.reference.H, zvector_tol=zvector_tol)
 
 
 class CCSDpT(GroundStateCorrectionBase):
@@ -589,10 +591,19 @@ class ExcitedStateCorrectionBase(CorrectionBase):
         total = self.eom.energy() + np.array([d[self.variant] for d in self.deltas])
         return total if root is None else total[root]
 
+    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, **kwargs):
+        self.ensure_solved()
+        eom, left, hbar = self.eom, self.left, self.eom.hbar
+        return self._gradient_function()(hbar.T, eom.R[root], eom.r0[root], left.L[root], eom.omega[root], hbar.H,
+                                         self.reference, delta=self.deltas[root][self.variant],
+                                         zvector_tol=zvector_tol)
+
 
 class CREOMCC23(ExcitedStateCorrectionBase):
     """CR-EOMCC(2,3) triples corrections to EOMCCSD (DF/Cholesky)."""
     module, function = "ccpy.moments.creomcc23_chol", "calc_creomcc23"
+    gradient_module, gradient_function = "ccpy.gradients.creomcc23_gradient", "calc_creomcc23_gradient"
+    gradient_variants = ("A",)
 
     def _compute(self, i, eom, hbar, left):
         _, delta, ddelta = self._function()(hbar.T, eom.R[i], left.L[i], eom.r0[i], eom.omega[i],

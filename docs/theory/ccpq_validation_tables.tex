@@ -1,0 +1,153 @@
+\subsection{Independent optimized ground-state tensor comparisons}
+The primary DF water calculation freezes O(1s), retaining all 13 spatial orbitals.
+CR-CC(2,3) has P = 64 S + 1,360 D and Q = all 11,200 T. The active-SDt
+case has P = 64 S + 1,360 D + 2,436 T and Q = all 8,764 remaining T.
+All nine components use four-point differences at 0.001 bohr of independently
+converged optimized tensor energies, with the same DF auxiliary basis and reference.
+The full CC(P;3) comparator includes selected triples in the left state and moments.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lllll}
+\toprule
+Method & Variant & Base & Correction & Total\\
+\midrule
+CR-CC(2,3) & A & $\ee{1.091}{-10}$ & $\ee{5.870}{-14}$ & $\ee{1.090}{-10}$\\
+CR-CC(2,3) & D & $\ee{1.091}{-10}$ & $\ee{5.509}{-14}$ & $\ee{1.090}{-10}$\\
+Full CC(P;3) & A & $\ee{1.152}{-10}$ & $\ee{3.064}{-14}$ & $\ee{1.152}{-10}$\\
+Full CC(P;3) & D & $\ee{1.152}{-10}$ & $\ee{5.232}{-14}$ & $\ee{1.152}{-10}$\\
+\bottomrule
+\end{tabular}
+\caption{DF H2O/6-31G: independent optimized-energy finite differences; maximum errors over nine components.}\label{tab:groundnumerical}
+\end{table}
+
+The determinant and existing DF CR-CC(2,3)-A analytical gradients differ by at most $\ee{1.432}{-13}$ $\gunit$.
+The largest base/correction energy differences over this table are $\ee{2.842}{-13}$ / $\ee{2.489}{-15}$ $\eunit$.
+
+\subsection{Independent optimized excited-state tensor comparisons}
+The water EOM test uses the same 2,436 active triples in ground T and excited R/L,
+all S/D, and all 8,764 remaining triples in Q. Both multiplicities use full spin blocks.
+The lowest triplet and singlet map to roots 1 and 2 of the unfiltered fixed-$M_s=0$
+spectrum. All nine components use a 0.001-bohr four-point stencil.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lllll}
+\toprule
+State & Variant & Base & Correction & Total\\
+\midrule
+Triplet & A & $\ee{1.220}{-10}$ & $\ee{1.504}{-13}$ & $\ee{1.220}{-10}$\\
+Triplet & D & $\ee{1.220}{-10}$ & $\ee{1.777}{-12}$ & $\ee{1.202}{-10}$\\
+Singlet & A & $\ee{1.271}{-10}$ & $\ee{1.992}{-13}$ & $\ee{1.271}{-10}$\\
+Singlet & D & $\ee{1.270}{-10}$ & $\ee{1.580}{-12}$ & $\ee{1.254}{-10}$\\
+\bottomrule
+\end{tabular}
+\caption{Full EOMCCSDt/EOMCC(P;3), frozen-O(1s) H2O/6-31G. The base column separately checks EOMCCSDt derivatives.}\label{tab:waterexcited}
+\end{table}
+
+Independent Arnoldi on optimized HR and determinant Davidson spectra agree within $\ee{7.816}{-13}$ $\eunit$.
+Physical right/left determinant-coordinate overlaps differ from unity by at most $\ee{1.332}{-15}$.
+The maximum base/correction energy differences are $\ee{1.705}{-13}$ / $\ee{1.269}{-14}$ $\eunit$.
+Displaced root overlaps exceed 0.999997; energy-gap and left/right residual guards are checked at every point.
+
+\subsection{A nonzero-reference-component excited-state control}
+The nonplanar H4/6-31G test retains all four electrons and eight orbitals.
+P has 24 S + 174 D + 160 T; Q has all 200 remaining T. Its lowest triplet
+and lowest singlet are roots 1 and 3 of the unfiltered $M_s=0$ spectrum.
+The singlet has $|r_0|\simeq0.083$. Both corrections are nonzero.
+All twelve Cartesian components use a 0.00025-bohr four-point step.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lllll}
+\toprule
+State & Variant & Base & Correction & Total\\
+\midrule
+Triplet & A & $\ee{1.737}{-11}$ & $\ee{3.067}{-14}$ & $\ee{1.738}{-11}$\\
+Triplet & D & $\ee{1.737}{-11}$ & $\ee{4.281}{-14}$ & $\ee{1.739}{-11}$\\
+Singlet & A & $\ee{2.685}{-10}$ & $\ee{6.901}{-11}$ & $\ee{1.995}{-10}$\\
+Singlet & D & $\ee{2.684}{-10}$ & $\ee{9.716}{-11}$ & $\ee{1.713}{-10}$\\
+\bottomrule
+\end{tabular}
+\caption{Independent full excited-state H4/6-31G comparison, including a nonzero right reference coefficient.}\label{tab:h4excited}
+\end{table}
+
+The singlet has a nearby root separated by about 0.00228 hartree. The initial
+0.001-bohr step has visible truncation error: halving it reduces the correction
+error by approximately sixteen. Smaller-step agreement is obtained without
+altering the analytical equations or loosening the comparison tolerance.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{llll}
+\toprule
+Step (bohr) & Base & Correction & Total\\
+\midrule
+0.00100 & $\ee{7.155}{-8}$ & $\ee{2.486}{-8}$ & $\ee{4.669}{-8}$\\
+0.00050 & $\ee{4.473}{-9}$ & $\ee{1.559}{-9}$ & $\ee{2.915}{-9}$\\
+0.00025 & $\ee{2.684}{-10}$ & $\ee{9.716}{-11}$ & $\ee{1.713}{-10}$\\
+\bottomrule
+\end{tabular}
+\caption{H4 singlet D, atom 0/z: explicit four-point step convergence; errors in $\gunit$.}\label{tab:step}
+\end{table}
+
+\subsection{Substantial triples/quadruples selections}
+The all-electron H6/6-31G models retain six electrons and twelve spatial orbitals
+(48,400 determinants). Every P includes all 54 S and 945 D plus the selected
+T/Q below. Q is the complete remaining triples/quadruples complement.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lllll}
+\toprule
+Active virtuals & P triples & P quadruples & Q triples & Q quadruples\\
+\midrule
+6 & 1660 & 2745 & 4340 & 13455\\
+7 & 2716 & 5439 & 3284 & 10761\\
+\bottomrule
+\end{tabular}
+\caption{H6 complete active selections: all three occupied MOs and either six or seven virtual MOs define P-space triples and quadruples.}\label{tab:h6spaces}
+\end{table}
+
+The virtual-6 model retains 27.67\% of triples and 16.94\% of quadruples;
+the virtual-7 model retains 45.27\% and 33.57\%, respectively. Only two
+components (atom 1/z and atom 2/x) are directly finite-differenced, not all eighteen.
+Here the energies being finite-differenced come from the determinant model itself:
+this is a general-space derivative-consistency test, not an optimized quadruples-kernel comparison.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lllll}
+\toprule
+Active virtuals & State & Base & Correction & Total\\
+\midrule
+6 & Ground & $\ee{8.847}{-12}$ & $\ee{4.812}{-13}$ & $\ee{8.811}{-12}$\\
+6 & Root 1 & $\ee{5.745}{-12}$ & $\ee{4.548}{-12}$ & $\ee{9.855}{-12}$\\
+6 & Root 2 & $\ee{9.871}{-12}$ & $\ee{1.443}{-11}$ & $\ee{2.404}{-11}$\\
+7 & Ground & $\ee{2.005}{-11}$ & $\ee{2.564}{-13}$ & $\ee{2.027}{-11}$\\
+7 & Root 1 & $\ee{2.388}{-12}$ & $\ee{6.128}{-12}$ & $\ee{4.930}{-12}$\\
+7 & Root 2 & $\ee{1.314}{-11}$ & $\ee{6.665}{-12}$ & $\ee{1.959}{-11}$\\
+\bottomrule
+\end{tabular}
+\caption{H6 substantial-T/Q derivative consistency. Each row takes the worst error across MP/full over the two checked components.}\label{tab:h6errors}
+\end{table}
+
+The conventional frozen-O(1s) water T/Q model has 64 S + 1,360 D +
+2,480 T + 5,210 quadruples in P, and 8,720 remaining T + 37,490 remaining
+quadruples in Q (245,025 support determinants). Only atom 1/z and atom 2/y
+are directly finite-differenced; all nine analytical components are recorded.
+No all-nine-component claim is made for this one-frozen-orbital T/Q model.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{llll}
+\toprule
+State & Base & Correction & Total\\
+\midrule
+Ground & $\ee{4.878}{-11}$ & $\ee{1.217}{-12}$ & $\ee{4.987}{-11}$\\
+Root 1 & $\ee{1.312}{-10}$ & $\ee{5.604}{-13}$ & $\ee{1.429}{-10}$\\
+Root 2 & $\ee{8.063}{-11}$ & $\ee{1.995}{-11}$ & $\ee{7.836}{-11}$\\
+\bottomrule
+\end{tabular}
+\caption{Conventional water general T/Q model: worst errors over MP/full and the two checked components.}\label{tab:watertq}
+\end{table}
+
+A separate reduced-correlation water regression freezes three occupied
+orbitals (six electrons), correlating four electrons in the same 13-orbital basis.
+Its 2,025-determinant model checks all nine components for ground and two excited
+states with both denominators. The largest total/correction errors are $\ee{8.125}{-10}$ / $\ee{2.535}{-11}$ $\gunit$.
+This is not the standard one-frozen-O(1s) model.
+

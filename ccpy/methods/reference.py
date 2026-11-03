@@ -70,22 +70,25 @@ class Reference:
         system = self.system
         system.cholesky = True
 
-        # full MO basis (frozen core and deleted virtuals included)
+        # full MO basis (frozen core and deleted virtuals included), per spin
         hcore = scf.get_hcore()
-        self.mo_coeff = (C_a, C_b)
-        self.h_mo = (C_a.T @ hcore @ C_a, C_b.T @ hcore @ C_b)
+        eps_a, eps_b = scf.mo_energy if self.is_uhf else (scf.mo_energy, scf.mo_energy)
+        self.mo_coeff = {"a": C_a, "b": C_b}
+        self.mo_energy = {"a": eps_a, "b": eps_b}
+        self.h_mo = {"a": C_a.T @ hcore @ C_a, "b": C_b.T @ hcore @ C_b}
         B_a = mol.df.mo_cholesky_vectors(C_a)
         B_b = B_a if C_b is C_a else mol.df.mo_cholesky_vectors(C_b)
-        self.B_mo = (B_a, B_b)
+        self.B_mo = {"a": B_a, "b": B_b}
+        h_a, h_b = self.h_mo["a"], self.h_mo["b"]
         nocc_a = nfrozen + system.noccupied_alpha
         nocc_b = nfrozen + system.noccupied_beta
-        f_a, f_b = build_fock(*self.h_mo, B_a, B_b, nocc_a, nocc_b)
+        f_a, f_b = build_fock(h_a, h_b, B_a, B_b, nocc_a, nocc_b)
 
-        e_ref = mol.nuclear_repulsion + determinant_energy(*self.h_mo, B_a, B_b, nocc_a, nocc_b)
+        e_ref = mol.nuclear_repulsion + determinant_energy(h_a, h_b, B_a, B_b, nocc_a, nocc_b)
         if not np.isclose(e_ref, scf.e_tot, atol=1.0e-06, rtol=0.0):
             raise RuntimeError(f"DF integrals don't match the SCF energy ({e_ref:.10f} vs {scf.e_tot:.10f})")
         system.reference_energy = e_ref
-        system.frozen_energy = determinant_energy(*self.h_mo, B_a, B_b, nfrozen, nfrozen)
+        system.frozen_energy = determinant_energy(h_a, h_b, B_a, B_b, nfrozen, nfrozen)
 
         corr = slice(nfrozen, nfrozen + system.norbitals)
         self.H = DFHamiltonian(system, f_a[corr, corr], f_b[corr, corr],
@@ -117,13 +120,13 @@ class Reference:
 
             system = self.system
             if self.is_uhf:
-                C_a, C_b = self.mo_coeff
+                C_a, C_b = self.mo_coeff["a"], self.mo_coeff["b"]
                 self._legacy_H = getUHFHamiltonianDF(C_a, C_b, self.scf.get_hcore(), self.molecule.df,
                                                      system, normal_ordered=True)
             else:
-                B = self.B_mo[0]
+                B = self.B_mo["a"]
                 e2int = np.asfortranarray(np.einsum("xpr,xqs->pqrs", B, B, optimize=True))
-                self._legacy_H = getHamiltonian(self.h_mo[0], e2int, system, normal_ordered=True)
+                self._legacy_H = getHamiltonian(self.h_mo["a"], e2int, system, normal_ordered=True)
         return copy.deepcopy(self._legacy_H) if copy_ else self._legacy_H
 
 

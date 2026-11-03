@@ -1,0 +1,1114 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb,bm,booktabs,longtable,array,xcolor,hyperref,microtype}
+\hypersetup{colorlinks=true,linkcolor=blue!45!black,urlcolor=blue!45!black,
+ pdftitle={Analytical gradients of determinantal CC(P;Q) and EOMCC(P;Q)},
+ pdfauthor={CCpy development notes}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[2]
+\numberwithin{equation}{section}
+\renewcommand{\arraystretch}{1.13}
+\newcommand{\ket}[1]{\lvert #1\rangle}
+\newcommand{\bra}[1]{\langle #1\rvert}
+\newcommand{\me}[3]{\langle #1\rvert #2\lvert #3\rangle}
+\newcommand{\bH}{\overline H}
+\newcommand{\T}{\mathsf T}
+\newcommand{\dd}{\mathrm d}
+\newcommand{\ee}[2]{#1\times10^{#2}}
+\newcommand{\eunit}{E_{\mathrm h}}
+\newcommand{\gunit}{E_{\mathrm h}/a_0}
+\newcommand{\vecz}{\mathbf z}
+\newcommand{\evec}{\mathbf e_0}
+\newcommand{\Pzero}{\mathbb P_0}
+\newcommand{\Qproj}{\mathbb Q}
+\newcommand{\sym}{\operatorname{sym}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\supp}{\operatorname{supp}}
+\newcommand{\tr}{\operatorname{Tr}}
+\title{Analytical gradients of determinantal\\CC(P;Q) and EOMCC(P;Q)\\[4pt]
+\large Stationary functionals, response equations, and validation in CCpy}
+\author{Implementation-linked theory note}
+\date{2 November 2026}
+\begin{document}
+\maketitle
+\begin{abstract}
+We derive first nuclear derivatives of a specified biorthogonal, noniterative
+CC(P;Q) energy for fixed, general determinant selections. Ground and excited
+states share the moment correction, but their defining constraints and
+response variables differ. Two separate stationary functionals produce the
+base-state and correction derivatives. The derivation retains the distinction
+between the CC residual Jacobian and the projected similarity-transformed
+Hamiltonian, the distinction between a projected left state and a ground-state
+gradient multiplier, the excited right-reference coefficient, and the explicit
+bare-Fock denominator derivative. We pull the stationary coefficients back to
+bare-integral density matrices, derive canonical-RHF orbital relaxation and
+AO-overlap terms, and give matching density-fitting/Cholesky contractions.
+Every construction is mapped to the determinant-driven implementation. Tables
+are generated from saved numerical reports, including independent optimized
+CCpy energy finite differences. The resulting evidence validates derivatives
+of the stated models and tested spaces; it is neither a proof of physical
+energy accuracy nor a validation of every approximation bearing a CC(P;Q) name.
+\end{abstract}
+\bigskip
+\begin{center}\textbf{The stationary construction}\end{center}
+\[
+ \boxed{\mathcal L_a=F_a+\mathbf z_a^{\T}\mathbf c,
+ \qquad c_y^{\T}\mathbf z_a=-F_{a,y},\qquad a=b,c.}
+\]
+The base energy and Q correction have separate amplitude adjoints. Their
+bare-integral derivative densities are then relaxed with respect to the
+reference orbitals before contraction with nuclear derivative integrals.
+\clearpage
+{\small\setlength{\baselineskip}{10pt}\setlength{\parskip}{0pt}\tableofcontents}
+\clearpage
+
+\section{Scope, conventions, and the energy being differentiated}
+\label{sec:definitions}
+We use real orbitals, real isolated roots, and a finite orthonormal
+spin-orbital basis. Transposes below are algebraic transposes of the real
+biorthogonal problem, not assertions that the similarity-transformed
+Hamiltonian is Hermitian. Nuclear repulsion is excluded from the electronic
+Hamiltonian until the final molecular gradient. The implemented molecular
+reference is closed-shell canonical RHF; excited states can be singlets or
+triplets in its fixed-$M_s=0$ determinant sector. An open-shell reference
+would require its own orbital-response derivation. The molecular derivation
+assumes a linearly independent AO basis with its full corresponding MO span
+retained, and no changing linear-dependence cutoff.
+
+Let $\ket{0}$ be the reference determinant. Let $P$ and $Q$ be fixed, disjoint
+sets of excited determinants, neither containing $0$, and define
+\begin{equation}
+ \Pzero=\ket{0}\bra{0}+\sum_{I\in P}\ket{I}\bra{I},\qquad
+ \Qproj=\sum_{K\in Q}\ket{K}\bra{K}.
+ \label{eq:projectors}
+\end{equation}
+$Q$ need not be the entire complement of $P$ in the full Hilbert space.
+For example, it can be the remaining triples, or remaining triples and
+quadruples. Omitted determinants outside both $P$ and $Q$ are not silently
+included in the correction. The full determinant support used for actions
+of $H$ and $e^{\pm T}$ is not restricted to $\{0\}\cup P\cup Q$.
+
+We choose pure particle-hole excitation operators with phases fixed by
+$\tau_I\ket{0}=\ket{I}$. In this unique-determinant convention,
+\begin{equation}
+ T=\sum_{I\in P}t_I\tau_I,\qquad U=e^{-T},\quad V=e^T,\quad
+ \bH=UHV.
+ \label{eq:similarity}
+\end{equation}
+There are no factorial multiplicities in this sum over unique excitations.
+Conversion to redundant antisymmetric CCpy spin blocks must restore their
+operator phases and permutation images. Because pure reference excitations
+commute with one another,
+\begin{equation}
+ \frac{\partial\bH}{\partial t_I}
+   =\bH\tau_I-\tau_I\bH\equiv H^{I}.
+ \label{eq:commutator}
+\end{equation}
+The exponentials are finite on the determinant support by nilpotency. This
+identity does not require $P$ to be closed under de-excitation.
+
+\subsection{The base states and correction}
+Write the uncorrected electronic state energy as $E_\mu$, with $\mu=0$ for
+the CC(P) ground branch. The corrected energy is
+\begin{equation}
+ \mathcal E_\mu=V_{\rm nn}+E_\mu+\delta_\mu,\qquad
+ \delta_\mu=\sum_{K\in Q}\frac{N_{\mu K}M_{\mu K}}{D_{\mu K}},
+ \label{eq:energy}
+\end{equation}
+where
+\begin{equation}
+ M_{\mu K}=\me{K}{\bH}{R_\mu},\qquad
+ N_{\mu K}=\me{L_\mu}{\bH}{K},\qquad
+ \langle L_\mu\vert R_\mu\rangle=1.
+ \label{eq:moments}
+\end{equation}
+Here $\ket{R_\mu}$ and $\bra{L_\mu}$ are vectors in the
+\emph{similarity-transformed} reference+$P$ space. The corresponding full
+CC wavefunctions are $e^T\ket{R_\mu}$ and $\bra{L_\mu}e^{-T}$.
+Without normalization, the right-hand side of the correction would have to
+be divided by $\langle L_\mu\vert R_\mu\rangle$.
+
+One way to motivate this energy, including the choice of left state, is to
+hold T(P) fixed and introduce a coupling parameter $\eta$ into the retained reference+P/Q block:
+\begin{equation}
+ \begin{pmatrix}\mathsf A&\eta\bH_{\{0,P\},Q}\\
+ \eta\bH_{Q,\{0,P\}}&\bH_{QQ}\end{pmatrix}
+ \begin{pmatrix}\bm R_P\\\bm R_Q\end{pmatrix}
+ =\mathcal E^{\rm el}(\eta)\begin{pmatrix}\bm R_P\\\bm R_Q\end{pmatrix}.
+\end{equation}
+The Q equation gives
+\begin{equation}
+ \bm R_Q=\eta[\mathcal E^{\rm el}(\eta)\mathbf1-\bH_{QQ}]^{-1}
+                         \bH_{Q,\{0,P\}}\bm R_P.
+\end{equation}
+Substitute into the P equation and project with the unperturbed left
+eigenvector. For a simple unperturbed eigenvalue and $\bm l^\T\bm r=1$,
+\begin{equation}
+ \mathcal E^{\rm el}(\eta)=E_\mu+\eta^2
+ \bm l^\T\bH_{\{0,P\},Q}(E_\mu\mathbf1-\bH_{QQ})^{-1}
+ \bH_{Q,\{0,P\}}\bm r+O(\eta^4).
+ \label{eq:resolventorigin}
+\end{equation}
+A diagonal Q-resolvent model gives Eq.~\eqref{eq:energy}. If Q omits other
+determinants, this is an elimination in the retained block, not an exact
+elimination of the complete Hilbert-space complement. The artificial
+parameter organizes this block coupling; it is not a claim of a small
+physical expansion parameter at $\eta=1$. This construction selects the
+\emph{projected left eigenstate} for N, not the ground CC residual-gradient
+multiplier introduced below. Replacing N by a conjugated right moment
+would also be unjustified for this non-Hermitian problem.
+
+The two implemented denominator models are
+\begin{align}
+ D_{\mu K}^{\rm full}&=E_\mu-\bH_{KK}, \label{eq:denfull}\\
+ D_{\mu K}^{\rm mp}&=\omega_\mu+\sum_p\chi_{Kp}f_{pp},\qquad
+ \omega_\mu=E_\mu-E_0,\qquad
+ \chi_{Kp}=n_p^0-n_p^K. \label{eq:denmp}
+\end{align}
+The Fock operator is the \emph{bare reference Fock operator}, not a
+similarity-transformed one. Its occupied sum includes frozen core electrons.
+The MP model can be written as $D_{\mu K}=E_\mu-E_K^{\rm mp}$ with
+$E_K^{\rm mp}=E_0-\sum_p\chi_{Kp}f_{pp}$, namely the CC(P) ground energy
+plus the reference orbital-energy excitation gap for K.
+For the ground state, $\omega_0=0$. In the optimized SD/active-SDt comparisons
+reported here, \texttt{mp} matches variant A and \texttt{full} matches variant D.
+This naming correspondence is not a definition of every published A--D
+approximation for arbitrary excitation ranks.
+
+Equation~\eqref{eq:energy} is noniterative: $E_\mu$, $T$, $R_\mu$ and $L_\mu$
+are obtained from the \emph{uncorrected} P-space problem. One does not replace
+$E_\mu$ in a denominator or eigenvalue equation by $E_\mu+\delta_\mu$.
+Such a replacement defines a different implicit energy and a different
+response problem. In particular, no extra universal normalization factor
+$1/(1+\sum_K NM/D^2)$ belongs to the model in Eq.~\eqref{eq:energy}.
+
+The supplied ground-state derivation is the internal note
+\path{ccpy/gradients/ccpq_gradients_revised.pdf} (implementation revision
+1 November 2026). The \texttt{ccpq\_audit} extension supplies the unified
+projected-state audit. The present note gives the ground/excited derivation
+and the subsequent molecular/optimized-code evidence explicitly; it does not
+rely on the upstream audit as a claim of verified nuclear gradients.
+
+\subsection{Bare versus normal-ordered energies}
+If an implementation uses $H=E_{\rm ref}^{\rm el}+H_N$, then
+$\bH=E_{\rm ref}^{\rm el}\mathbf 1+\overline H_N$. Off-diagonal P--Q moments
+and both denominator models are unchanged by this scalar shift, while
+\begin{equation}
+ E_\mu=E_{\rm ref}^{\rm el}+E_{\mu,N},\qquad
+ \mathcal E_\mu=V_{\rm nn}+E_{\rm ref}^{\rm el}+E_{\mu,N}+\delta_\mu.
+\end{equation}
+The determinant code uses the bare electronic Hamiltonian, so its densities
+already contain the reference and frozen-core contributions. Adding an HF
+reference derivative to these densities a second time would double count it.
+The optimized tensor comparison reconstructs the same total state energies
+from reference energy, CC correlation energy, excitation energy and correction.
+
+\section{Right CC(P), the two ground left quantities, and the Jacobian}
+The amplitudes solve
+\begin{equation}
+ m_A(t,H)=\bH_{A0}=0\quad(A\in P),\qquad E_0=\bH_{00}.
+ \label{eq:ccright}
+\end{equation}
+Let
+\begin{equation}
+ e_I=\frac{\partial E_0}{\partial t_I}=\bH_{0I},\qquad
+ J_{AI}=\frac{\partial m_A}{\partial t_I}
+       =\me{A}{[\bH,\tau_I]}{0},\qquad
+ B_{AI}=\bH_{AI}-E_0\delta_{AI}.
+ \label{eq:JBe}
+\end{equation}
+To see exactly why $J$ and $B$ can differ, expand
+\begin{align}
+ J_{AI}&=\bH_{AI}-\sum_X\me{A}{\tau_I}{X}\bH_{X0}\\
+ &=B_{AI}-\sum_{X\notin\{0\}\cup P}
+                \me{A}{\tau_I}{X}\bH_{X0}
+       \equiv B_{AI}-\mathcal W_{AI}.
+ \label{eq:JminusB}
+\end{align}
+The $P$ residuals vanish, but omitted residuals generally do not. A selected
+high-rank determinant can receive an excitation of an omitted lower-rank
+determinant. The last term then survives. De-excitation closure of $P$ is a
+sufficient condition for $\mathcal W=0$. In particular, all S/D plus selected
+triples has this property: an omitted residual has rank at least three and
+cannot be raised into a P determinant of rank at most three.
+
+The projected left ground state used in the numerator is
+\begin{equation}
+ \bra{L_0}=\bra{0}+\sum_{A\in P}\lambda_A\bra{A},\qquad
+ B^{\T}\bm\lambda=-\bm e,\qquad \ket{R_0}=\ket{0}.
+ \label{eq:projectedlambda}
+\end{equation}
+The base-energy \emph{gradient multiplier} is instead
+\begin{equation}
+ J^{\T}\bm\lambda^{g}=-\bm e,\qquad
+ \mathcal L_b^{(0)}=E_0+(\bm\lambda^{g})^{\T}\bm m.
+ \label{eq:lambdagrad}
+\end{equation}
+It follows that $\partial_t\mathcal L_b^{(0)}=0$ and
+$\partial_{\lambda^g}\mathcal L_b^{(0)}=\bm m=0$.
+Using the projected $\bm\lambda$ in its place gives the defect
+\begin{equation}
+ \bm e+J^{\T}\bm\lambda=(J-B)^{\T}\bm\lambda
+                         =-\mathcal W^{\T}\bm\lambda.
+ \label{eq:lambdadefect}
+\end{equation}
+Thus $\lambda=\lambda^g$ is a consequence of additional structure, not a
+valid general assumption. The program retains both quantities. Its
+nonclosed-P tests explicitly verify nonzero differences and the stationary
+base derivative with $\lambda^g$.
+
+\section{Projected excited states and their reference component}
+Let $\mathsf A$ be the reference+$P$ projection of $\bH$. At the CC solution,
+\begin{equation}
+ \mathsf A=\begin{pmatrix}E_0&\bm h^{\T}\\0&\bH_{PP}\end{pmatrix},
+ \quad h_I=\bH_{0I},\qquad
+ \mathsf A\bm r_\mu=E_\mu\bm r_\mu,\quad
+ \mathsf A^{\T}\bm l_\mu=E_\mu\bm l_\mu.
+ \label{eq:eom}
+\end{equation}
+For $E_\mu\ne E_0$,
+\begin{equation}
+ l_{\mu0}=0,\qquad
+ r_{\mu0}=\frac{\bm h^{\T}\bm r_{\mu P}}{E_\mu-E_0},\qquad
+ \bm l_{\mu P}^{\T}\bm r_{\mu P}=1.
+ \label{eq:r0}
+\end{equation}
+The left reference coefficient vanishes; the right one generally does not.
+Consequently,
+\begin{equation}
+ M_{\mu K}=r_{\mu0}\bH_{K0}+\sum_{I\in P}\bH_{KI}r_{\mu I},\qquad
+ N_{\mu K}=\sum_{I\in P}l_{\mu I}\bH_{IK}.
+ \label{eq:r0moment}
+\end{equation}
+Dropping $r_{\mu0}$ changes the correction whenever its first term is
+nonzero. The H4 singlet benchmark has $|r_{\mu0}|\simeq0.083$, so that check
+is not restricted to a symmetry-forced zero-reference case.
+
+For a general selected P, Eq.~\eqref{eq:eom} is the defining projected-Hbar
+EOM problem in this note. The CC residual Jacobian $J$ is still used for
+\emph{cluster response}. Substituting $J$ for the projected EOM matrix in
+an arbitrary nonclosed P changes the chosen base-state model and moments.
+For all-S/D plus selected-T spaces, the usual corresponding optimized EOM
+problem agrees with this projected definition, as verified independently.
+
+\section{A stationary representation of the Q correction}
+Suppress $\mu$ temporarily and define divided moments
+\begin{equation}
+ u_K=\frac{M_K}{D_K},\qquad v_K=\frac{N_K}{D_K},\qquad
+ w_K=u_Kv_K=\frac{N_KM_K}{D_K^2},\qquad W_Q=\sum_{K\in Q}w_K.
+ \label{eq:divided}
+\end{equation}
+The auxiliary saddle functional
+\begin{equation}
+ \mathcal C_Q=\sum_{K\in Q}\bigl(v_KM_K+u_KN_K-u_Kv_KD_K\bigr)
+ \label{eq:saddleQ}
+\end{equation}
+has derivatives
+\begin{equation}
+ \partial_{u_K}\mathcal C_Q=N_K-v_KD_K=0,\qquad
+ \partial_{v_K}\mathcal C_Q=M_K-u_KD_K=0.
+\end{equation}
+At these solutions, $\mathcal C_Q=\delta$. The envelope derivative is
+\begin{equation}
+ \dd\delta=\sum_K\bigl(v_K\dd M_K+u_K\dd N_K-w_K\dd D_K\bigr).
+ \label{eq:deltadifferential}
+\end{equation}
+This is also obtained directly by differentiating $NM/D$; the saddle form
+explains why no $u^x$ or $v^x$ is required in a first derivative.
+On shell its three terms give $\delta+\delta-\delta$. Omitting the last
+term gives twice the correction and loses the denominator derivative.
+It is the Q-sector subtraction associated with $(\bH-E_\mu)$, not an
+optional bookkeeping constant.
+
+The denominator differentials are
+\begin{align}
+ \dd D_{\mu K}^{\rm full}&=\dd E_\mu-\dd\bH_{KK},\\
+ \dd D_{\mu K}^{\rm mp}&=\dd E_\mu-\dd E_0+
+                                     \sum_p\chi_{Kp}\dd f_{pp}.
+ \label{eq:dendifferentials}
+\end{align}
+In particular the full-diagonal term contributes $+w_K\dd\bH_{KK}$,
+whereas the bare-Fock contribution is $-w_K\sum_p\chi_{Kp}\dd f_{pp}$.
+The sign follows from differentiating $1/D$; it is not a convention to be
+chosen independently.
+
+For example the explicit total differential before eliminating responses is
+\begin{align}
+ \dd(E_\mu+\delta_\mu)_{\rm full}
+   &=(1-W_Q)\dd E_\mu+
+          \sum_K\bigl(v_K\dd M_K+u_K\dd N_K+w_K\dd\bH_{KK}\bigr),\\
+ \dd(E_\mu+\delta_\mu)_{\rm mp}
+   &=(1-W_Q)\dd E_\mu+W_Q\dd E_0+
+      \sum_K(v_K\dd M_K+u_K\dd N_K)
+      -\sum_{Kp}w_K\chi_{Kp}\dd f_{pp}.
+ \label{eq:chainbeforeadjoint}
+\end{align}
+For $\mu=0$ the first two MP energy terms combine to $\dd E_0$.
+These equations still contain implicit T/R/L response. They are not yet
+AO nuclear-gradient formulas, and do not justify omitting those responses.
+
+\section{The general constrained-adjoint construction}
+\label{sec:adjoint}
+Let $\bm y$ contain the independently varied defining variables and let
+$\bm c(\bm y,H)=0$ be their constraints. For either $a=b$ (base) or
+$a=c$ (correction), define
+\begin{equation}
+ \boxed{\mathcal L_a=F_a(\bm y,H,f)+\vecz_a^{\T}\bm c(\bm y,H),\qquad
+ c_y^{\T}\vecz_a=-F_{a,y}.}
+ \label{eq:masterfunctional}
+\end{equation}
+The Fock diagonal is displayed separately because MP has an explicit Fock
+dependence. It is ultimately a function of the same bare integrals and
+reference occupation, not an unrelated external parameter.
+
+To derive the gradient, differentiate the constraints and objective:
+\begin{align}
+ c_y\bm y^x+c_x&=0,\qquad \bm y^x=-c_y^{-1}c_x,\\
+ \frac{\dd F_a}{\dd x}
+ &=F_{a,x}+F_{a,y}^{\T}\bm y^x
+   =F_{a,x}-F_{a,y}^{\T}c_y^{-1}c_x
+   =F_{a,x}+\vecz_a^{\T}c_x
+   =\left.\partial_x\mathcal L_a\right|_{\bm y,\vecz_a}.
+ \label{eq:adjointproof}
+\end{align}
+Thus all defining variables are held fixed in the final explicit integral
+derivative. The total molecular functional is
+\begin{equation}
+ \mathcal L_{\rm tot}=V_{\rm nn}+\mathcal L_b+\mathcal L_c.
+ \label{eq:separatefunctionals}
+\end{equation}
+The two adjoints can be added because their constraint Jacobian is the same.
+Keeping them separate yields independent base/correction densities, makes
+sign errors visible, and is exactly how the determinant driver reports the
+three gradients. A single stationary functional for $F_b+F_c$ is equivalent
+if all sources and constraints are retained.
+Separate stationarity defines the individual multipliers; stationarity of
+the sum alone fixes only the combined adjoint, not its base/correction split.
+
+An isolated root, a valid gauge, nonzero Q denominators and nonsingular
+constraint response are assumed. A root crossing, a changing discrete P/Q
+selection, or a genuinely singular reference Hessian requires additional
+analysis; it is not repaired by writing an adjoint equation.
+
+\section{Expanded ground-state response: Sigma and Pi}
+\label{sec:ground}
+Take $\bm y=(\bm t,\bm\lambda)$, $F_b=E_0$, $F_c=\delta_0$ and
+\begin{equation}
+ \bm c_0=\begin{pmatrix}\bm m\\B^{\T}\bm\lambda+\bm e\end{pmatrix}.
+ \label{eq:groundconstraints}
+\end{equation}
+The base adjoint has zero multiplier on the left-state constraint and
+$\lambda^g$ on the right CC equations, recovering Eq.~\eqref{eq:lambdagrad}.
+Let the correction multipliers be $\bm\pi$ and $\bm\sigma$. Then
+\begin{equation}
+ \boxed{\mathcal L_c^{(0)}=\mathcal C_Q+\bm\pi^{\T}\bm m+
+       \bra{L_0}(\bH-E_0)\ket{\Sigma},\qquad
+       \ket{\Sigma}=\sum_{I\in P}\sigma_I\ket{I}.}
+ \label{eq:groundcorrectfunctional}
+\end{equation}
+Indeed its last term is
+$\bm\sigma^{\T}(B^{\T}\bm\lambda+\bm e)$, which vanishes on the projected
+left equations. The functional therefore equals $\delta_0$ on shell.
+
+\subsection{Left-state response}
+Only $N_K$ and the constraint term depend explicitly on $\lambda_I$.
+Using $\partial_{\lambda_I}N_K=\bH_{IK}$ gives
+\begin{equation}
+ (s_\lambda)_I=\sum_{K\in Q}\bH_{IK}u_K,
+ \qquad \boxed{B\bm\sigma=-\bm s_\lambda.}
+ \label{eq:sigma}
+\end{equation}
+It is $B$, not $J$, in this equation: the constraint being differentiated
+is the projected-left-state equation.
+
+\subsection{Cluster response}
+Hold $\lambda,u,v,\sigma$ fixed and set
+\begin{align}
+ (s_t)_I&=\sum_K\left[v_KH^I_{K0}
+                   +u_K\me{L_0}{H^I}{K}-w_K d_{KI}\right],\\
+ d_{KI}^{\rm full}&=e_I-H^I_{KK},\qquad d_{KI}^{\rm mp}=0,\\
+ k_I&=\me{L_0}{H^I}{\Sigma}
+                      -(\bm\lambda^{\T}\bm\sigma)e_I.
+ \label{eq:groundsource}
+\end{align}
+The MP Fock diagonal is independent of T at fixed bare integrals/reference;
+its separate integral derivative enters later. Stationarity in $t_I$ yields
+\begin{equation}
+ \boxed{J^{\T}\bm\pi=-\bm s_t-\bm k.}
+ \label{eq:pi}
+\end{equation}
+The sequence is consequently: right CC(P), projected left state,
+$\lambda^g$, Q divided moments, $\sigma$, then $\pi$. Solving the Sigma
+equation with $J$ or the Pi equation with $B^{\T}$ is generally incorrect.
+
+\subsection{The ground Hbar coefficient}
+Embed all vectors in the full determinant support. Write
+$\bm b=\evec+\bm\lambda_P$, $\bm u_Q$, $\bm v_Q$, $\bm\sigma_P$ and
+$\bm\pi_P$ for those embeddings. If
+$\mathcal A_{AB}=\partial\mathcal L/\partial\bH_{AB}$ at fixed multipliers,
+then
+\begin{align}
+ \mathcal A_b^{(0)}&=(\evec+\bm\lambda_P^g)\evec^{\T},\\
+ \mathcal A_c^{(0)}&=\bm\pi_P\evec^{\T}
+   +\bm b\bm\sigma_P^{\T}
+   -(\bm\lambda^{\T}\bm\sigma)\evec\evec^{\T}
+   +\bm v_Q\evec^{\T}+\bm b\bm u_Q^{\T}+\mathcal D_0,\\
+ \mathcal D_0^{\rm full}&=\sum_{K\in Q}w_K\ket{K}\bra{K}
+                                     -W_Q\ket{0}\bra{0},\qquad
+ \mathcal D_0^{\rm mp}=0.
+ \label{eq:groundcoeff}
+\end{align}
+For MP, this coefficient must be supplemented by the explicit Fock density
+in Sec.~\ref{sec:fock}. For full denominators every denominator contribution
+is already in $\mathcal D_0$.
+
+\section{Expanded excited-state constrained response}
+\label{sec:excited}
+Let $k=1+|P|$. Fix a nonzero component $r_q=c$ of the right vector; $q$ is
+chosen from P and $c$ is constant during differentiation. Let $D_q$ delete
+component $q$ of a vector and let $E_q$ insert a zero at that component.
+The independent variables and constraints are
+\begin{align}
+ \bm y&=(\bm t,\bm r_{\widehat q},\bm l,E),\\
+ \bm c_\mu&=\begin{pmatrix}
+  \bm m\\(\mathsf A-E\mathbf1)\bm r\\
+  D_q(\mathsf A^{\T}-E\mathbf1)\bm l\\\bm l^{\T}\bm r-1
+ \end{pmatrix}.
+ \label{eq:excconstraints}
+\end{align}
+There are $|P|+2k$ variables and constraints. One left eigen-equation is
+removed because, given the right equations, the two sets have one algebraic
+redundancy. Fixing the right scale and imposing $\bm l^{\T}\bm r=1$
+removes the eigenvector scaling freedom. Paired changes
+$\bm r\mapsto c'\bm r$, $\bm l\mapsto\bm l/c'$ leave the energy and densities
+unchanged, including negative real scale changes on a regular gauge patch.
+
+The objectives used by the unified oracle are
+\begin{equation}
+ F_b=\bm l^{\T}\mathsf A\bm r,\qquad F_c=\delta_\mu.
+ \label{eq:objectives}
+\end{equation}
+On shell $F_b=E$. Off shell it is important to use derivatives of the
+chosen expression consistently. Replacing $F_b$ by $E$ is possible, but
+changes the adjoints because
+\begin{equation}
+ \bm l^{\T}\mathsf A\bm r-E
+ =\bm l^{\T}(\mathsf A-E\mathbf1)\bm r
+                    +E(\bm l^{\T}\bm r-1).
+ \label{eq:offshellequivalence}
+\end{equation}
+The difference is a combination of constraints, not an identity before
+those constraints are imposed.
+
+\subsection{State and energy sources}
+At fixed $t$, use full reference+$P$ components for $r,l$. The base sources are
+\begin{equation}
+ F_{b,r}=\mathsf A^{\T}\bm l,\quad F_{b,l}=\mathsf A\bm r,
+ \quad F_{b,E}=0,\quad (F_{b,t})_I=\me{L_\mu}{H^I}{R_\mu}.
+ \label{eq:baseeomsources}
+\end{equation}
+For the correction,
+\begin{align}
+ F_{c,r}&=\bH_{Q,\{0,P\}}^{\T}\bm v,
+ &F_{c,l}&=\bH_{\{0,P\},Q}\bm u,
+ &F_{c,E}&=-W_Q,\\
+ (F_{c,t})_I&=\sum_K\left[v_K\me{K}{H^I}{R_\mu}
+       +u_K\me{L_\mu}{H^I}{K}\right]+d_I,\\
+ d_I^{\rm full}&=\sum_Kw_K H^I_{KK},
+ &d_I^{\rm mp}&=W_Q e_I.
+ \label{eq:excsources}
+\end{align}
+The $E$ in these partial derivatives is independent. In particular,
+$\partial_t D^{\rm mp}=-\partial_t E_0$ and
+$\partial_E D^{\rm mp}=1$. Collapsing $E$ into a T-dependent expression
+before differentiating these sources, while also retaining its response
+constraint, would double count its chain rule.
+
+\subsection{Explicit adjoint equations and block order}
+Use multipliers $\bm z_t$, $\bm a\in\mathbb R^k$,
+$\bm b\in\mathbb R^k$ with $b_q=0$, and $\nu$. The functional is
+\begin{align}
+ \mathcal L_a={}&F_a+\bm z_t^{\T}\bm m
+ +\bm a^{\T}(\mathsf A-E\mathbf1)\bm r
+ +\bm b^{\T}(\mathsf A^{\T}-E\mathbf1)\bm l
+ +\nu(\bm l^{\T}\bm r-1).
+ \label{eq:excfunctional}
+\end{align}
+Its stationarity conditions are
+\begin{align}
+ D_q\left[F_{a,r}+(\mathsf A-E\mathbf1)^{\T}\bm a+\nu\bm l\right]&=0,
+                                                        \label{eq:adjr}\\
+ F_{a,l}+(\mathsf A-E\mathbf1)\bm b+\nu\bm r&=0,
+                                                        \label{eq:adjl}\\
+ F_{a,E}-\bm a^{\T}\bm r-\bm b^{\T}\bm l&=0,
+                                                        \label{eq:adjenergy}\\
+ (J^{\T}\bm z_t)_I+(F_{a,t})_I+
+   \bm a^{\T}\mathsf A^I\bm r+
+   \bm l^{\T}\mathsf A^I\bm b&=0.
+                                                        \label{eq:adjt}
+\end{align}
+First solve Eqs.~\eqref{eq:adjr}--\eqref{eq:adjenergy} for the state
+multipliers; then solve Eq.~\eqref{eq:adjt} for cluster response. The
+right CC equations do not depend on $r,l,E$, giving this triangular order.
+The diagonal/bordered matrices used in a GMRES preconditioner are not
+substitutes for the exact operators in these equations.
+
+Multiplying Eq.~\eqref{eq:adjl} by $\bm l^{\T}$ gives useful identities:
+\begin{equation}
+ \nu_b=-E_\mu,\qquad \nu_c=-\delta_\mu.
+ \label{eq:nuidentities}
+\end{equation}
+For the base objective, $\bm a=\bm b=0$, $\nu_b=-E_\mu$ solves the state
+part on shell. Thus the base cluster multiplier reduces to
+\begin{equation}
+ J^{\T}\bm z_{t,b}=-\bm q_t,\qquad
+ (q_t)_I=\me{L_\mu}{H^I}{R_\mu}.
+ \label{eq:baseeomsimplified}
+\end{equation}
+This is the familiar fixed-T biorthogonal eigenvalue derivative supplemented
+by ground-cluster response. The code's general constrained solve reproduces
+this reduction. For the Q correction the state multipliers are generally
+nonzero; the projected left EOM vector alone is not its gradient adjoint.
+
+\subsection{Excited Hbar coefficients and a denominator sign table}
+Embed $\bm r,\bm l,\bm a,\bm b$ in the full determinant support, and embed
+$\bm z_t$ on P. The objective coefficients are
+\begin{align}
+ \mathcal A_b^{\rm raw}&=\bm l\bm r^{\T},\\
+ \mathcal A_c^{\rm raw}&=\bm v_Q\bm r^{\T}+\bm l\bm u_Q^{\T}
+                  +\mathcal D_\mu,\\
+ \mathcal D_\mu^{\rm full}&=\sum_K w_K\ket{K}\bra{K},\qquad
+ \mathcal D_\mu^{\rm mp}=W_Q\ket{0}\bra{0}.
+ \label{eq:excrawcoeff}
+\end{align}
+For either objective add
+\begin{equation}
+ \boxed{\mathcal A_a=\mathcal A_a^{\rm raw}
+    +\bm z_{t,a}\evec^{\T}+\bm a_a\bm r^{\T}
+                                  +\bm l\bm b_a^{\T}.}
+ \label{eq:exccoeff}
+\end{equation}
+Terms containing $E$ and $\nu$ in Eq.~\eqref{eq:excfunctional} are constant
+with respect to $\bH$ at fixed response variables. Their effect is retained
+through the adjoint equations, particularly Eq.~\eqref{eq:adjenergy}.
+
+\begin{table}[htbp]\centering\small
+\begin{tabular}{llll}
+\toprule
+Case & Extra Hbar diagonal coefficient & $\partial_E\delta$ & Explicit Fock term\\
+\midrule
+Ground, full & $+w_K$ on Q; $-W_Q$ on $00$ & Not independent & None\\
+Ground, MP & None & Not independent & $-\sum_Kw_K\chi_{Kp}$\\
+Excited, full & $+w_K$ on Q & $-W_Q$ & None\\
+Excited, MP & $+W_Q$ on $00$ & $-W_Q$ & $-\sum_Kw_K\chi_{Kp}$\\
+\bottomrule
+\end{tabular}
+\caption{Denominator contributions at fixed T/R/L and independent excited E.
+Moment derivatives are additional in every row.}\label{tab:signs}
+\end{table}
+
+\input{ccpq_lean_response.tex}
+
+\section{Pullback to bare-integral derivative densities}
+\label{sec:densities}
+Use the explicit pairing
+$\langle X,Y\rangle_F=\sum_{AB}X_{AB}Y_{AB}$. This avoids an implicit
+transpose in density definitions. At fixed multipliers,
+\begin{equation}
+ \dd\mathcal L_a\big|_{T,r,l,\ldots}
+  =\langle\mathcal A_a,U\dd H V\rangle_F+
+                                     \dd\mathcal L_a\big|_{f},
+\end{equation}
+and rearranging indices gives
+\begin{equation}
+ \boxed{\mathcal K_a=U^{\T}\mathcal A_a V^{\T},\qquad
+       \dd\mathcal L_a\big|_H=\sum_{AB}(\mathcal K_a)_{AB}\dd H_{AB}.}
+ \label{eq:pullback}
+\end{equation}
+For an outer product $\mathcal A=\bm u\bm v^{\T}$,
+$\mathcal K=(U^{\T}\bm u)(V\bm v)^{\T}$: a transition density between two
+vectors suffices. Diagonal Q weights are streamed or handled by exact sparse
+commutator expressions; no dense full-space coefficient matrix is required.
+
+In spin orbitals, take
+\begin{equation}
+ H=\sum_{pq}h_{pq}a_p^\dagger a_q+
+   \frac14\sum_{pqrs}\langle pq\Vert rs\rangle
+                      a_p^\dagger a_q^\dagger a_s a_r.
+ \label{eq:Hsecond}
+\end{equation}
+The derivative densities are
+\begin{align}
+ \gamma_{pq}^{a}&=\sum_{AB}(\mathcal K_a)_{AB}
+                         \me{A}{a_p^\dagger a_q}{B},\\
+ \Gamma_{pqrs}^{a}&=\sum_{AB}(\mathcal K_a)_{AB}
+                         \me{A}{a_p^\dagger a_q^\dagger a_s a_r}{B},\\
+ \dd\mathcal L_a\big|_H&=\sum_{pq}\gamma_{pq}^{a}\dd h_{pq}
+       +\frac14\sum_{pqrs}\Gamma_{pqrs}^{a}\dd\langle pq\Vert rs\rangle.
+ \label{eq:spinrdms}
+\end{align}
+These are derivative densities of a stationary functional, not necessarily
+Hermitian expectation-value densities of a variational wavefunction. Only
+the symmetry components seen by the real integrals contribute.
+
+\subsection{The explicit MP denominator density}
+\label{sec:fock}
+Define
+\begin{equation}
+ d_p=-\sum_{K\in Q}w_K\chi_{Kp},\qquad
+ f_{pp}=h_{pp}+\sum_i n_i^0\langle pi\Vert pi\rangle.
+ \label{eq:dfock}
+\end{equation}
+Then
+\begin{equation}
+ \dd\mathcal L_c\big|_f=\sum_p d_p\dd f_{pp}
+ =\sum_p d_p\dd h_{pp}+\sum_{pi}d_pn_i^0\dd\langle pi\Vert pi\rangle.
+ \label{eq:fockchain}
+\end{equation}
+Let $d_{pq}=d_p\delta_{pq}$ and $n_{pq}=n_p^0\delta_{pq}$. The required
+additions to Eq.~\eqref{eq:spinrdms} are
+\begin{align}
+ \gamma^D_{pq}&=d_{pq},\\
+ \Gamma^D_{pqrs}&=d_{pr}n_{qs}-d_{ps}n_{qr}
+                         -d_{qr}n_{ps}+d_{qs}n_{pr}.
+ \label{eq:denrdm}
+\end{align}
+Each antisymmetric image contributes the same contraction, so the
+$\tfrac14\Gamma^D:\dd v$ expression reduces to the second term of
+Eq.~\eqref{eq:fockchain}. This is why a Hamiltonian coefficient evaluated
+at fixed $f$ is insufficient for an MP gradient.
+
+Since every K has the same electron number as the reference,
+$\sum_p\chi_{Kp}=0$, and hence $\sum_p d_p=0$. A uniform shift of all Fock
+diagonal entries therefore leaves the denominator unchanged. Although a
+frozen-core orbital has $\chi_{Kp}=0$, its occupation still enters $n_i^0$
+in Eq.~\eqref{eq:fockchain}; deleting core spectator terms is incorrect.
+
+\subsection{Spatial convention and spin tracing}
+For a shared spatial basis,
+\begin{align}
+ D_{pq}&=\sum_\sigma\gamma_{p\sigma,q\sigma},\\
+ G_{pqrs}&=\sum_{\sigma\tau}
+                  \Gamma_{p\sigma,q\tau,r\sigma,s\tau},\\
+ \dd\mathcal L&=\sum_{pq}D_{pq}\dd h_{pq}
+                       +\frac12\sum_{pqrs}G_{pqrs}\dd(pr|qs).
+ \label{eq:spatial}
+\end{align}
+Here $(ab|cd)$ is a chemists' integral. The ordering $(pr|qs)$ in
+Eq.~\eqref{eq:spatial} is deliberate. Confusing it with $(pq|rs)$ without
+transposing G is a two-particle-density convention error. The code averages
+D and G over the symmetries actually seen by these real integrals before
+orbital response.
+
+\section{Canonical RHF orbital relaxation and the overlap term}
+\label{sec:orbital}
+The amplitudes have been relaxed, but their densities are not stationary
+with respect to the reference orbitals. This section derives the remaining
+response for the restricted, common-orbital reference. The same linear
+operations apply to the base and correction densities separately.
+
+Let $C$ denote the AO-to-MO coefficient matrix and $P_o$ the \emph{per-spin}
+occupied MO projector (one on each occupied spatial orbital, not two).
+Define the RHF response map
+\begin{equation}
+ \mathcal R(X)_{pq}=\sum_{rs}[2(pq|rs)-(pr|qs)]X_{rs},\qquad
+ f=h+\mathcal R(P_o).
+ \label{eq:rhfresponse}
+\end{equation}
+The generalized Fock matrix of the amplitude-relaxed functional is
+\begin{equation}
+ \mathcal F_{tp}=\sum_qh_{tq}D_{pq}
+                 +\sum_{qrs}(tr|qs)G_{pqrs},\qquad
+ g_{tp}=2(\mathcal F_{tp}-\mathcal F_{pt}).
+ \label{eq:orbitalgradient}
+\end{equation}
+Indeed, under $C\mapsto C(\mathbf1+\kappa)$ with $\kappa^{\T}=-\kappa$,
+\begin{equation}
+ \dd h=\kappa^{\T}h+h\kappa,\qquad
+ \dd\mathcal L=2\sum_{tp}\mathcal F_{tp}\kappa_{tp}
+              =\sum_{t>p}g_{tp}\kappa_{tp}.
+\end{equation}
+The analogous four-index integral rotation supplies the two-electron part
+of $\mathcal F$ in Eq.~\eqref{eq:orbitalgradient}.
+
+\subsection{Canonical constraints and the Z vector}
+The reference satisfies the occupied--virtual Brillouin conditions and
+canonical off-diagonal Fock conditions. Selected spaces and orbital-energy
+denominators can make rotations within occupied or virtual subsets matter.
+Frozen-core/active-occupied rotations also matter because core excitation
+amplitudes are excluded. Introduce a multiplier $\zeta_{pq}$ for each
+independent relevant $f_{pq}=0$ and collect it in a symmetric matrix S with
+$S_{pq}=S_{qp}=\zeta_{pq}$, zero diagonal. Write $Z=S/2$ so the added term is
+\begin{equation}
+ \mathcal L_{\rm orb}=\mathcal L+\sum_{p>q}\zeta_{pq}f_{pq}
+                    =\mathcal L+\sum_{pq}Z_{pq}f_{pq}.
+ \label{eq:orblagrangian}
+\end{equation}
+For rotations within the same occupied or virtual block, the reference
+projector does not change. Therefore
+\begin{equation}
+ \zeta_{pq}=-\frac{g_{pq}}{\epsilon_p-\epsilon_q}
+ \label{eq:zetainternal}
+\end{equation}
+for active-occupied pairs, virtual pairs and core/active-occupied pairs.
+A degenerate pair with a nonzero source does not admit this division; a
+selected model must then specify a differentiable orbital convention.
+
+For a virtual $a$ and occupied $i$, the projector changes by the symmetric
+OV rotation. Differentiating the Fock operator gives
+\begin{equation}
+ \delta f_{ai}=(\epsilon_a-\epsilon_i)\kappa_{ai}
+                              +\mathcal R(S_{\rm OV}(\kappa))_{ai}.
+\end{equation}
+Using self-adjointness of $\mathcal R$ in Eq.~\eqref{eq:orblagrangian},
+stationarity yields
+\begin{equation}
+ \boxed{(\epsilon_a-\epsilon_i)\zeta_{ai}
+  +\mathcal R(S_{\rm OV}(\zeta))_{ai}
+       =-g_{ai}-\mathcal R(S_{\rm int})_{ai}.}
+ \label{eq:orbz}
+\end{equation}
+$S_{\rm int}$ contains the multipliers in Eq.~\eqref{eq:zetainternal}.
+All occupied orbitals, including core, participate in the OV response.
+Rotations purely within a completely frozen core have zero source for the
+stated model. Core/active response must not be discarded merely because
+core excitation amplitudes were frozen.
+
+\subsection{Relaxed densities}
+At fixed $Z$, differentiating the extra Fock term with respect to bare
+integrals gives
+\begin{align}
+ D^{\rm rel}_{pq}&=D_{pq}+Z_{pq},\\
+ G^{\rm rel}_{pqrs}&=G_{pqrs}
+   +2(Z_{pr}(P_o)_{qs}+(P_o)_{pr}Z_{qs})
+   -(Z_{ps}(P_o)_{qr}+(P_o)_{ps}Z_{qr}).
+ \label{eq:relaxeddensities}
+\end{align}
+Substitution in $D^{\rm rel}:\dd h+\tfrac12G^{\rm rel}:\dd g$
+produces $D:\dd h+\tfrac12G:\dd g+Z:\dd f$ exactly. Thus the orbital
+multipliers are incorporated into the same derivative-density convention.
+
+\subsection{AO overlap and the energy-weighted density}
+Differentiate $C^{\T}S_{\rm AO}C=\mathbf1$. Writing
+$C^x=C\bigl(\kappa^x-\tfrac12S^x_{\rm MO}\bigr)$ separates the antisymmetric
+orbital rotation from the symmetric orthonormality connection, with
+$S^x_{\rm MO}=C^{\T}S^x_{\rm AO}C$. The antisymmetric terms cancel by
+Eq.~\eqref{eq:orbz}. The symmetric connection contributes
+$-\sym(\mathcal F):S^x_{\rm MO}$ from the amplitude functional.
+The explicit Fock rotation contributes
+$-\tfrac12(\epsilon Z+Z\epsilon):S^x_{\rm MO}$.
+Finally the occupied projector changes by
+$-\tfrac12(S^x_{\rm MO}P_o+P_oS^x_{\rm MO})$, giving
+$-\tfrac12[P_o\mathcal R(Z)+\mathcal R(Z)P_o]:S^x_{\rm MO}$.
+Hence
+\begin{equation}
+ W=\sym(\mathcal F)+\frac12(\epsilon Z+Z\epsilon)
+            +\frac12[P_o\mathcal R(Z)+\mathcal R(Z)P_o],
+ \qquad \epsilon=\diag(\epsilon_p).
+ \label{eq:weighted}
+\end{equation}
+This overlap coefficient is not supplied by the amplitude response alone.
+
+\section{The final nuclear gradients}
+\subsection{Conventional four-center integrals}
+Back-transform every spatial index with C, for example
+$D^{\rm AO}=CD^{\rm rel}C^{\T}$ and $W^{\rm AO}=CWC^{\T}$. Then
+\begin{equation}
+ \boxed{\mathcal E_\mu^x=V_{\rm nn}^x+
+  \sum_{ab}D^{\rm AO}_{ab}h^x_{ab}
+  -\sum_{ab}W^{\rm AO}_{ab}S^x_{ab}
+  +\frac12\sum_{abcd}G^{\rm AO}_{abcd}(ac|bd)^x.}
+ \label{eq:final4c}
+\end{equation}
+All AO derivatives here are evaluated at fixed MO coefficients. Motion of
+the orbitals has already been included by relaxation and the overlap term.
+The correction gradient uses the same contraction with correction densities
+and \emph{without} $V_{\rm nn}^x$. Linearity of orbital response gives
+$g_{\rm total}=g_b+g_c$; the driver evaluates total and correction, then
+obtains the base by subtraction.
+
+For corrected excitation energies one may form
+\begin{equation}
+ \Omega_\mu^{\rm corr}=\mathcal E_\mu-\mathcal E_0,
+ \qquad (\Omega_\mu^{\rm corr})^x=g_\mu^x-g_0^x.
+\end{equation}
+The molecular tables in this note compare total \emph{state}-energy gradients;
+they should not be relabeled excitation-energy-gradient tests.
+
+\subsection{Density fitting and Cholesky representations}
+Let the fitted spatial integral be
+\begin{equation}
+ (pr|qs)_{\rm fit}=\sum_X B_{Xpr}B_{Xqs}.
+\end{equation}
+For a G symmetrized over the real integral pair symmetries,
+\begin{equation}
+ \frac12\sum_{pqrs}G_{pqrs}\dd(pr|qs)_{\rm fit}
+   =\sum_{Xpr}Y_{Xpr}\dd B_{Xpr},\qquad
+ Y_{Xpr}=\sum_{qs}G_{pqrs}B_{Xqs}.
+ \label{eq:Ydensity}
+\end{equation}
+For the common restricted orbital variation, the native per-spin machinery
+can use $D^a=D^b=D/2$ and $Y^a=Y^b=Y/2$. This is a bookkeeping split of the
+shared-orbital derivative, not a reconstruction of arbitrary spin-resolved
+RDMs. The native orbital response then returns relaxed $D^s,Y^s,W^s$.
+
+To expose the auxiliary-basis derivative, let
+\begin{equation}
+ I_{Qab}=(Q|ab),\quad M_{QR}=(Q|R),\quad M=LL^{\T},\quad
+ X=L^{-1},\quad B_{Xab}=\sum_Q X_{XQ}I_{Qab}.
+\end{equation}
+After AO back-transformation and summation over spins, define
+\begin{align}
+ (W_3)_{Qab}&=\sum_X X_{XQ}Y^{\rm AO}_{Xab},\\
+ C_{XY}&=\sum_{s,pq}B^s_{Xpq}Y^s_{Ypq},\qquad
+ W_2=-\frac12X^{\T}CX.
+ \label{eq:dfweights}
+\end{align}
+The metric term follows from $XMX^{\T}=\mathbf1$: the symmetric part of
+$\dd X\,X^{-1}$ is $-\tfrac12X(\dd M)X^{\T}$. Auxiliary orthogonal
+rotations do not change the fitted ERI functional, so only that symmetric
+part survives its contraction with the symmetric part of C. Thus
+\begin{equation}
+ \boxed{\mathcal E_\mu^x=V_{\rm nn}^x+D^{\rm AO}:h^x-W^{\rm AO}:S^x
+                            +W_3:I^x+W_2:M^x.}
+ \label{eq:finaldf}
+\end{equation}
+Both three-center and metric derivatives include auxiliary-center motion.
+Using a DF energy but the conventional four-center derivative in
+Eq.~\eqref{eq:final4c} would compare two Hamiltonians. In CCpy,
+\texttt{integral\_model="factorized"} differentiates the fitted model;
+\texttt{"conventional"} differentiates the unfitted model.
+For the Cholesky derivative, Q labels locally fixed pivot pairs and the same
+metric construction applies. Discrete pivot reselection is not itself
+analytically differentiated.
+
+\section{Determinant implementation and equation-to-code correspondence}
+\label{sec:implementation}
+The independent dense oracle uses complex-step differentiation of the
+constraint system and solves its transposed Jacobian. The larger backend
+uses Slater-rule Hamiltonian actions from the external FCIpy routines,
+Davidson right/left roots, and GMRES response. It does not receive optimized
+CCpy amplitudes or eigenvectors. With connected sparse caching it stores a
+sparse bare Hamiltonian, not a dense determinant-pair Hamiltonian.
+
+For a factor pair $\bm u\bm v^{\T}$, the program evaluates the T source as
+\begin{equation}
+ \partial_{t_I}(\bm u^{\T}\bH\bm v)
+   =(\bH^{\T}\bm u)^{\T}\tau_I\bm v
+                         -\bm u^{\T}\tau_I(\bH\bm v).
+ \label{eq:factorgradient}
+\end{equation}
+Sparse excitation transitions contract this expression for all I without
+forming a dense third-order derivative tensor. Its bare-integral density
+is a transition RDM of $U^{\T}\bm u$ and $V\bm v$, as in
+Eq.~\eqref{eq:pullback}. Exact T/R/L response is still solved; using a sparse
+representation does not introduce a two-body approximation to the moments.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.28\textwidth}>{\raggedright\arraybackslash}p{0.65\textwidth}}
+\toprule Construction & Implementation location and role\\\midrule\endhead
+Definitions and phases & \path{ccpy/gradients/ccpq/determinants.py},
+\path{spaces.py}: normalized determinant excitations, fixed P/Q selections,
+CCpy triples-list conversion.\\
+Ground functionals & \path{amplitudes.py}, \texttt{SelectedCC.run}:
+$J,B,\lambda^g,\lambda,\sigma,\pi$ and Eq.~\eqref{eq:groundcoeff}.\\
+Unified dense adjoint & \path{state_oracle.py}, \texttt{evaluate/solve}:
+Eqs.~\eqref{eq:masterfunctional}, \eqref{eq:excconstraints} and
+\eqref{eq:objectives}; independent complex-step Jacobians and coefficients.\\
+Matrix-free adjoint & \path{matrix_free.py}, \texttt{objective},
+\texttt{constraint\_factors}, \texttt{vjp}, \texttt{solve\_adjoint}:
+Eqs.~\eqref{eq:excsources}--\eqref{eq:exccoeff}, including the sign table.\\
+Densities & \path{densities.py}: Eqs.~\eqref{eq:pullback},
+\eqref{eq:spinrdms}, \eqref{eq:denrdm} and \eqref{eq:spatial}.\\
+Hamiltonian and RDM actions & \path{fcipy_adapter.py},
+\path{fortran/fcipy_connected.f90}: connected Slater rules, transition RDMs,
+and exact refresh of numerical Hamiltonian entries at each geometry.\\
+Conventional orbitals/AO derivative & Local \path{orbital_response.py},
+\path{nuclear_gradient.py}: Eqs.~\eqref{eq:orbz}--\eqref{eq:final4c}.\\
+DF orbitals/AO derivative & Parent \path{ccpy/gradients/orbital_response.py}
+and \path{derivative_integrals.py}, used through \texttt{driver.py}:
+Eq.~\eqref{eq:finaldf}.\\
+Independent optimized comparator & \texttt{CRCC23},
+\texttt{CCP3(two\_body\_approx=False)}, \texttt{EOMCCSDT\_P} and
+\texttt{EOMCCP3}, with the identical determinant lists and integral model.\\
+\bottomrule
+\end{longtable}
+Paths without the full prefix in the first seven rows are relative to
+\path{ccpy/gradients/ccpq/}; the last orbital row explicitly refers to the
+parent gradient package.
+
+\subsection{The ground and excited approximate APIs are different models}
+Identical P/Q sets do not specify all moment approximations. The default
+optimized \texttt{CCT3} uses CCSD-like correction contractions and left-CCSD.
+The matching full ground specialization for a CCSDt P list is
+\texttt{CCP3(two\_body\_approx=False)}. Their energy and gradient differences
+were measured, not declared a passing comparison of identical functionals.
+
+In the excited code, \texttt{EOMCCT3(two\_body\_approx=False)} retains VT3
+contributions in Hbar, but its correction kernels still use only the SD
+parts of R and L. Full selected-R3/L3 moments are supplied by
+\texttt{EOMCCP3}. That is the full optimized excited-state comparator in the
+tables below. Agreement with it does not establish an analytical gradient
+for the separate SD-only correction approximation.
+
+\subsection{Practical algorithm}
+\begin{enumerate}
+\item Fix reference, core convention, P/Q lists, denominator model and target root.
+\item Solve canonical RHF in the same conventional or fitted integral model
+      that will be differentiated; transform the bare Hamiltonian.
+\item Solve right CC(P). Construct the projected ground left state and
+      $\lambda^g$, or the normalized projected excited right/left root.
+\item Form Q moments, denominators, $u,v,w$, and the correction energy.
+\item For component diagnostics, solve the base and correction adjoints
+      separately. For an excited-state total gradient, use the projected
+      responses and single combined cluster adjoint in Sec.~\ref{sec:lean}.
+      Check the right/left constraints and stationarity residuals.
+\item Form Hbar covectors, pull them back through $U,V$, and evaluate
+      transition derivative densities. Add Eq.~\eqref{eq:denrdm} for MP.
+\item Spin trace, symmetrize and solve orbital response, including canonical
+      internal and frozen-core/active rotations. Construct W.
+\item Contract the matching AO integral derivatives. Add nuclear repulsion
+      exactly once, to the base/total rather than correction gradient.
+\item For validation, re-solve the optimized energy at all displaced points,
+      hold lists fixed, verify root identities and test step convergence.
+\end{enumerate}
+
+\clearpage
+\section{Numerical validation and its evidentiary scope}
+\label{sec:validation}
+The tables below are generated from saved JSON reports rather than copied
+from rounded conversational summaries. Units are $\gunit$ for errors and
+$\eunit$ for energies. Every error is a maximum absolute deviation over the
+\emph{explicitly stated} finite-differenced components. The independent
+optimized tensor comparisons validate both amplitude/left-state equations
+and derivatives; determinant-energy finite differences for more general
+T/Q models separately validate differentiation of those defined models.
+
+\input{ccpq_validation_tables.tex}
+
+\subsection{What these results support}
+The optimized SD/SDt cases independently reproduce the stated base and
+correction energies and their state gradients. The general selected-T/Q
+cases extend derivative consistency to sizeable higher-rank P and Q spaces.
+The nonclosed-P and gauge audits test algebra that is not exercised simply
+by choosing all S/D plus triples. Dense complex-step and matrix-free
+implementations provide different differentiation paths.
+
+This evidence does not prove the quantitative physical accuracy of a
+noniterative energy correction, universal root following through crossings,
+or every denominator approximation used under a CR-CC name. The molecular
+orbital layer tested here is RHF. Water/6-31G results are explicitly
+frozen-core, with the separate more-reduced regression identified below;
+no all-electron water result is claimed. The formal model is smooth only
+on a fixed-selection, nondegenerate branch with solvable response and
+nonzero denominators. A numerical match is not a mathematical proof that
+all future implementations or cases are error-free.
+
+\appendix
+\clearpage
+\section{Exact full-denominator diagonal with high-rank cluster amplitudes}
+Give a determinant its excitation rank relative to $\ket{0}$. Every pure
+$T_r$ raises that rank by r when its action is nonzero. A two-body H can
+lower it by at most two. Therefore a diagonal matrix element of a BCH
+term can contain total excitation rank from T of at most two. Exactly,
+\begin{equation}
+ \bH_{KK}=H_{KK}+\me{K}{[H,T_1+T_2]}{K}
+                     +\frac12\me{K}{[[H,T_1],T_1]}{K}.
+ \label{eq:exactdiagonal}
+\end{equation}
+This rank argument is independent of whether T also contains selected
+triples, quadruples or higher ranks. It explains the exact sparse diagonal
+acceleration in \texttt{MatrixFreeState.prepare\_diagonal}. It is not a
+truncation of the \emph{moments}: high-rank T amplitudes still affect
+$M,N$, the eigenstates, and the response of $T_1,T_2$. Their total influence
+on a nuclear derivative must still be retained. Tests compare this diagonal
+and its amplitude/integral derivatives with dense complex-step expressions.
+
+\section{Energy homogeneity checks and the missing-MP-term diagnostic}
+Scale all bare electronic integrals by a common factor with orbitals and
+occupations fixed. T and normalized isolated eigenvectors are unchanged
+on the corresponding branch; E, f, D and $\delta$ scale linearly. Euler's
+identity for the amplitude-relaxed densities is consequently
+\begin{equation}
+ \sum_{pq}\gamma^b_{pq}h_{pq}+\frac14\sum_{pqrs}\Gamma^b_{pqrs}v_{pqrs}=E_\mu,
+ \quad
+ \sum_{pq}\gamma^c_{pq}h_{pq}+\frac14\sum_{pqrs}\Gamma^c_{pqrs}v_{pqrs}=\delta_\mu.
+ \label{eq:euler}
+\end{equation}
+These checks use \emph{amplitude-relaxed}, not orbital-relaxed, densities.
+The latter also contain reference-orbital constraint multipliers and are
+not to be interpreted as the same energy-reconstruction test.
+
+For ground full denominators, the raw coefficient in
+Eq.~\eqref{eq:groundcoeff} contracts to
+\begin{equation}
+ 2\delta+\sum_Kw_K(\bH_{KK}-E_0)=2\delta-\delta=\delta.
+\end{equation}
+The Pi and Sigma constraint terms vanish on shell. For ground MP, the raw
+Hbar coefficient instead gives $2\delta$, and
+$\sum_p d_pf_{pp}=-\sum_Kw_KD_K=-\delta$ supplies the missing part.
+
+For an excited full denominator,
+$\langle\mathcal A_c^{\rm raw},\bH\rangle_F=\delta+EW_Q$.
+For MP, adding the explicit Fock contribution to the raw Hbar contraction
+gives the same $\delta+EW_Q$. Equation~\eqref{eq:adjenergy} requires
+$\bm a^{\T}\bm r+\bm b^{\T}\bm l=-W_Q$, so the constraint coefficient
+contracts to $-EW_Q$. This recovers Eq.~\eqref{eq:euler} in both cases.
+It also pinpoints why differentiating only an Hbar coefficient at fixed
+Fock diagonal fails the MP test.
+
+\section{Gauge, empty-Q and complete-P checks}
+Under $\bm r\mapsto c\bm r$, $\bm l\mapsto\bm l/c$, the moments transform
+as $M\mapsto cM$, $N\mapsto N/c$, while $D,w,\delta$ are unchanged. The
+full stationary derivative must be invariant too; gauge constraints change
+coordinates and multipliers, not the energy surface. The implementation
+tests positive and negative nonzero pivot scales.
+
+For empty Q, $u,v,w,\delta$ and the correction sources vanish; all correction
+multipliers and densities can be zero, leaving the appropriate CC(P) or
+EOMCC(P) gradient. If P spans every allowed excited determinant of the
+chosen frozen-core Hilbert space, Q is empty and the physical ground
+branch gives the full-CI result in that support, provided the exact state
+has nonzero reference overlap and a regular CC representation. No claim is made that an
+arbitrary nonlinear CC initial guess always converges to that branch.
+
+\section{Manuscript-specific algebra checks and reproducibility}
+The expanded sources, Hbar covectors, pullbacks, ground Sigma/Pi reduction,
+normalization multipliers and Euler identities are checked by
+\path{devtools/check_ccpq_theory.py}. It compares them with the independent
+complex-step oracle for closed/nonclosed P, ground/first two excited states,
+and both denominator models: 12 configurations. The largest discrepancy
+in the saved run is $\ee{8.882}{-16}$. In the nonclosed examples the script
+also asserts $J\ne B$ and $\lambda\ne\lambda^g$.
+
+The audit deliberately keeps spin partners together in its small nonclosed
+P so this machine-precision formula check is not dominated by a near-zero
+Q denominator. Existing stress tests separately exercise difficult
+corrections; they do not turn small-denominator models into reliable physical
+predictions. The broader gradient regression run contains 144 passing tests;
+these 12 manuscript algebra configurations are an additional check, not a
+relabeling of that pytest count.
+
+Eight additional fixed-Fock reduced-response checks are described in
+Sec.~\ref{sec:leanvalidation}; their scope and count are separate.
+
+Run from the repository root with the CCpy environment active:
+\begin{verbatim}
+OPENBLAS_NUM_THREADS=1 python devtools/check_ccpq_theory.py
+OPENBLAS_NUM_THREADS=1 python devtools/check_ccpq_lean_response.py
+OPENBLAS_NUM_THREADS=1 python -m pytest tests/gradients \
+    tests/scf/test_ccpq_gradient.py -q
+\end{verbatim}
+For molecular reproductions, build the optional FCIpy connector using
+\path{devtools/build_fcipy_oracle.py} and set its printed
+\texttt{CCPY\_FCIPY\_EXTENSION}. The optimized comparison examples are
+\path{examples/ccpq_optimized_comparison.py} and
+\path{examples/ccpq_excited_optimized_comparison.py}.
+General substantial-T/Q demonstrations use
+\path{examples/ccpq_complete_spaces.py}; exact command lines and fixed
+selection lists are in the result reports named below.
+
+\input{ccpq_validation_manifest.tex}
+
+\end{document}

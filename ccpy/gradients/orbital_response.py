@@ -1,7 +1,7 @@
 """Orbital relaxation (Z-vector / CPHF) of amplitude-relaxed CC densities, per spin.
 
 Given the amplitude-relaxed densities of a CC Lagrangian L(h, B) in the bare MO frame
-(ccpy.gradients.mo_density), D1[s] = dL/dh[s] and Y[s] = dL/dB[s], this adds the response of
+(ccpy.gradients.density_gradient), D1[s] = dL/dh[s] and Y[s] = dL/dB[s], this adds the response of
 the reference orbitals. L is not stationary with respect to orbital rotations, so the
 conditions that fix the reference orbitals of each spin s are added with multipliers z[s],
 
@@ -27,7 +27,7 @@ satisfy different conditions and are not handled.
 import numpy as np
 import scipy.sparse.linalg as spla
 
-from ccpy.gradients.mo_density import SPINS
+from ccpy.gradients.density_gradient import SPINS, occupied_projectors
 
 
 def hf_response(X, B):
@@ -42,7 +42,7 @@ def hf_response(X, B):
     return out
 
 
-def orbital_relaxation(D1, Y, mo, zvector_tol=1.0e-10, verbose=True):
+def orbital_relaxation(D1, Y, reference, zvector_tol=1.0e-10, verbose=True):
     """Orbital-relaxed densities (D, Y, W), per spin, from the amplitude-relaxed (D1, Y).
 
     Parameters
@@ -51,17 +51,19 @@ def orbital_relaxation(D1, Y, mo, zvector_tol=1.0e-10, verbose=True):
         D1[s][p, q] = dL/dh[s][p, q], E1 = sum_s sum_pq h[s]_pq D1[s]_pq.
     Y : {spin: (naux, nmo, nmo)}
         Y[s]_x[p, r] = dL/dB[s]_x[p, r].
-    mo : ccpy.gradients.mo_density.get_mo_integrals
+    reference : ccpy.methods.Reference
     zvector_tol : float
         Convergence threshold of the Z-vector (conjugate-gradient) solver.
     """
-    if mo["reference"] not in ("RHF", "UHF"):
-        raise NotImplementedError(f"Orbital relaxation is implemented for RHF and UHF references, not {mo['reference']}.")
-    nmo, nfz = mo["nmo"], mo["nfrozen"]
-    B, h, eps, P = mo["B"], mo["h"], mo["eps"], mo["P"]
-    occ = {s: slice(0, mo["nocc"][s]) for s in SPINS}
-    vir = {s: slice(mo["nocc"][s], nmo) for s in SPINS}
-    act = {s: slice(nfz, mo["nocc"][s]) for s in SPINS}
+    kind = type(reference.scf).__name__
+    if kind not in ("RHF", "UHF"):
+        raise NotImplementedError(f"Orbital relaxation is implemented for RHF and UHF references, not {kind}.")
+    B, h, eps, P = reference.B_mo, reference.h_mo, reference.mo_energy, occupied_projectors(reference)
+    nmo, nfz = h["a"].shape[0], reference.nfrozen
+    nocc = {"a": nfz + reference.system.noccupied_alpha, "b": nfz + reference.system.noccupied_beta}
+    occ = {s: slice(0, nocc[s]) for s in SPINS}
+    vir = {s: slice(nocc[s], nmo) for s in SPINS}
+    act = {s: slice(nfz, nocc[s]) for s in SPINS}
     core = slice(0, nfz)
 
     # only the symmetric parts are seen by the symmetric h and B_x
