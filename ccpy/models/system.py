@@ -90,7 +90,7 @@ class System:
         self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, nact_unoccupied)
         self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
         self.num_act_unoccupied_beta = min(self.nunoccupied_beta, (self.multiplicity - 1) + nact_unoccupied)
-        self.num_virt_beta = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_beta)
+        self.num_virt_beta = max(0, self.nunoccupied_beta - self.num_act_unoccupied_beta)
 
     def set_full_active_space(self):
         self.set_active_space(nact_occupied=self.noccupied_alpha, nact_unoccupied=self.nunoccupied_beta)
@@ -181,7 +181,7 @@ class UHFSystem:
         self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, nact_unoccupied)
         self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
         self.num_act_unoccupied_beta = min(self.nunoccupied_beta, (self.multiplicity - 1) + nact_unoccupied)
-        self.num_virt_beta = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_beta)
+        self.num_virt_beta = max(0, self.nunoccupied_beta - self.num_act_unoccupied_beta)
 
     def print_info(self):
         UHFSystemPrinter(self).header()

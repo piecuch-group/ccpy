@@ -187,9 +187,12 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         # orthogonalize residual against subspace vectors (would be nice to vectorize this)
         q = R.flatten()
         q /= np.linalg.norm(q)
-        for p in range(curr_size):
-            b = B[p, :] / np.linalg.norm(B[p, :])
-            q -= np.dot(b, q) * b
+        # Reorthogonalize: nearly dependent corrections otherwise create
+        # spurious zero Ritz roots with vanishing eigenvector norms.
+        for _ in range(2):
+            for p in range(curr_size):
+                b = B[p, :] / np.linalg.norm(B[p, :])
+                q -= np.dot(b, q) * b
         q /= np.linalg.norm(q)
         R.unflatten(q)
 

@@ -37,7 +37,7 @@ def run_diagonalization(system, H, multiplicity, roots_per_irrep, nacto, nactu, 
         # Compute the active-space 2p-1h Hamiltonian
         Hmat = build_ipcisd_hamiltonian(H, nacto, nactu, idx_a, idx_aa, idx_ab, system)
         # Compute the S2 matrix in the same projection subspace
-        S2mat = build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab)
+        S2mat = None if multiplicity == -1 else build_s2matrix(system, nacto, nactu, idx_a, idx_aa, idx_ab)
         # Project H onto the spin subspace with the specified multiplicity
         omega, V_act = spin_adapt_guess(S2mat, Hmat, multiplicity, debug=False)
         nroot = min(nroot, V_act.shape[1])

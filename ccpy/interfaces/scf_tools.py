@@ -158,16 +158,28 @@ def getUHFHamiltonianDF(coeff_a, coeff_b, h_ao, df, system, normal_ordered, sort
     return Integral(system, 2, {**onebody, **twobody}, sorted=sorted)
 
 
-def get_multipole_integral(l, mf, system):
+def get_multipole_integral(l, mf, system=None):  # noqa: E741 (legacy public keyword)
     """Multipole integrals (l = 1 dipole, 2 quadrupole, 3 octupole) in the correlated MO
     basis, with the reference expectation value, in the format of
     ccpy.interfaces.pyscf_tools.get_multipole_integral. The origin is the coordinate
-    origin, as for PySCF's int1e_r/rr/rrr.
+    origin, as for PySCF's int1e_r/rr/rrr. Pass a Reference as ``mf`` to use
+    its actual working coefficients, including FNOs, and omit ``system``.
     """
     from ccpy.integrals import integrals
+    from ccpy.methods.reference import Reference
 
-    mol = mf.mol
-    C = mf.mo_coeff
+    reference = mf if isinstance(mf, Reference) else None
+    if reference is not None:
+        if system is not None and system is not reference.system:
+            raise ValueError("Use the System belonging to the property reference.")
+        system = reference.system
+        mol, coefficients = reference.molecule, reference.mo_coeff
+    else:
+        if system is None:
+            raise TypeError("Supply a System with SCF input, or pass a Reference.")
+        mol = mf.mol
+        C = mf.mo_coeff
+        coefficients = {"a": C[0], "b": C[1]} if isinstance(C, (tuple, list)) or C.ndim == 3 else {"a": C, "b": C}
     noa, nob = system.noccupied_alpha, system.noccupied_beta
     nua, nub = system.nunoccupied_alpha, system.nunoccupied_beta
     corr_slice = slice(system.nfrozen, system.nfrozen + system.norbitals)
@@ -199,15 +211,18 @@ def get_multipole_integral(l, mf, system):
     else:
         raise NotImplementedError(f"Multipole integrals with L = {l} are not available.")
     # libint2 multipoles are <m|r|n> about the origin, the same sign as PySCF's int1e_r
-    mo =np.einsum("xij,ip,jq->xpq", ao, C, C, optimize=True)
-    Q_ref = (np.einsum("xii->x", mo[:, occ_a, occ_a]) + np.einsum("xii->x", mo[:, occ_b, occ_b])).reshape(shape)
-    mo = mo[:, corr_slice, corr_slice]
+    mo = {s: np.einsum("xij,ip,jq->xpq", ao, C, C, optimize=True) for s, C in coefficients.items()}
+    Q_ref = (np.einsum("xii->x", mo["a"][:, occ_a, occ_a])
+             + np.einsum("xii->x", mo["b"][:, occ_b, occ_b])).reshape(shape)
+    mo = {s: value[:, corr_slice, corr_slice] for s, value in mo.items()}
 
     mu = np.empty(int(np.prod(shape)), dtype=object)
     for k in range(mu.size):
         m = Integral.from_empty(system, order=1, data_type=np.float64, use_none=True)
-        m.a.oo, m.a.vv, m.a.ov, m.a.vo = mo[k, oa, oa], mo[k, va, va], mo[k, oa, va], mo[k, va, oa]
-        m.b.oo, m.b.vv, m.b.ov, m.b.vo = mo[k, ob, ob], mo[k, vb, vb], mo[k, ob, vb], mo[k, vb, ob]
+        m.a.oo, m.a.vv, m.a.ov, m.a.vo = mo["a"][k, oa, oa], mo["a"][k, va, va], mo["a"][k, oa, va], mo["a"][k, va, oa]
+        m.b.oo, m.b.vv, m.b.ov, m.b.vo = mo["b"][k, ob, ob], mo["b"][k, vb, vb], mo["b"][k, ob, vb], mo["b"][k, vb, ob]
+        if reference is not None:
+            m.reference = reference
         mu[k] = m
     return mu.reshape(shape).tolist(), Q_ref
 
