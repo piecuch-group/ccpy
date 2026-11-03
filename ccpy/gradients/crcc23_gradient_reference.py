@@ -45,7 +45,6 @@ import scipy.sparse.linalg as spla
 
 from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_ccsd_rdm_derivative, calc_rdm2_vvvv_slice
 from ccpy.density.crcc23_rdm import calc_crcc23_rdm, calc_crcc23_rdm1_denominator
-from ccpy.gradients.ccsd_gradient import calc_ccsd_density
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
 from ccpy.gradients.density_gradient import (add_blocks, add_densities, build_DY, commutator, get_bare_integrals,
                                              rotate_density, rotation_gradient, zero_like)
@@ -89,7 +88,8 @@ def calc_crcc23A_density(T, L, response, H, reference):
     z = SimpleNamespace(**{k: _get(response["z"], k) for k in ("a", "b", "aa", "ab", "bb")})
     _, B = get_bare_integrals(reference)
     return add_densities(
-        calc_ccsd_density(T, L, H, reference),
+        build_DY(*calc_ccsd_rdm(T, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s), H.chol, T, B,
+                 reference, ref_weight=True),
         build_DY(*calc_crcc23_rdm(R3, L3, T, L, system), None, H.chol, T, B, reference),
         build_DY(*calc_ccsd_rdm(T, z, system, energy=False), lambda a, s: calc_rdm2_vvvv_slice(z, T, a, s),
                  H.chol, T, B, reference),

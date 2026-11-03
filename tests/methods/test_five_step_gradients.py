@@ -17,10 +17,10 @@ from conftest import AUX, OPTS, converged_scf
 from ccpy import CREOMCC23, CRCC23, EOMCCSD, Molecule, RHF, UHF
 from ccpy.gradients import crcc23_gradient as v2
 from ccpy.gradients import crcc23_gradient_reference as v1
-from ccpy.gradients.ccsd_gradient import calc_bra_density
 from ccpy.gradients.creomcc23_gradient import calc_creomcc23_gradient
 from ccpy.gradients.finite_difference import finite_difference
-from ccpy.gradients.density_gradient import get_bare_integrals
+from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_rdm2_vvvv_slice
+from ccpy.gradients.density_gradient import build_DY, get_bare_integrals
 from ccpy.hbar.hbar_ccs_chol import build_hbar_ccs_chol, build_hbar_ccs_chol_derivative
 
 TIGHT = dict(OPTS, energy_convergence=1.0e-13, amp_convergence=1.0e-12)
@@ -38,6 +38,13 @@ def _density_energy(DY, reference):
     D1, Y = DY
     h, B = get_bare_integrals(reference)
     return float(_pair(D1.a, h.a) + _pair(D1.b, h.b) + 0.5 * (_pair(Y.a, B.a) + _pair(Y.b, B.b)))
+
+
+def _intermediates(T, H, constant=True):
+    return {"aaa": v2.build_triples_intermediates_aaa(T, H, constant=constant),
+            "aab": v2.build_triples_intermediates_aab(T, H, constant=constant),
+            "abb": v2.build_triples_intermediates_abb(T, H, constant=constant),
+            "bbb": v2.build_triples_intermediates_bbb(T, H, constant=constant)}
 
 
 def _pair(X, M):
@@ -70,9 +77,11 @@ def test_crcc23_triples_and_lagrangian_density(crcc23):
     mf, m = crcc23
     T, L, system = m.cc.T, m.left.L, m.system
     H = build_hbar_ccs_chol(T, m.reference.H, system)
-    tr = v2.calc_triples(v2.build_triples_intermediates(T, H), T, L, H, m.reference)
+    tr = v2.calc_triples(_intermediates(T, H), T, L, H, m.reference, *v2.zero_triples_density(system))
     assert abs(tr["delta"] - m.deltas["A"]) < 1.0e-12
-    base = calc_bra_density(1.0, L, T, H, m.reference)
+    _, B = get_bare_integrals(m.reference)
+    base = build_DY(*calc_ccsd_rdm(T, L, system), lambda a, s: calc_rdm2_vvvv_slice(L, T, a, s), H.chol, T, B,
+                    m.reference, ref_weight=True)
     assert abs(_density_energy(base, m.reference) - (m.cc.energy() - mf.mol.nuclear_repulsion)) < 1.0e-10
 
 
@@ -108,11 +117,12 @@ def test_creomcc23_moments(nh3_eom, root):
     assert abs(r0) > 1.0e-4
     H = build_hbar_ccs_chol(T, m.reference.H, system)
     H1 = build_hbar_ccs_chol_derivative(R, H, system)
-    X = v2.build_triples_intermediates(T, H)
-    XH1 = v2.build_triples_intermediates(T, H1)
-    XR = v2.build_triples_intermediates(R, H, constant=False)
+    X = _intermediates(T, H)
+    XH1 = _intermediates(T, H1)
+    XR = _intermediates(R, H, constant=False)
     J = {c: [r0 * x + y + z for x, y, z in zip(X[c], XH1[c], XR[c])] for c in X}
-    tr = v2.calc_triples(X, T, L, H, m.reference, omega=eom.omega[root], R=R, r0=r0, J=J)
+    tr = v2.calc_triples(X, T, L, H, m.reference, *v2.zero_triples_density(system), omega=eom.omega[root], R=R,
+                         r0=r0, J=J)
     assert abs(tr["delta"] - m.deltas[root]["A"]) < 1.0e-12
 
 
