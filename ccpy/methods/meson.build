@@ -4,6 +4,7 @@ python_sources = [
   'cc.py',
   'corrections.py',
   'eomcc.py',
+  'guess.py',
   'hamiltonian.py',
   'hbar.py',
   'left.py',

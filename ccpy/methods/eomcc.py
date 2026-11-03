@@ -1,8 +1,12 @@
 """Equation-of-motion CC methods (EE, SF, IP, EA, DIP, DEA) and their initial guesses.
 
     eom = EOMCCSD(mf, nfrozen=1)
-    eom.initial_guess(method="cisd", multiplicity=1, nacto=3, nactu=3, roots_per_irrep={"A1": 2})
+    eom.initial_guess(roots_per_irrep={"A1": 2, "B2": 1}, nacto=3, nactu=3)    # CISd guess
     energies = eom.energy()          # total energies of all roots
+    eom.root_irreps                  # ["A1", "A1", "B2"]
+
+Every family takes the same guess (ccpy.methods.guess.InitialGuessMixin): CISd for EE,
+IP-/EA-CISd for IP/EA, SF-CIS for SF, DIP-/DEA-CIS for DIP/DEA, targeted by roots_per_irrep.
 
 The ground-state CC, its HBar, and the guess are computed on demand.
 """
@@ -11,18 +15,14 @@ from importlib import import_module
 import numpy as np
 
 from ccpy.methods.base import MethodBase
+from ccpy.methods.guess import GUESS_ORDER, InitialGuessMixin
 from ccpy.methods.cc import CC2, CC3, CCSD, CCSDT, CCSDT_P
 from ccpy.methods.hbar import HBarCC2, HBarCC3, HBarCCSD, HBarCCSDLegacy, HBarCCSDT, HBarCCSDTA, HBarCCSDT_P
 from ccpy.models.operators import ClusterOperator, FockOperator, SpinFlipOperator
 from ccpy.utilities.printing import get_timestamp
 
-# guess methods that generate singles (order 1) or singles and doubles (order 2) only
-GUESS_ORDER = {"cis": 1, "sfcis": 1, "eacis": 1, "ipcis": 1,
-               "cisd": 2, "cisd_chol": 2, "deacis": 2, "dipcis": 2, "eacisd": 2, "ipcisd": 2}
 
-
-
-class EOMCCBase(MethodBase):
+class EOMCCBase(InitialGuessMixin, MethodBase):
     """Base class of EOMCC methods (scheme: EOMCC); levels set the equation module, the
     operator type, the ground-state CC/HBar they need, and the default guess.
 
@@ -30,15 +30,16 @@ class EOMCCBase(MethodBase):
     ----------
     upstream : SCF object or a method holding a ground-state CC (``.cc``)
     roots : list of int, optional
-        Guess vectors (0-based, in the order returned by the guess) to converge;
-        all of them by default.
+        Guess roots (0-based, in the order of the guess) to converge; all of them by default
+        (``initial_guess(roots=...)`` takes precedence).
     hbar_class : HBar class, optional
         Overrides the HBar of the level (e.g., HBarCCSDTA for the CCSD(T)(a)* methods).
 
     Attributes
     ----------
     R : list of right eigenvectors, omega : excitation (ionization, ...) energies,
-    root_converged : convergence flag of each root.
+    root_converged : convergence flag of each root, root_irreps : irrep of each root (from its
+    guess), guess_irreps : irrep of each guess root.
     """
 
     module = None
@@ -58,7 +59,8 @@ class EOMCCBase(MethodBase):
         self.omega = None
         self.root_converged = None
         self.guess_settings = None
-        self.guess_energy = self.guess_vectors = None
+        self.guess_energy = self.guess_vectors = self.guess_irreps = None
+        self.root_irreps = None
         self._guess_hbar_version = None
         self._left = None
 
@@ -83,33 +85,13 @@ class EOMCCBase(MethodBase):
         return len(self.R) if self.R is not None else 0
 
     # ------------------------------------------------------------------ guess
-    def initial_guess(self, method=None, multiplicity=1, nacto=0, nactu=0, roots_per_irrep=None,
-                      use_symmetry=True, debug=False):
-        """Set up the initial guess (a CI-like diagonalization of HBar in a small space),
-        run when the EOM equations are first solved.
-
-        Parameters
-        ----------
-        method : str, guess method (e.g., "cis", "cisd", "ipcisd", "eacisd", "sfcis")
-        multiplicity : int, spin multiplicity of the targeted states (-1 for IP/EA/DIP/DEA)
-        nacto, nactu : int, active occupied/unoccupied orbitals of the guess space
-        roots_per_irrep : dict, number of roots per irreducible representation
-        """
-        method = (method or self.default_guess).lower()
-        if not self.requires_df_port and method == "cisd":
-            method = "cisd_chol"
-        if method not in GUESS_ORDER:
-            raise NotImplementedError(f"Guess {method} is not available.")
-        if roots_per_irrep is None:
-            raise ValueError("initial_guess needs roots_per_irrep, e.g., {'A1': 2}.")
-        self.guess_settings = dict(method=method, multiplicity=multiplicity, nacto=nacto, nactu=nactu,
-                                   roots_per_irrep=dict(roots_per_irrep), use_symmetry=use_symmetry, debug=debug)
+    def _configure_guess(self, settings):
+        settings = super()._configure_guess(settings)
         # spin-adapted closed-shell equations only apply to singlets
-        if multiplicity != 1:
+        if settings["multiplicity"] != 1:
             self.options["RHF_symmetry"] = False
         self.R = None
-        self.converged = False
-        return self
+        return settings
 
     def _copy_setup(self, new):
         if self.guess_settings is not None:
@@ -117,17 +99,10 @@ class EOMCCBase(MethodBase):
         new.options["RHF_symmetry"] = self.options["RHF_symmetry"]
 
     def run_guess(self):
-        if self.guess_settings is None:
-            raise RuntimeError(f"Call {type(self).__name__}.initial_guess(...) before solving.")
+        energy = super().run_guess()
         hbar = self.hbar
-        s = self.guess_settings
-        function = getattr(import_module("ccpy.eom_guess." + s["method"]), "run_diagonalization")
-        args = (self.system, hbar.H) + ((hbar.T,) if s["method"] == "cisd_chol" else ())
-        self.guess_energy, self.guess_vectors = function(*args, s["multiplicity"], s["roots_per_irrep"],
-                                                         s["nacto"], s["nactu"], debug=s["debug"],
-                                                         use_symmetry=s["use_symmetry"])
         self._guess_hbar_version = (hbar, hbar.version)
-        return self.guess_energy
+        return energy
 
     # ------------------------------------------------------------------ operators
     def _new_operator(self):
@@ -149,7 +124,7 @@ class EOMCCBase(MethodBase):
         hbar = self.hbar
         if self.R is None or self._guess_hbar_version != (hbar, hbar.version):
             self.run_guess()
-            roots = self.roots if self.roots is not None else list(range(len(self.guess_energy)))
+            roots = self.selected_guess_roots(None if self.guess_settings["roots"] is not None else self.roots)
             order = GUESS_ORDER[self.guess_settings["method"]]
             self.R = []
             for k in roots:
@@ -157,6 +132,7 @@ class EOMCCBase(MethodBase):
                 R.unflatten(self.guess_vectors[:, k], order=order)
                 self.R.append(R)
             self.omega = np.array([self.guess_energy[k] for k in roots], dtype=float)
+            self.root_irreps = [self.guess_irreps[k] for k in roots]
             self.root_converged = [False] * len(roots)
             self.r0 = np.zeros(len(roots))
             self.rel = np.zeros(len(roots))
@@ -168,6 +144,7 @@ class EOMCCBase(MethodBase):
             self._solve_multiroot(HR, update, dR, hbar)
         else:
             self._solve_sequential(HR, update, dR, hbar)
+        self.check_root_symmetry(self.R, self.root_irreps)
         self._finish_solve(all(self.root_converged), self.cc, hbar)
         return self
 
@@ -360,7 +337,13 @@ class SFEOMCCBase(EOMCCBase):
     requires_df_port = True
     hbar_class = HBarCCSDLegacy
     default_guess = "sfcis"
+    guess_multiplicity = -1
     order = 2
+
+    def _leading_orbitals(self, R):
+        # R.b(a~, i): alpha occupied i -> beta virtual a~
+        a, i = np.unravel_index(np.argmax(np.abs(R.b)), R.b.shape)
+        return [self.system.noccupied_beta + a, i]
 
     def _new_operator(self):
         return SpinFlipOperator(self.system, Ms=-1, order=self.order)
@@ -393,6 +376,17 @@ class FockEOMCCBase(EOMCCBase):
     hbar_class = HBarCCSDLegacy
     num_particles = num_holes = None
     printer = summary = None
+    guess_multiplicity = -1
+
+    def _leading_orbitals(self, R):
+        # the purely attaching (EA, DEA) or ionizing (IP, DIP) block, e.g. R.a(i) or R.ab(a, b~)
+        block = R.spin_cases[0]
+        X = getattr(R, block)
+        idx = np.unravel_index(np.argmax(np.abs(X)), X.shape)
+        if self.num_particles > self.num_holes:
+            no = {"a": self.system.noccupied_alpha, "b": self.system.noccupied_beta}
+            return [no[s] + p for s, p in zip(block, idx)]
+        return list(idx)
 
     def _new_operator(self):
         return FockOperator(self.system, self.num_particles, self.num_holes)
