@@ -128,3 +128,21 @@ def test_integrals_against_pyscf():
     dip = pmol.intor("int1e_r")
     assert np.allclose(np.array(integrals.emultipole1(mol)[1:]), np.array([d[p] for d in dip]), atol=1.0e-09)
     assert np.isclose(integrals.nuclear_repulsion(mol), pmol.energy_nuc(), atol=1.0e-09)
+
+
+def test_df_gradient_with_screened_shell_sets():
+    # Distant fragments make libint2 screen out shell sets; it then nulls only the first
+    # derivative buffer, and the others must not be read (they hold the previous set).
+    dimer = "O 0 0 0; H 0 0.7572 0.5865; H 0 -0.7572 0.5865; O 0.3 0.2 7.0; H 0.3 0.9572 7.5865; H 0.3 -0.5572 7.5865"
+    mol = Molecule(dimer, "cc-pvdz", auxiliary_basis="def2-universal-jkfit", verbose=False)
+    mf = RHF(mol, e_tol=1.0e-12, d_tol=1.0e-9, verbose=0)
+    mf.kernel()
+    grad = mf.gradient()
+    assert np.allclose(grad.sum(axis=0), 0.0, atol=1.0e-8)  # translational invariance
+    h, x0 = 1.0e-4, mol.atomic_positions.copy()
+    energy = []
+    for step in (h, -h):
+        x = x0.copy()
+        x[4, 1] += step
+        energy.append(mf.with_molecule(mol.with_geometry(x)).kernel())
+    assert np.isclose(grad[4, 1], (energy[0] - energy[1]) / (2 * h), atol=1.0e-7)

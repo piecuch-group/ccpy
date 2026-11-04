@@ -42,6 +42,9 @@ class Molecule:
                            overlap_tol * max eigenvalue are removed as linearly dependent
     df_metric_tol : float -> if given, the DF metric is orthogonalized with this relative
                              threshold instead of being Cholesky decomposed
+    df_direct : bool -> recompute the three-center integrals in each SCF J/K build and
+                        gradient instead of storing the B tensor; None (default) does so
+                        when B would exceed df.DIRECT_DF_MEMORY_GB
     verbose : bool -> print the geometry analysis and integral information
     """
 
@@ -61,6 +64,7 @@ class Molecule:
         cholesky_pivots=None,
         overlap_tol=1.0e-08,
         df_metric_tol=None,
+        df_direct=None,
         verbose=True,
     ):
         unit = unit.lower()
@@ -85,6 +89,7 @@ class Molecule:
         self.cholesky_pivots = cholesky_pivots
         self.overlap_tol = overlap_tol
         self.df_metric_tol = df_metric_tol
+        self.df_direct = df_direct
         self.verbose = verbose
 
         self._build(parse_geometry(geometry, unit))

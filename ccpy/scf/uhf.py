@@ -25,6 +25,8 @@ class UHF(SCFBase):
     See ``SCFBase`` for the remaining options.
     """
 
+    _unrestricted = True
+
     def __init__(self, molecule, guess_mix=False, **kwargs):
         self.guess_mix = guess_mix
         super().__init__(molecule, **kwargs)
@@ -58,6 +60,16 @@ class UHF(SCFBase):
         Ca = self.C[0][:, : self.na]
         Cb = self.C[1][:, : self.nb]
         return [Ca @ Ca.T, Cb @ Cb.T]
+
+    def _orbital_sets(self):
+        """(coefficients, number occupied) of each independently rotated orbital set."""
+        return [(self.C[0], self.na), (self.C[1], self.nb)]
+
+    def _response_fock(self, df, pairs):
+        """First-order changes of the alpha and beta Fock matrices for the density changes
+        dD_s = L_s R_s^T + R_s L_s^T, pairs = [(L_a, R_a), (L_b, R_b)]."""
+        (J,) = df.build_J([sum(L @ R.T + R @ L.T for L, R in pairs)])
+        return [J - K for K in df.build_K_pair(pairs)]
 
     def _build_ao_grad(self, S, F):
         return np.hstack(

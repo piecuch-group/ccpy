@@ -27,6 +27,9 @@ omitting the auxiliary basis selects ``<basis>-autoaux``. Supply an auxiliary
 basis explicitly with a dictionary orbital basis. ``cartesian=False`` uses
 spherical functions. ``overlap_tol`` controls removal of AO linear dependencies;
 ``df_metric_tol`` optionally controls DF metric orthogonalization.
+``df_direct=True`` makes SCF Coulomb/exchange builds and SCF gradients recompute the
+three-center integrals instead of storing the B tensor (the default switches to this
+when B would exceed 4 GB); correlated methods still build B when they need it.
 
 ``cholesky_tei=True, cholesky_tol=1.e-6`` selects pivoted AO Cholesky instead of
 auxiliary-basis fitting. The correlated interfaces still receive three-index
@@ -47,6 +50,32 @@ Unlisted irreps in an occupation dictionary are left empty. These configure the
 reference occupations; they are not EOM root selections. Inspect the detected
 point group and orbital labels rather than assuming a particular orientation
 and irrep assignment.
+
+RHF, UHF, RKS and UKS switch from DIIS to the trust-region augmented Hessian (TRAH)
+second-order solver when DIIS stalls after ``trah_after=15`` iterations;
+``trah_after=0`` uses TRAH from the start and ``None`` disables it (ROHF always uses
+DIIS). ``mf.stability()`` returns the lowest orbital-Hessian eigenvalues and the SCF
+object; ``external=True`` tests a restricted solution for RHF -> UHF (RKS -> UKS)
+instability, and ``follow=True`` rotates along a negative mode and reconverges,
+returning the new unrestricted object in the external case. Only rotations that
+preserve the point-group symmetry are tested, so run with ``symmetry=False`` to find
+symmetry-breaking solutions.
+
+Kohn-Sham DFT uses the same options plus the functional name (any libxc functional,
+through PySCF's bundled libxc) and the grid:
+
+.. code-block:: python
+
+   from ccpy import RKS, UKS
+
+   mf = RKS(mol, xc="wb97x")        # LDA, GGA, meta-GGA, hybrid, range-separated
+   mf.kernel()
+   grad = mf.gradient()             # analytic, without grid-weight derivatives
+
+The default grid is PySCF's level 3 (Treutler-Ahlrichs radial, Lebedev angular,
+Becke partitioning, NWChem pruning); ``grid=(nradial, nangular)`` sets one grid for
+all atoms and ``prune=False`` disables pruning. VV10 nonlocal correlation and
+Laplacian-dependent meta-GGAs are not implemented.
 
 ``Reference`` currently accepts native ``SCFBase`` objects, not PySCF SCF
 objects. The older ``Driver.from_pyscf`` workflow is separate. Reference creation

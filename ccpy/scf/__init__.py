@@ -7,3 +7,4 @@ THIRD_PARTY_NOTICES.md.
 from ccpy.scf.rhf import RHF
 from ccpy.scf.rohf import ROHF
 from ccpy.scf.uhf import UHF
+from ccpy.scf.ks import RKS, UKS

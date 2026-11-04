@@ -3,7 +3,7 @@
 # Import the specific modules that form the CCpy API here
 #from . import *
 from ccpy.integrals.molecule import Molecule
-from ccpy.scf import RHF, ROHF, UHF
+from ccpy.scf import RHF, RKS, ROHF, UHF, UKS
 from ccpy.methods import *
 from ccpy.optimize import IRCBranch, IRCResult, run_irc
 from ccpy.drivers.driver import Driver

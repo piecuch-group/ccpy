@@ -13,22 +13,23 @@ nanobind_dir = run_command(py3,
   check: true
 ).stdout().strip()
 
-nanobind_inc = include_directories(
-  nanobind_dir / 'include',
-  nanobind_dir / 'ext' / 'robin_map' / 'include',
-)
+# -I flags rather than include_directories(): meson rejects absolute paths inside the
+# source tree, which is where nanobind lives when the venv is in the repository.
+nanobind_inc = [
+  '-I' + (nanobind_dir / 'include'),
+  '-I' + (nanobind_dir / 'ext' / 'robin_map' / 'include'),
+]
 
 nanobind_lib = static_library('nanobind',
   nanobind_dir / 'src' / 'nb_combined.cpp',
-  include_directories: nanobind_inc,
   dependencies: py3_dep,
-  cpp_args: ['-fvisibility=hidden', '-ffunction-sections', '-fdata-sections', '-fno-strict-aliasing'],
+  cpp_args: nanobind_inc + ['-fvisibility=hidden', '-ffunction-sections', '-fdata-sections', '-fno-strict-aliasing'],
   override_options: ['cpp_std=c++20', 'b_ndebug=if-release'],
   gnu_symbol_visibility: 'hidden',
 )
 nanobind_dep = declare_dependency(
   link_with: nanobind_lib,
-  include_directories: nanobind_inc,
+  compile_args: nanobind_inc,
 )
 
 # ---------------------------------------------------------------------------

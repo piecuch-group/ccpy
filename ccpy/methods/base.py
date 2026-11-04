@@ -203,11 +203,11 @@ class MethodBase:
 
     def has_analytic_gradient(self, **kwargs):
         """True when the method has a gradient kernel and the reference supports it (RHF or UHF
-        orbitals, no deleted virtuals)."""
+        orbitals, not Kohn-Sham ones; no deleted virtuals)."""
         from ccpy.scf.rhf import RHF
         from ccpy.scf.uhf import UHF
 
-        return (self.gradient_function is not None and isinstance(self.reference.scf, (RHF, UHF))
+        return (self.gradient_function is not None and type(self.reference.scf) in (RHF, UHF)
                 and self.reference.ndelete == 0 and self.fno_result is None)
 
     def _gradient_function(self):

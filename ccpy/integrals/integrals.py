@@ -334,6 +334,22 @@ def coulomb_4c_deriv(molecule, W4, symmetrize=True):
     return ints.coulomb_4c_deriv(basis, np.ascontiguousarray(W4), molecule.atoms)
 
 
+def attenuated_coulomb_3c_deriv(molecule, W3, omega, basis1=None, basis2=None, basis3=None):
+    r"""coulomb_3c_deriv for erf(omega r)/r (omega > 0) or erfc(|omega| r)/r (omega < 0)."""
+    b1, b2, b3 = _parse_basis_args_3c2e(molecule, basis1, basis2, basis3)
+    _check_am(_max_l(b1, b2, b3), "Attenuated three-center Coulomb derivative")
+    W3 = np.ascontiguousarray(W3, dtype=float)
+    return ints.attenuated_coulomb_3c_deriv(b1, b2, b3, W3, molecule.atoms, omega < 0, abs(omega))
+
+
+def attenuated_coulomb_2c_deriv(molecule, W2, omega, basis1=None, basis2=None):
+    r"""coulomb_2c_deriv for erf(omega r)/r (omega > 0) or erfc(|omega| r)/r (omega < 0)."""
+    b1, b2 = _parse_basis_args_2c2e(molecule, basis1, basis2)
+    _check_am(_max_l(b1, b2), "Attenuated two-center Coulomb derivative")
+    W2 = np.ascontiguousarray(W2, dtype=float)
+    return ints.attenuated_coulomb_2c_deriv(b1, b2, W2, molecule.atoms, omega < 0, abs(omega))
+
+
 def coulomb_2c_deriv(molecule, W2, basis1=None, basis2=None):
     r"""G_{Ax} = \sum_{PQ} W_{PQ} d(P|Q)/dR_{Ax}, flat (3 natoms,)."""
     b1, b2 = _parse_basis_args_2c2e(molecule, basis1, basis2)
@@ -345,9 +361,19 @@ def coulomb_2c_deriv(molecule, W2, basis1=None, basis2=None):
 
 
 # Basis functions on a grid
-def basis_at_points(molecule, points, basis=None):
-    """Values of the AO basis functions at ``points`` (npoints x 3, bohr)."""
-    return ints.basis_at_points(molecule.basis if basis is None else basis, points)
+def basis_at_points(molecule, points, basis=None, deriv=0, shells=()):
+    """Values of the AO basis functions at ``points`` (npoints x 3, bohr), shape
+    (npoints, nbf). With ``deriv=1``, shape (4, npoints, nbf): values, d/dx, d/dy, d/dz;
+    with ``deriv=2``, (10, npoints, nbf), followed by xx, xy, xz, yy, yz, zz. ``shells``
+    restricts the functions to those of the listed shells (in that order)."""
+    basis = molecule.basis if basis is None else basis
+    ao = ints.basis_on_grid(basis, np.ascontiguousarray(points, dtype=float), deriv, list(shells))
+    return ao[0] if deriv == 0 else ao
+
+
+def shell_extents(molecule, threshold=1.0e-12, basis=None):
+    """Radius (bohr) beyond which all functions of each shell are below ``threshold``."""
+    return np.array(ints.shell_extents(molecule.basis if basis is None else basis, threshold))
 
 
 def orbitals_at_points(molecule, points, C, basis=None):

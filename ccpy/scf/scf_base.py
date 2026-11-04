@@ -106,10 +106,16 @@ class SCFBase:
     irrep_occupations : dict, optional
         {irrep: number of electrons} or {irrep: (n_alpha, n_beta)}, akin to PySCF's
         ``irrep_nelec``. Irreps that are not listed are left empty.
+    trah_after : int | None, optional, default=15
+        After this many DIIS iterations, switch to the trust-region augmented Hessian (TRAH)
+        second-order solver as soon as DIIS stalls (orbital gradient not reduced tenfold over
+        five iterations); 0 uses TRAH from the start, None never. Not available for ROHF.
     die_if_not_converged : bool, optional, default=True
     verbose : int, optional, default=1
         0 suppresses the iteration printout.
     """
+
+    _unrestricted = False  # separate alpha and beta orbitals (UHF, UKS)
 
     def __init__(
         self,
@@ -125,6 +131,7 @@ class SCFBase:
         level_shift_thresh=1.0e-05,
         target_symmetry=None,
         irrep_occupations=None,
+        trah_after=15,
         die_if_not_converged=True,
         verbose=1,
     ):
@@ -143,6 +150,7 @@ class SCFBase:
         self.level_shift_thresh = level_shift_thresh
         self.target_symmetry = target_symmetry
         self.irrep_occupations = irrep_occupations
+        self.trah_after = trah_after
         self.die_if_not_converged = die_if_not_converged
         self.verbose = verbose
 
@@ -175,6 +183,7 @@ class SCFBase:
             "level_shift_thresh": self.level_shift_thresh,
             "target_symmetry": self.target_symmetry,
             "irrep_occupations": self.irrep_occupations,
+            "trah_after": self.trah_after,
             "die_if_not_converged": self.die_if_not_converged,
             "verbose": self.verbose,
         }
@@ -193,11 +202,11 @@ class SCFBase:
         if ls is None:
             return
         if isinstance(ls, tuple):
-            if self.method != "UHF" or len(ls) != 2:
+            if not self._unrestricted or len(ls) != 2:
                 raise ValueError("A tuple level_shift is only valid for UHF, as (alpha, beta).")
         elif ls < 0.0:
             raise ValueError("level_shift must be non-negative.")
-        elif self.method == "UHF":
+        elif self._unrestricted:
             self.level_shift = (float(ls), float(ls))
 
     def _set_occupation_constraints(self):
@@ -205,7 +214,7 @@ class SCFBase:
             self._occupations = None
             return
         self._occupations = OccupationConstraints(
-            self.method in ("RHF", "ROHF"),
+            not self._unrestricted,
             self.mol.point_group,
             (self.na, self.nb),
             self.target_symmetry,
@@ -311,8 +320,16 @@ class SCFBase:
             print("    Iter            Energy             ΔE        ‖ΔD‖     ‖grad‖      <S^2>   DIIS")
             print("   " + "-" * 82)
         self.converged = False
+        trah_after = self.trah_after if hasattr(self, "_orbital_sets") else None
+        use_trah = False
+        grad_norms = []
         for it in range(1, self.maxiter + 1):
+            if trah_after is not None and it > trah_after and (
+                    trah_after == 0 or grad_norms[-1] > 0.1 * grad_norms[-min(5, len(grad_norms))]):
+                use_trah = True
+                break
             AO_grad = self._build_ao_grad(S, F_canon)
+            grad_norms.append(np.linalg.norm(AO_grad))
             F_canon = self._diis_update(diis, F_canon, AO_grad)
             F_canon = self._apply_level_shift(F_canon, S)
             self.eps, self.C, self._orbital_irreps = self._diagonalize_fock(F_canon)
@@ -335,12 +352,19 @@ class SCFBase:
                 break
             Eold, Dold = self.E, self.D
 
-        # final diagonalization: canonical orbitals of the converged Fock operator
-        self.eps, self.C, self._orbital_irreps = self._diagonalize_fock(F_canon)
-        self.D = self._build_density_matrix()
-        F, F_canon = self._build_fock(H, df, S)
-        self.F = F_canon
-        self.E = Vnn + self._energy(H, F)
+        if use_trah:
+            from ccpy.scf.trah import trah
+
+            _, ntrah = trah(self, H, df, S, maxiter=self.maxiter)
+            it += ntrah - 1
+            self.S2 = self._spin(S)
+        else:
+            # final diagonalization: canonical orbitals of the converged Fock operator
+            self.eps, self.C, self._orbital_irreps = self._diagonalize_fock(F_canon)
+            self.D = self._build_density_matrix()
+            F, F_canon = self._build_fock(H, df, S)
+            self.F = F_canon
+            self.E = Vnn + self._energy(H, F)
         self.e_tot = self.E
 
         if self.verbose:
@@ -359,6 +383,13 @@ class SCFBase:
             self._print_orbital_energies()
             print("")
         return self
+
+    def stability(self, external=False, follow=False, nroots=1):
+        """Lowest orbital Hessian eigenvalues, optionally following an instability; see
+        ccpy.scf.trah.stability. Returns (eigenvalues, scf)."""
+        from ccpy.scf.trah import stability
+
+        return stability(self, external=external, follow=follow, nroots=nroots)
 
     def _assign_orbital_symmetries(self):
         point_group = "C1" if self._symmetry_basis is None else self._symmetry_basis.point_group

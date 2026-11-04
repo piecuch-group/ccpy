@@ -43,6 +43,7 @@
 #include <string>
 #include <thread>
 #include <tuple>
+#include <type_traits>
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -80,6 +81,7 @@ using np_vector = nb::ndarray<nb::numpy, double, nb::ndim<1>>;
 using np_matrix = nb::ndarray<nb::numpy, double, nb::ndim<2>>;
 using np_tensor3 = nb::ndarray<nb::numpy, double, nb::ndim<3>>;
 using np_tensor4 = nb::ndarray<nb::numpy, double, nb::ndim<4>>;
+using np_vector_c = nb::ndarray<nb::numpy, double, nb::ndim<1>, nb::c_contig>;
 using np_matrix_c = nb::ndarray<nb::numpy, double, nb::ndim<2>, nb::c_contig>;
 using np_tensor3_c = nb::ndarray<nb::numpy, double, nb::ndim<3>, nb::c_contig>;
 using np_tensor4_c = nb::ndarray<nb::numpy, double, nb::ndim<4>, nb::c_contig>;
@@ -354,9 +356,86 @@ std::string shell_label(int l, int idx) {
     return letters[l] + "(" + std::to_string(idx) + ")";
 }
 
+// Forward-mode dual number carrying d/dx, d/dy, d/dz, so the same expressions give the
+// exact gradients of the basis functions on a grid.
+struct Dual3 {
+    double v = 0.0;
+    std::array<double, 3> d{0.0, 0.0, 0.0};
+    Dual3(double value = 0.0) : v(value) {}
+    Dual3(double value, std::array<double, 3> grad) : v(value), d(grad) {}
+    friend Dual3 operator+(const Dual3& a, const Dual3& b) {
+        return {a.v + b.v, {a.d[0] + b.d[0], a.d[1] + b.d[1], a.d[2] + b.d[2]}};
+    }
+    friend Dual3 operator-(const Dual3& a, const Dual3& b) {
+        return {a.v - b.v, {a.d[0] - b.d[0], a.d[1] - b.d[1], a.d[2] - b.d[2]}};
+    }
+    friend Dual3 operator-(const Dual3& a) { return {-a.v, {-a.d[0], -a.d[1], -a.d[2]}}; }
+    friend Dual3 operator*(const Dual3& a, const Dual3& b) {
+        return {a.v * b.v, {a.d[0] * b.v + a.v * b.d[0], a.d[1] * b.v + a.v * b.d[1],
+                            a.d[2] * b.v + a.v * b.d[2]}};
+    }
+    friend Dual3 pow(const Dual3& a, int n) {
+        const double p = std::pow(a.v, n - 1);
+        return {p * a.v, {n * p * a.d[0], n * p * a.d[1], n * p * a.d[2]}};
+    }
+    friend Dual3 exp(const Dual3& a) {
+        const double e = std::exp(a.v);
+        return {e, {e * a.d[0], e * a.d[1], e * a.d[2]}};
+    }
+    static constexpr std::size_t ncomp = 4; // value, x, y, z
+    double comp(std::size_t c) const { return c == 0 ? v : d[c - 1]; }
+};
+
+// Second-order dual number: value, gradient, and Hessian (xx, xy, xz, yy, yz, zz).
+struct Dual3H {
+    double v = 0.0;
+    std::array<double, 3> d{0.0, 0.0, 0.0};
+    std::array<double, 6> h{0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    static constexpr int I[6] = {0, 0, 0, 1, 1, 2}, J[6] = {0, 1, 2, 1, 2, 2};
+    Dual3H(double value = 0.0) : v(value) {}
+    Dual3H(double value, std::array<double, 3> grad) : v(value), d(grad) {}
+    // f(a) from f, f', f'' at a.v (chain rule)
+    static Dual3H chain(const Dual3H& a, double f, double f1, double f2) {
+        Dual3H r(f);
+        for (int k = 0; k < 3; ++k)
+            r.d[k] = f1 * a.d[k];
+        for (int k = 0; k < 6; ++k)
+            r.h[k] = f1 * a.h[k] + f2 * a.d[I[k]] * a.d[J[k]];
+        return r;
+    }
+    friend Dual3H operator+(const Dual3H& a, const Dual3H& b) {
+        Dual3H r(a.v + b.v);
+        for (int k = 0; k < 3; ++k)
+            r.d[k] = a.d[k] + b.d[k];
+        for (int k = 0; k < 6; ++k)
+            r.h[k] = a.h[k] + b.h[k];
+        return r;
+    }
+    friend Dual3H operator-(const Dual3H& a) { return chain(a, -a.v, -1.0, 0.0); }
+    friend Dual3H operator-(const Dual3H& a, const Dual3H& b) { return a + (-b); }
+    friend Dual3H operator*(const Dual3H& a, const Dual3H& b) {
+        Dual3H r(a.v * b.v);
+        for (int k = 0; k < 3; ++k)
+            r.d[k] = a.d[k] * b.v + a.v * b.d[k];
+        for (int k = 0; k < 6; ++k)
+            r.h[k] = a.h[k] * b.v + a.v * b.h[k] + a.d[I[k]] * b.d[J[k]] + a.d[J[k]] * b.d[I[k]];
+        return r;
+    }
+    friend Dual3H pow(const Dual3H& a, int n) {
+        const double p = n >= 2 ? std::pow(a.v, n - 2) : 0.0;
+        return chain(a, std::pow(a.v, n), n * std::pow(a.v, n - 1), n * (n - 1) * p);
+    }
+    friend Dual3H exp(const Dual3H& a) {
+        const double e = std::exp(a.v);
+        return chain(a, e, e, e);
+    }
+    static constexpr std::size_t ncomp = 10; // value, x, y, z, xx, xy, xz, yy, yz, zz
+    double comp(std::size_t c) const { return c == 0 ? v : c < 4 ? d[c - 1] : h[c - 4]; }
+};
+
 // Real solid harmonics in libint2's order (m = -l ... l), for l = 0..7, written to out.
 // See https://en.wikipedia.org/wiki/Solid_harmonics#Real_form
-void real_solid_harmonics(int l, double x, double y, double z, double* out) {
+template <class T> void real_solid_harmonics(int l, T x, T y, T z, T* out) {
     // square roots of small integers (20 digits)
     constexpr double sqrt_3 = 1.7320508075688772935, sqrt_5 = 2.2360679774997896964,
                      sqrt_6 = 2.4494897427831780982, sqrt_7 = 2.6457513110645905905,
@@ -368,7 +447,7 @@ void real_solid_harmonics(int l, double x, double y, double z, double* out) {
                      sqrt_231 = 15.198684153570663632, sqrt_429 = 20.712315177207979132,
                      sqrt_462 = 21.494185260204677039, sqrt_6006 = 77.498387079990251885;
     using std::pow;
-    const double r2 = x * x + y * y + z * z;
+    const T r2 = x * x + y * y + z * z;
     switch (l) {
     case 0:
         out[0] = 1.0;
@@ -506,6 +585,25 @@ void evaluate_shell(const Shell& shell, const std::array<double, 3>& point, doub
         out[i] *= radial;
 }
 
+// Values and Cartesian derivatives (to the order of the dual type D) of the (pure)
+// functions of `shell` at `point`.
+template <class D>
+void evaluate_shell_deriv(const Shell& shell, const std::array<double, 3>& point, D* out) {
+    const auto& contr = shell.contr[0];
+    if (contr.l > 7)
+        throw std::runtime_error("[ccpy] evaluate_shell with l > 7 is not supported");
+    const D dx(point[0] - shell.O[0], {1.0, 0.0, 0.0});
+    const D dy(point[1] - shell.O[1], {0.0, 1.0, 0.0});
+    const D dz(point[2] - shell.O[2], {0.0, 0.0, 1.0});
+    const D r2 = dx * dx + dy * dy + dz * dz;
+    D radial;
+    for (std::size_t i = 0; i < shell.nprim(); ++i)
+        radial = radial + contr.coeff[i] * exp(-shell.alpha[i] * r2);
+    real_solid_harmonics(contr.l, dx, dy, dz, out);
+    for (std::size_t i = 0; i < contr.size(); ++i)
+        out[i] = out[i] * radial;
+}
+
 // =====================================================================================
 //  3. One-electron integrals
 // =====================================================================================
@@ -524,6 +622,8 @@ std::array<np_matrix, M> one_electron(libint2::Engine& engine, const Basis& b1, 
     for (std::size_t s1 = 0; s1 < b1.nshells(); ++s1) {
         for (std::size_t s2 = 0; s2 < b2.nshells(); ++s2) {
             engine.compute(b1[s1], b2[s2]);
+            if (results[0] == nullptr)
+                continue; // screened: only the first target is nulled, the rest are stale
             for (std::size_t c = 0; c < M; ++c) {
                 const double* buf = results[c];
                 if (!buf)
@@ -722,6 +822,97 @@ np_tensor3 erfc_coulomb_3c(const Basis& b1, const Basis& b2, const Basis& b3, do
     auto engine = make_engine(Operator::erfc_coulomb, {&b1, &b2, &b3}, 0, BraKet::xs_xx);
     engine.set_params(omega);
     return three_center(engine, b1, b2, b3);
+}
+
+// Integral-direct contractions of the three-center integrals (P|w|mn), P in `aux` and m, n in
+// `basis`, with w = 1/r (op 0), erf(omega r)/r (op 1) or erfc(omega r)/r (op 2):
+//   gamma[d, P] = sum_mn (P|mn) D[d, m, n]      (symmetric densities D)
+//   J[c, m, n]  = sum_P (P|mn) coef[c, P]
+//   T[P, m, k]  = sum_n (P|mn) C[n, k]
+// in one pass over the unique shell triplets, skipping those whose Schwarz bound
+// aux_bound[sP] * pair_bound[sm, sn] is below `threshold`. Empty inputs skip their
+// contraction. Threaded over auxiliary shells.
+std::tuple<np_matrix, np_tensor3, np_tensor3>
+coulomb_3c_direct(const Basis& aux, const Basis& basis, const np_tensor3_c& D, const np_matrix_c& coef,
+                  const np_matrix_c& C, const np_matrix_c& pair_bound, const np_vector_c& aux_bound,
+                  double threshold, int op, double omega) {
+    const std::size_t naux = aux.size(), nbf = basis.size();
+    const std::size_t nd = D.shape(0), nc = coef.shape(0), nk = C.shape(1);
+    auto gamma = zeros<np_matrix>({nd, naux});
+    auto J = zeros<np_tensor3>({nc, nbf, nbf});
+    auto T = zeros<np_tensor3>({nk > 0 ? naux : 0, nk > 0 ? nbf : 0, nk});
+    const double *d = D.data(), *cf = coef.data(), *c = C.data(), *pb = pair_bound.data(),
+                 *ab = aux_bound.data();
+    double *g = gamma.data(), *t = T.data();
+    const auto offa = aux.shell_offsets(), offb = basis.shell_offsets();
+    const std::size_t nsh = basis.nshells();
+
+    LibintSession libint;
+    const Operator ops[3] = {Operator::coulomb, Operator::erf_coulomb, Operator::erfc_coulomb};
+    auto prototype = make_engine(ops[op], {&aux, &basis, &basis}, 0, BraKet::xs_xx);
+    if (op != 0)
+        prototype.set_params(omega);
+    const std::size_t nthreads = get_num_threads();
+    std::vector<std::vector<double>> Jt(nthreads, std::vector<double>(nc * nbf * nbf, 0.0));
+
+    parallel_for(0, aux.nshells(), [&](std::size_t thread, std::size_t sP0, std::size_t sP1) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        double* jt = Jt[thread].data();
+        for (std::size_t sP = sP0; sP < sP1; ++sP) {
+            const std::size_t fP = offa[sP], nP = aux[sP].size();
+            for (std::size_t sm = 0; sm < nsh; ++sm) {
+                const std::size_t fm = offb[sm], nm = basis[sm].size();
+                for (std::size_t sn = 0; sn <= sm; ++sn) {
+                    if (ab[sP] * pb[sm * nsh + sn] < threshold)
+                        continue;
+                    engine.compute(aux[sP], basis[sm], basis[sn]);
+                    const double* buf = results[0];
+                    if (!buf)
+                        continue;
+                    const std::size_t fn = offb[sn], nn = basis[sn].size();
+                    const bool offdiag = sm != sn;
+                    for (std::size_t p = 0, pij = 0; p < nP; ++p) {
+                        const std::size_t P = fP + p;
+                        for (std::size_t i = 0; i < nm; ++i) {
+                            const std::size_t m = fm + i;
+                            for (std::size_t j = 0; j < nn; ++j, ++pij) {
+                                const std::size_t n = fn + j;
+                                const double v = buf[pij];
+                                for (std::size_t x = 0; x < nd; ++x) {
+                                    const double* dx = d + x * nbf * nbf;
+                                    g[x * naux + P] += v * (offdiag ? dx[m * nbf + n] + dx[n * nbf + m] : dx[m * nbf + n]);
+                                }
+                                for (std::size_t x = 0; x < nc; ++x) {
+                                    const double w = v * cf[x * naux + P];
+                                    jt[(x * nbf + m) * nbf + n] += w;
+                                    if (offdiag)
+                                        jt[(x * nbf + n) * nbf + m] += w;
+                                }
+                                if (nk) {
+                                    double* tm = t + (P * nbf + m) * nk;
+                                    const double* cn = c + n * nk;
+                                    for (std::size_t k = 0; k < nk; ++k)
+                                        tm[k] += v * cn[k];
+                                    if (offdiag) {
+                                        double* tn = t + (P * nbf + n) * nk;
+                                        const double* cm = c + m * nk;
+                                        for (std::size_t k = 0; k < nk; ++k)
+                                            tn[k] += v * cm[k];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+    double* j = J.data();
+    for (const auto& jt : Jt)
+        for (std::size_t x = 0; x < jt.size(); ++x)
+            j[x] += jt[x];
+    return {gamma, J, T};
 }
 
 // (b1 | b2 b3) restricted to the shell ranges in `slices`, written into the top-left corner
@@ -928,6 +1119,8 @@ np_vector one_electron_deriv(Operator op, const Basis& b1, const Basis& b2, cons
     for (std::size_t s1 = 0; s1 < b1.nshells(); ++s1) {
         for (std::size_t s2 = 0; s2 < b2.nshells(); ++s2) {
             engine.compute(b1[s1], b2[s2]);
+            if (results[0] == nullptr)
+                continue; // screened: only the first target is nulled, the rest are stale
             for (std::size_t c = 0; c < ncomponents; ++c) {
                 const double* buf = results[c];
                 if (!buf)
@@ -963,14 +1156,17 @@ np_vector nuclear_deriv(const Basis& b1, const Basis& b2, const np_matrix& dm,
 // Weights may be real or complex (only the real part is used).
 template <typename WeightArray>
 np_vector coulomb_2c_deriv(const Basis& b1, const Basis& b2, const WeightArray& W2,
-                           const Charges& charges) {
+                           const Charges& charges, Operator op = Operator::coulomb,
+                           double omega = 0.0) {
     check_centers(b1, charges, "basis1", "coulomb_2c_deriv");
     check_centers(b2, charges, "basis2", "coulomb_2c_deriv");
     const std::size_t nb2 = b2.size();
     check_shape(W2, {b1.size(), nb2}, "W2", "coulomb_2c_deriv");
 
     LibintSession libint;
-    const auto prototype = make_engine(Operator::coulomb, {&b1, &b2}, 1, BraKet::xs_xs);
+    auto prototype = make_engine(op, {&b1, &b2}, 1, BraKet::xs_xs);
+    if (op != Operator::coulomb)
+        prototype.set_params(omega);
     const auto off1 = b1.shell_offsets(), off2 = b2.shell_offsets();
     const auto atom1 = b1.shell_to_center(), atom2 = b2.shell_to_center();
     const auto* w = W2.data();
@@ -984,6 +1180,8 @@ np_vector coulomb_2c_deriv(const Basis& b1, const Basis& b2, const WeightArray& 
         for (std::size_t s1 = s1_begin; s1 < s1_end; ++s1) {
             for (std::size_t s2 = 0; s2 < b2.nshells(); ++s2) {
                 engine.compute(b1[s1], b2[s2]);
+                if (results[0] == nullptr)
+                    continue; // screened: only the first target is nulled, the rest are stale
                 for (std::size_t c = 0; c < 6; ++c) {
                     const double* buf = results[c];
                     if (!buf)
@@ -1003,7 +1201,8 @@ np_vector coulomb_2c_deriv(const Basis& b1, const Basis& b2, const WeightArray& 
 // ---- Three-center Coulomb derivatives: sum_{P mn} W^P_mn d(P|mn)/dR ---------------------
 template <typename WeightArray>
 np_vector coulomb_3c_deriv(const Basis& b1, const Basis& b2, const Basis& b3,
-                           const WeightArray& W3, const Charges& charges) {
+                           const WeightArray& W3, const Charges& charges,
+                           Operator op = Operator::coulomb, double omega = 0.0) {
     check_centers(b1, charges, "basis1", "coulomb_3c_deriv");
     check_centers(b2, charges, "basis2", "coulomb_3c_deriv");
     check_centers(b3, charges, "basis3", "coulomb_3c_deriv");
@@ -1011,7 +1210,9 @@ np_vector coulomb_3c_deriv(const Basis& b1, const Basis& b2, const Basis& b3,
     check_shape(W3, {b1.size(), nb2, nb3}, "W3", "coulomb_3c_deriv");
 
     LibintSession libint;
-    const auto prototype = make_engine(Operator::coulomb, {&b1, &b2, &b3}, 1, BraKet::xs_xx);
+    auto prototype = make_engine(op, {&b1, &b2, &b3}, 1, BraKet::xs_xx);
+    if (op != Operator::coulomb)
+        prototype.set_params(omega);
     const auto off1 = b1.shell_offsets(), off2 = b2.shell_offsets(), off3 = b3.shell_offsets();
     const auto atom1 = b1.shell_to_center(), atom2 = b2.shell_to_center(),
                atom3 = b3.shell_to_center();
@@ -1030,6 +1231,8 @@ np_vector coulomb_3c_deriv(const Basis& b1, const Basis& b2, const Basis& b3,
                 for (std::size_t s3 = 0; s3 < b3.nshells(); ++s3) {
                     const std::size_t f3 = off3[s3], n3 = b3[s3].size();
                     engine.compute(b1[s1], b2[s2], b3[s3]);
+                    if (results[0] == nullptr)
+                        continue; // screened: only the first target is nulled, the rest are stale
                     const std::array<std::size_t, 3> atoms{atom1[s1], atom2[s2], atom3[s3]};
                     for (std::size_t c = 0; c < 9; ++c) {
                         const double* buf = results[c];
@@ -1041,6 +1244,76 @@ np_vector coulomb_3c_deriv(const Basis& b1, const Basis& b2, const Basis& b3,
                                 for (std::size_t k = 0; k < n3; ++k, ++ijk)
                                     gc += buf[ijk] *
                                           real_part(w[(f1 + i) * nb2 * nb3 + (f2 + j) * nb3 + f3 + k]);
+                    }
+                }
+            }
+        }
+    });
+    return sum_gradients(grads, ngrad);
+}
+
+// ---- Three-center derivatives with factorized weights ----------------------------------
+// sum_{P mn} W^P_mn d(P|w|mn)/dR with W^P_mn = D_mn rho_P - sum_k U[P, m, k] C[n, k] formed
+// block by block (W must be symmetric in m, n), so that the dense W of a density-fitted
+// gradient is never stored. Operators and screening as in coulomb_3c_direct.
+np_vector coulomb_3c_deriv_factored(const Basis& aux, const Basis& basis, const np_matrix_c& D,
+                                    const np_vector_c& rho, const np_tensor3_c& U, const np_matrix_c& C,
+                                    const Charges& charges, const np_matrix_c& pair_bound,
+                                    const np_vector_c& aux_bound, double threshold, int op, double omega) {
+    check_centers(aux, charges, "aux", "coulomb_3c_deriv_factored");
+    check_centers(basis, charges, "basis", "coulomb_3c_deriv_factored");
+    const std::size_t nbf = basis.size(), nk = C.shape(1), nsh = basis.nshells();
+    const double *d = D.data(), *r = rho.data(), *u = U.data(), *c = C.data(), *pb = pair_bound.data(),
+                 *ab = aux_bound.data();
+    LibintSession libint;
+    const Operator ops[3] = {Operator::coulomb, Operator::erf_coulomb, Operator::erfc_coulomb};
+    auto prototype = make_engine(ops[op], {&aux, &basis, &basis}, 1, BraKet::xs_xx);
+    if (op != 0)
+        prototype.set_params(omega);
+    const auto offa = aux.shell_offsets(), offb = basis.shell_offsets();
+    const auto atoma = aux.shell_to_center(), atomb = basis.shell_to_center();
+    const std::size_t ngrad = 3 * charges.size();
+    std::vector<std::vector<double>> grads(get_num_threads(), std::vector<double>(ngrad, 0.0));
+
+    parallel_for(0, aux.nshells(), [&](std::size_t thread, std::size_t sP0, std::size_t sP1) {
+        libint2::Engine engine = prototype;
+        const auto& results = engine.results();
+        auto& g = grads[thread];
+        std::vector<double> W;
+        for (std::size_t sP = sP0; sP < sP1; ++sP) {
+            const std::size_t fP = offa[sP], nP = aux[sP].size();
+            for (std::size_t sm = 0; sm < nsh; ++sm) {
+                const std::size_t fm = offb[sm], nm = basis[sm].size();
+                for (std::size_t sn = 0; sn <= sm; ++sn) {
+                    if (ab[sP] * pb[sm * nsh + sn] < threshold)
+                        continue;
+                    const std::size_t fn = offb[sn], nn = basis[sn].size();
+                    // weights of this block (doubled for the transposed (P|nm) block)
+                    const double factor = sm != sn ? 2.0 : 1.0;
+                    W.assign(nP * nm * nn, 0.0);
+                    for (std::size_t p = 0, pij = 0; p < nP; ++p)
+                        for (std::size_t i = 0; i < nm; ++i)
+                            for (std::size_t j = 0; j < nn; ++j, ++pij) {
+                                const std::size_t P = fP + p, m = fm + i, n = fn + j;
+                                double w = d[m * nbf + n] * r[P];
+                                const double* um = u + (P * nbf + m) * nk;
+                                const double* cn = c + n * nk;
+                                for (std::size_t k = 0; k < nk; ++k)
+                                    w -= um[k] * cn[k];
+                                W[pij] = factor * w;
+                            }
+                    engine.compute(aux[sP], basis[sm], basis[sn]);
+                    if (results[0] == nullptr)
+                        continue; // screened: only the first target is nulled, the rest are stale
+                    const std::array<std::size_t, 3> atoms{atoma[sP], atomb[sm], atomb[sn]};
+                    for (std::size_t comp = 0; comp < 9; ++comp) {
+                        const double* buf = results[comp];
+                        if (!buf)
+                            continue;
+                        double acc = 0.0;
+                        for (std::size_t x = 0; x < W.size(); ++x)
+                            acc += buf[x] * W[x];
+                        g[3 * atoms[comp / 3] + comp % 3] += acc;
                     }
                 }
             }
@@ -1121,7 +1394,10 @@ np_vector coulomb_4c_deriv(const Basis& basis, const np_tensor4_c& W4, const Cha
 // (mn|mn) for all function pairs, shape (nbf, nbf).
 np_matrix coulomb_4c_diagonal(const Basis& basis) {
     LibintSession libint;
-    const auto prototype = make_engine(Operator::coulomb, {&basis});
+    auto prototype = make_engine(Operator::coulomb, {&basis});
+    // no primitive screening: weakly overlapping pairs keep their small but nonzero values,
+    // which Schwarz bounds rely on
+    prototype.set_precision(0.0);
     const auto off = basis.shell_offsets();
     const std::size_t nbf = basis.size(), ns = basis.nshells();
     auto diag = zeros<np_matrix>({nbf, nbf});
@@ -1233,6 +1509,8 @@ np_vector cholesky_3c_deriv(const Basis& basis, const np_tensor3_c& W3,
                     const std::size_t n2 = basis[s2].size();
                     const std::array<std::size_t, 4> atoms{atom[sr], atom[ss], atom[s1], atom[s2]};
                     engine.compute(basis[sr], basis[ss], basis[s1], basis[s2]);
+                    if (results[0] == nullptr)
+                        continue; // screened: only the first target is nulled, the rest are stale
                     for (std::size_t c = 0; c < 12; ++c) {
                         const double* buf = results[c];
                         if (!buf)
@@ -1282,6 +1560,8 @@ np_vector cholesky_2c_deriv(const Basis& basis, const np_matrix_c& W2,
                 const std::size_t nu = basis[su].size(), nv = basis[sv].size();
                 const std::array<std::size_t, 4> atoms{atom[sr], atom[ss], atom[su], atom[sv]};
                 engine.compute(basis[sr], basis[ss], basis[su], basis[sv]);
+                if (results[0] == nullptr)
+                    continue; // screened: only the first target is nulled, the rest are stale
                 for (std::size_t c = 0; c < 12; ++c) {
                     const double* buf = results[c];
                     if (!buf)
@@ -1337,6 +1617,8 @@ std::array<np_matrix, 4> coulomb_3c_opVop(const Basis& b1, const Basis& b2, cons
             for (std::size_t s3 = 0; s3 < b3.nshells(); ++s3) {
                 for (std::size_t s1 = 0; s1 < b1.nshells(); ++s1) {
                     engine.compute(b1[s1], b2[s2], b3[s3]);
+                    if (results[0] == nullptr)
+                        continue; // screened: only the first target is nulled, the rest are stale
                     std::array<const double*, 9> buf;
                     for (std::size_t d = 0; d < 9; ++d)
                         buf[d] = results[which[d]];
@@ -1383,6 +1665,86 @@ np_matrix basis_at_points(const Basis& basis, const std::vector<std::array<doubl
         first += shell.size();
     }
     return values;
+}
+
+// Values (deriv = 0) and derivatives up to order deriv <= 2 of the functions of the shells
+// `shells` (all shells if empty) at the points: (ncomp, npoints, nfunctions) with
+// ncomp = 1, 4, 10 and components value, x, y, z, xx, xy, xz, yy, yz, zz. Threaded over points.
+template <class D>
+void fill_basis_on_grid(const Basis& basis, const std::vector<std::array<double, 3>>& points,
+                        const std::vector<std::size_t>& shells, np_tensor3& out) {
+    const auto offsets = basis.shell_offsets();
+    std::vector<std::size_t> first(shells.size());
+    for (std::size_t i = 0, f = 0; i < shells.size(); f += basis[shells[i]].size(), ++i)
+        first[i] = f;
+    auto v = out.view();
+    const std::size_t ncomp = out.shape(0);
+    parallel_for(0, points.size(), [&](std::size_t, std::size_t p0, std::size_t p1) {
+        D buffer[16]; // enough for l <= 7
+        for (std::size_t i = 0; i < shells.size(); ++i) {
+            const Shell& shell = basis[shells[i]];
+            for (std::size_t p = p0; p < p1; ++p) {
+                if constexpr (std::is_same_v<D, double>)
+                    evaluate_shell(shell, points[p], buffer);
+                else
+                    evaluate_shell_deriv(shell, points[p], buffer);
+                for (std::size_t j = 0; j < shell.size(); ++j) {
+                    if constexpr (std::is_same_v<D, double>)
+                        v(0, p, first[i] + j) = buffer[j];
+                    else
+                        for (std::size_t c = 0; c < ncomp; ++c)
+                            v(c, p, first[i] + j) = buffer[j].comp(c);
+                }
+            }
+        }
+    });
+}
+
+np_tensor3 basis_on_grid(const Basis& basis, const std::vector<std::array<double, 3>>& points,
+                         int deriv, std::vector<std::size_t> shells) {
+    if (shells.empty())
+        for (std::size_t s = 0; s < basis.nshells(); ++s)
+            shells.push_back(s);
+    std::size_t nf = 0;
+    for (auto s : shells) {
+        if (s >= basis.nshells())
+            throw std::out_of_range("[ccpy] basis_on_grid: shell index out of range");
+        if (!basis[s].contr[0].pure)
+            throw std::runtime_error("[ccpy] basis_on_grid: Only pure shells are supported");
+        nf += basis[s].size();
+    }
+    const std::size_t ncomp = deriv == 0 ? 1 : deriv == 1 ? 4 : 10;
+    if (deriv < 0 || deriv > 2)
+        throw std::runtime_error("[ccpy] basis_on_grid: deriv must be 0, 1 or 2");
+    auto out = zeros<np_tensor3>({ncomp, points.size(), nf});
+    if (deriv == 0)
+        fill_basis_on_grid<double>(basis, points, shells, out);
+    else if (deriv == 1)
+        fill_basis_on_grid<Dual3>(basis, points, shells, out);
+    else
+        fill_basis_on_grid<Dual3H>(basis, points, shells, out);
+    return out;
+}
+
+// Radius beyond which every function of each shell is below `threshold` in magnitude,
+// bounding the contraction by sum_k |c_k| r^l exp(-alpha_k r^2).
+std::vector<double> shell_extents(const Basis& basis, double threshold) {
+    std::vector<double> extents;
+    for (std::size_t s = 0; s < basis.nshells(); ++s) {
+        const Shell& shell = basis[s];
+        const int l = shell.contr[0].l;
+        auto bound = [&](double r) {
+            double f = 0.0;
+            for (std::size_t k = 0; k < shell.nprim(); ++k)
+                f += std::abs(shell.contr[0].coeff[k]) * std::exp(-shell.alpha[k] * r * r);
+            return f * std::pow(r, l) * (l <= 1 ? 2.0 : 4.0); // margin for the angular factor
+        };
+        double r = 60.0;
+        while (r > 0.0 && bound(r) < threshold)
+            r -= 0.05;
+        extents.push_back(r + 0.05);
+    }
+    return extents;
 }
 
 // Orbital values sum_mu phi_mu(r) C[mu, j] at the points: shape (npoints, norb).
@@ -1662,10 +2024,12 @@ ndarray, shape = (nb1, nb2)
     m.def("coulomb_2c", &coulomb_2c, "basis1"_a, "basis2"_a);
     m.def("coulomb_2c", [](const Basis& b) { return coulomb_2c(b, b); }, "basis"_a);
 
-    m.def("coulomb_3c_deriv", &coulomb_3c_deriv<np_tensor3_c>, "basis1"_a, "basis2"_a,
+    m.def("coulomb_3c_deriv", [](const Basis& b1, const Basis& b2, const Basis& b3, const np_tensor3_c& W3,
+             const Charges& charges) { return coulomb_3c_deriv(b1, b2, b3, W3, charges); }, "basis1"_a, "basis2"_a,
           "basis3"_a, "W3"_a, "charges"_a);
     m.def("coulomb_3c_opVop", &coulomb_3c_opVop, "basis1"_a, "basis2"_a, "basis3"_a);
-    m.def("coulomb_3c_deriv", &coulomb_3c_deriv<np_tensor3_complex_c>, "basis1"_a, "basis2"_a,
+    m.def("coulomb_3c_deriv", [](const Basis& b1, const Basis& b2, const Basis& b3, const np_tensor3_complex_c& W3,
+             const Charges& charges) { return coulomb_3c_deriv(b1, b2, b3, W3, charges); }, "basis1"_a, "basis2"_a,
           "basis3"_a, "W3"_a, "charges"_a);
 
     m.def("coulomb_4c_deriv", &coulomb_4c_deriv, "basis"_a, "W4"_a, "charges"_a,
@@ -1680,18 +2044,48 @@ ndarray, shape = (nb1, nb2)
     m.def("cholesky_2c_deriv", &cholesky_2c_deriv, "basis"_a, "W2"_a, "pivots"_a,
           "charges"_a, "sum_PQ W2[P,Q] d(J_P|J_Q)/dR for Cholesky pivot pairs.");
 
-    m.def("coulomb_2c_deriv", &coulomb_2c_deriv<np_matrix_c>, "basis1"_a, "basis2"_a, "W2"_a,
+    m.def("coulomb_2c_deriv", [](const Basis& b1, const Basis& b2, const np_matrix_c& W2, const Charges& charges) {
+              return coulomb_2c_deriv(b1, b2, W2, charges);
+          }, "basis1"_a, "basis2"_a, "W2"_a,
           "charges"_a);
-    m.def("coulomb_2c_deriv", &coulomb_2c_deriv<np_matrix_complex_c>, "basis1"_a, "basis2"_a,
+    m.def("coulomb_2c_deriv", [](const Basis& b1, const Basis& b2, const np_matrix_complex_c& W2, const Charges& charges) {
+              return coulomb_2c_deriv(b1, b2, W2, charges);
+          }, "basis1"_a, "basis2"_a,
           "W2"_a, "charges"_a);
 
     m.def("erf_coulomb_3c", &erf_coulomb_3c, "basis1"_a, "basis2"_a, "basis3"_a, "omega"_a);
     m.def("erf_coulomb_2c", &erf_coulomb_2c, "basis1"_a, "basis2"_a, "omega"_a);
     m.def("erfc_coulomb_3c", &erfc_coulomb_3c, "basis1"_a, "basis2"_a, "basis3"_a, "omega"_a);
     m.def("erfc_coulomb_2c", &erfc_coulomb_2c, "basis1"_a, "basis2"_a, "omega"_a);
+    m.def("coulomb_3c_deriv_factored", &coulomb_3c_deriv_factored, "aux"_a, "basis"_a, "D"_a,
+          "rho"_a, "U"_a, "C"_a, "charges"_a, "pair_bound"_a, "aux_bound"_a, "threshold"_a, "op"_a,
+          "omega"_a, "sum W^P_mn d(P|w|mn)/dR with W = D rho - U C^T formed on the fly.");
+    m.def("coulomb_3c_direct", &coulomb_3c_direct, "aux"_a, "basis"_a, "D"_a, "coef"_a, "C"_a,
+          "pair_bound"_a, "aux_bound"_a, "threshold"_a, "op"_a, "omega"_a,
+          "Integral-direct (gamma, J, T) contractions of (P|mn); see the C++ source.");
+    // derivatives of the attenuated integrals, (erf, omega > 0) or (erfc, omega > 0)
+    m.def(
+        "attenuated_coulomb_3c_deriv",
+        [](const Basis& b1, const Basis& b2, const Basis& b3, const np_tensor3_c& W3,
+           const Charges& charges, bool erfc, double omega) {
+            return coulomb_3c_deriv(b1, b2, b3, W3, charges,
+                                    erfc ? Operator::erfc_coulomb : Operator::erf_coulomb, omega);
+        },
+        "basis1"_a, "basis2"_a, "basis3"_a, "W3"_a, "charges"_a, "erfc"_a, "omega"_a);
+    m.def(
+        "attenuated_coulomb_2c_deriv",
+        [](const Basis& b1, const Basis& b2, const np_matrix_c& W2, const Charges& charges,
+           bool erfc, double omega) {
+            return coulomb_2c_deriv(b1, b2, W2, charges,
+                                    erfc ? Operator::erfc_coulomb : Operator::erf_coulomb, omega);
+        },
+        "basis1"_a, "basis2"_a, "W2"_a, "charges"_a, "erfc"_a, "omega"_a);
 
     // ---- Values on points and grids -----------------------------------------------------
     m.def("basis_at_points", &basis_at_points, "basis"_a, "points"_a);
+    m.def("basis_on_grid", &basis_on_grid, "basis"_a, "points"_a, "deriv"_a, "shells"_a,
+          "AO values and derivatives (ncomp, npoints, nfunctions) of the listed shells.");
+    m.def("shell_extents", &shell_extents, "basis"_a, "threshold"_a);
     m.def("orbitals_at_points", &orbitals_at_points, "basis"_a, "points"_a, "C"_a,
           "Evaluate the orbitals on a set of points. Returns a 2D array of shape (npoints, "
           "norb).");

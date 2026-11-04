@@ -33,6 +33,18 @@ class RHF(SCFBase):
         Cocc = self.C[0][:, : self.na]
         return [Cocc @ Cocc.T]
 
+    def _orbital_sets(self):
+        """(coefficients, number occupied) of each independently rotated orbital set."""
+        return [(self.C[0], self.na)]
+
+    def _response_fock(self, df, pairs):
+        """First-order change of the Fock matrix for the alpha (= beta) density change
+        dD = L R^T + R L^T given as the single pair [(L, R)]."""
+        ((L, R),) = pairs
+        (J,) = df.build_J([L @ R.T + R @ L.T])
+        (K,) = df.build_K_pair(pairs)
+        return [2.0 * J - K]
+
     def _build_ao_grad(self, S, F):
         grad = F[0] @ self.D[0] @ S - S @ self.D[0] @ F[0]
         return self.Xorth.T @ grad @ self.Xorth
