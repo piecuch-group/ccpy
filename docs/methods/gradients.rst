@@ -7,6 +7,10 @@ variant and (for excited states) returned root. The same choices must be used
 at every displaced or optimized geometry. Geometry optimizers need the gradient
 of the energy they are minimizing, including any enabled energy completion.
 
+For relaxed multipole moments and vibrational IR intensities, see
+:doc:`multipoles`. Property-perturbation requests have their own return shapes
+and analytic availability; their fallback differs from nuclear gradients.
+
 The common method interface
 ---------------------------
 

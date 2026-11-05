@@ -94,6 +94,8 @@ Use a callback for custom calculations
    minimum = optimize_geometry(mol, energy_and_gradient, thresh="gau_tight")
 
 The callback contract is ``callable(Molecule) -> (float, array(natoms,3))``.
+Do not pass ``gradient_and_dipole`` here: its return is ``(g,mu)``, not ``(E,g)``.
+Use the native Hessian/IR helpers in :doc:`multipoles` for dipole intensities.
 It lets you select correction variants, check convergence, target an excited
 state, or define a custom scalar composite energy consistently. Pass either a
 method or a molecule plus callback, not both method and callback.
@@ -221,6 +223,9 @@ imaginary vibrations; translations/rotations and numerical noise can contribute.
 
 Projected vibrational analysis
 --------------------------------
+
+See :doc:`frequencies` for a complete minimum-frequency calculation, mode
+displacements, isotope substitution, Hessian reuse and numerical convergence.
 
 Use public pysisyphus objects with CCpy's calculator, on the same electronic
 surface and basis as the optimization:

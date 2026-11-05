@@ -10,9 +10,12 @@ indices must not be mixed with the interface described here.
 Start with :doc:`setup`, choose a method from :doc:`ground` or :doc:`excited`,
 then use :doc:`guesses` to select excited roots. :doc:`spaces` explains frozen
 cores, FNOs and selected determinants; :doc:`properties` covers left states,
-densities and response. :doc:`gradients` details analytic and numerical derivatives;
+densities and response. :doc:`multipoles` covers relaxed moments and IR
+intensities.
+:doc:`gradients` details analytic and numerical derivatives;
 :doc:`geometry` covers minima, transition states and two-sided IRC validation
-through pysisyphus. :doc:`options` documents solver controls,
+through pysisyphus. :doc:`frequencies` gives the full harmonic vibrational
+analysis workflow. :doc:`options` documents solver controls,
 restarts and extending the API. :doc:`catalog` lists every exported class and
 its actual constructor, dependencies and equation implementation.
 
@@ -25,8 +28,10 @@ its actual constructor, dependencies and equation implementation.
    guesses
    spaces
    properties
+   multipoles
    gradients
    geometry
+   frequencies
    options
    catalog
 

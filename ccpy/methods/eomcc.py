@@ -247,11 +247,12 @@ class EEEOMCCBase(EOMCCBase):
     fno_sector = "EE"
     order = 2
 
-    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         self.ensure_solved()
         left, hbar = self.left.ensure_solved(), self.hbar
         return self._gradient_function()(hbar.T, self.R[root], self.r0[root], left.L[root], hbar.H, self.reference,
-                                         zvector_tol=zvector_tol, perturbation=perturbation)
+                                         zvector_tol=zvector_tol, perturbation=perturbation, properties=properties)
 
     def _new_operator(self):
         return ClusterOperator(self.system, order=self.order)

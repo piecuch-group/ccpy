@@ -2135,7 +2135,7 @@ Source description::
 * Defined in ``ccpy.methods.base``.
 * Extension base; choose a concrete subclass for calculations.
 * Class-level ``requires_df_port = False``.
-* Public members defined here: ``system`` (property), ``molecule`` (property), ``reference_energy`` (property), ``fno_result`` (property), ``fno_options`` (property), ``solve()``, ``energy()``, ``raw_energy()``, ``ensure_solved()``, ``is_current()``, ``gradient(**kwargs)``, ``energy_and_gradient(**kwargs)``, ``has_analytic_gradient(**kwargs)``, ``fd_gradient(**kwargs)``, ``at_geometry(molecule)``.
+* Public members defined here: ``system`` (property), ``molecule`` (property), ``reference_energy`` (property), ``fno_result`` (property), ``fno_options`` (property), ``solve()``, ``energy()``, ``raw_energy()``, ``ensure_solved()``, ``is_current()``, ``gradient(perturbation=None, properties=None, **kwargs)``, ``multipole_moments(order=1, origin=None, **kwargs)``, ``gradient_and_dipole(**kwargs)``, ``energy_and_gradient(**kwargs)``, ``has_analytic_gradient(**kwargs)``, ``fd_gradient(**kwargs)``, ``at_geometry(molecule)``.
 
 Preparation and registry functions
 ----------------------------------

@@ -48,10 +48,13 @@ densities (D, Y) with [h, a+ i] and [B_x, a+ i],
 The gradient is assembled as
 
   1. sources: the triples (one Fortran pass, ccpy.gradients.crcc23_gradient.calc_triples) give
-     delta, W, F_r0, F_r, F_l and F_t;
+     delta, W and F_l; the triples RDMs <V3|O|0>, <V3|O|R> and <L|O|U3>
+     (ccpy.gradients.crcc23_gradient.build_triples_rdm_1A ... 2C), whose rotations are the singles
+     of F_r and F_t; and the T2 derivatives (build_triples_dt_2A ... 2C), the doubles of F_r and F_t;
   2. responses: z_b (the EOMCCSD multipliers, ccpy.gradients.eomccsd_gradient.build_q_* and
      solve_z), the state multipliers b and a (deflated, solve_state), z_c (build_g_1A ... 2C);
-  3. the bare-frame densities D1 = dE/dh and Y_x = dE/dB_x of the Hbar coefficients
+  3. the RDMs, in the bare frame D1 = dE/dh and Y_x = dE/dB_x, of the Hbar coefficients (the
+     triples RDMs of step 1 and the response terms)
      l r^T + z_b e0^T (base) and v r^T + l u^T + W e0 e0^T + z_c e0^T + a r^T + l b^T (correction),
      plus the bare-Fock denominator density (Eqs. 8.9-8.10);
   4. orbital relaxation (ccpy.gradients.orbital_response) and
@@ -72,11 +75,12 @@ import numpy as np
 import scipy.sparse.linalg as spla
 
 from ccpy.density.ccsd_rdm import calc_ccsd_rdm, calc_ccsd_rdm_derivative, calc_rdm2_vvvv_slice
-from ccpy.gradients.crcc23_gradient import (backprop_triples_intermediates_aaa, backprop_triples_intermediates_aab,
-                                            backprop_triples_intermediates_abb, backprop_triples_intermediates_bbb,
+from ccpy.gradients.crcc23_gradient import (build_triples_dt_2A, build_triples_dt_2B, build_triples_dt_2C,
                                             build_triples_intermediates_aaa, build_triples_intermediates_aab,
                                             build_triples_intermediates_abb, build_triples_intermediates_bbb,
-                                            calc_triples, cholesky_ladder, zero_triples_density)
+                                            build_triples_rdm_1A, build_triples_rdm_1B, build_triples_rdm_2A,
+                                            build_triples_rdm_2B, build_triples_rdm_2C, calc_triples,
+                                            cholesky_ladder, zero_triples_density)
 from ccpy.gradients.density_gradient import build_DY, get_bare_integrals, zero_density
 from ccpy.gradients.derivative_integrals import contract_derivative_integrals, print_gradient
 from ccpy.gradients.eomccsd_gradient import (build_q_1A, build_q_1B, build_q_2A, build_q_2B, build_q_2C,
@@ -88,12 +92,13 @@ from ccpy.models.integrals import Integral
 
 
 def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zvector_tol=1.0e-10, components=False,
-                            perturbation=None, verbose=True):
+                            perturbation=None, properties=None, verbose=True):
     """Analytic delta-CR-EOMCC(2,3)_A gradient of one EOMCCSD root, (natoms, 3) in Eh/bohr, from the
     CCSD T, the root's R, r0, L, omega, and the CCSD HBar, on the SCF reference
     (ccpy.methods.Reference). components=True returns a dict with the base (EOMCCSD, nuclear
     repulsion included), correction and total gradients. perturbation: AO one-electron operator(s),
-    for which dE/dlambda is returned instead (see contract_derivative_integrals)."""
+    for which dE/dlambda is returned instead (see contract_derivative_integrals); with properties V,
+    (gradient, dE/dlambda) (components: a "properties" entry)."""
     if reference.system.cholesky:
         from ccpy.left.left_ccsd_chol import LH_fun
     else:
@@ -169,32 +174,34 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     delta_Q, W = tr["delta"], tr["W"]
     if delta is not None and abs(delta_Q - delta) > 1.0e-8:
         raise RuntimeError(f"delta from the moments ({delta_Q:.12f}) does not match the energy ({delta:.12f}).")
-    # v . (J_g . t_g + X_g . r_g) through the intermediates:
-    #   v . M3(T) = v . X_g(T, H) . t_g:        T2 gradient dT0, H(T1) densities rdm_v0
-    #   v . X_g(T, H1R) . t_g:                   T2 gradient dTH1
-    #   v . X_g(T, H) . r_g + v . X_g(R, H) . t_g: T2 gradient dTR, H(T1) densities rdm_vR
-    zeros_T = {"aa": np.zeros_like(T.aa), "ab": np.zeros_like(T.ab), "bb": np.zeros_like(T.bb)}
-    dT0, dTH1, dTR, dT_unused = (copy.deepcopy(zeros_T), copy.deepcopy(zeros_T), copy.deepcopy(zeros_T),
-                                 copy.deepcopy(zeros_T))
+    # v . (J_g . t_g + X_g . r_g) through the intermediates, from G_g = sum_K v_K dM_K/dX_g (at t_g)
+    # and GR_g = sum_K v_K dM_K/dX_g (at r_g):
+    #   v . M3(T) = v . X_g(T, H) . t_g:            triples RDM rdm_v0, T2 derivative dT0
+    #   v . X_g(T, H1R) . t_g:                       T2 derivative dTH1
+    #   v . X_g(T, H) . r_g + v . X_g(R, H) . t_g:   triples RDM rdm_vR, T2 derivative dTR
     rdm1_v0, rdm2_v0 = zero_triples_density(system)
+    build_triples_rdm_1A(rdm1_v0, tr["G"], T)
+    build_triples_rdm_1B(rdm1_v0, tr["G"], T)
+    build_triples_rdm_2A(rdm2_v0, tr["G"], T)
+    build_triples_rdm_2B(rdm2_v0, tr["G"], T)
+    build_triples_rdm_2C(rdm2_v0, tr["G"], T)
     rdm1_vR, rdm2_vR = zero_triples_density(system)
-    rdm1_unused, rdm2_unused = zero_triples_density(system)
-    backprop_triples_intermediates_aaa(tr["dX"]["aaa"], T, H, dT0, rdm1_v0, rdm2_v0)
-    backprop_triples_intermediates_aab(tr["dX"]["aab"], T, H, dT0, rdm1_v0, rdm2_v0)
-    backprop_triples_intermediates_abb(tr["dX"]["abb"], T, H, dT0, rdm1_v0, rdm2_v0)
-    backprop_triples_intermediates_bbb(tr["dX"]["bbb"], T, H, dT0, rdm1_v0, rdm2_v0)
-    backprop_triples_intermediates_aaa(tr["dX"]["aaa"], T, H1R, dTH1, rdm1_unused, rdm2_unused)
-    backprop_triples_intermediates_aab(tr["dX"]["aab"], T, H1R, dTH1, rdm1_unused, rdm2_unused)
-    backprop_triples_intermediates_abb(tr["dX"]["abb"], T, H1R, dTH1, rdm1_unused, rdm2_unused)
-    backprop_triples_intermediates_bbb(tr["dX"]["bbb"], T, H1R, dTH1, rdm1_unused, rdm2_unused)
-    backprop_triples_intermediates_aaa(tr["dXR"]["aaa"], T, H, dTR, rdm1_vR, rdm2_vR)
-    backprop_triples_intermediates_aab(tr["dXR"]["aab"], T, H, dTR, rdm1_vR, rdm2_vR)
-    backprop_triples_intermediates_abb(tr["dXR"]["abb"], T, H, dTR, rdm1_vR, rdm2_vR)
-    backprop_triples_intermediates_bbb(tr["dXR"]["bbb"], T, H, dTR, rdm1_vR, rdm2_vR)
-    backprop_triples_intermediates_aaa(tr["dX"]["aaa"], R, H, dT_unused, rdm1_vR, rdm2_vR, constant=False)
-    backprop_triples_intermediates_aab(tr["dX"]["aab"], R, H, dT_unused, rdm1_vR, rdm2_vR, constant=False)
-    backprop_triples_intermediates_abb(tr["dX"]["abb"], R, H, dT_unused, rdm1_vR, rdm2_vR, constant=False)
-    backprop_triples_intermediates_bbb(tr["dX"]["bbb"], R, H, dT_unused, rdm1_vR, rdm2_vR, constant=False)
+    build_triples_rdm_1A(rdm1_vR, tr["GR"], T)
+    build_triples_rdm_1B(rdm1_vR, tr["GR"], T)
+    build_triples_rdm_2A(rdm2_vR, tr["GR"], T)
+    build_triples_rdm_2B(rdm2_vR, tr["GR"], T)
+    build_triples_rdm_2C(rdm2_vR, tr["GR"], T)
+    build_triples_rdm_1A(rdm1_vR, tr["G"], R)
+    build_triples_rdm_1B(rdm1_vR, tr["G"], R)
+    build_triples_rdm_2A(rdm2_vR, tr["G"], R, constant=False)
+    build_triples_rdm_2B(rdm2_vR, tr["G"], R, constant=False)
+    build_triples_rdm_2C(rdm2_vR, tr["G"], R, constant=False)
+    dT0 = {"aa": build_triples_dt_2A(tr["G"], H), "ab": build_triples_dt_2B(tr["G"], H),
+           "bb": build_triples_dt_2C(tr["G"], H)}
+    dTH1 = {"aa": build_triples_dt_2A(tr["G"], H1R), "ab": build_triples_dt_2B(tr["G"], H1R),
+            "bb": build_triples_dt_2C(tr["G"], H1R)}
+    dTR = {"aa": build_triples_dt_2A(tr["GR"], H), "ab": build_triples_dt_2B(tr["GR"], H),
+           "bb": build_triples_dt_2C(tr["GR"], H)}
     cprime = SimpleNamespace(**tr["cprime"])
     # bare-frame densities: <V3|O|0> (D_v0), <V3|O|R> (D_vR) and <L|O|U3> (D_Lu)
     D_v0, Y_v0 = build_DY(rdm1_v0, rdm2_v0, None, H.chol, T, B, reference)
@@ -529,13 +536,18 @@ def calc_creomcc23_gradient(T, R, r0, L, omega, Hbar, reference, delta=None, zve
     grad = contract_derivative_integrals(D, Yr, Wd, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "delta-CR-EOMCC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
+    if properties is not None:
+        props = contract_derivative_integrals(D, Yr, Wd, reference, properties)
     if not components:
-        return grad
+        return grad if properties is None else (grad, props)
     D, Yr, Wd = orbital_relaxation(D1c, Yc, reference, zvector_tol=zvector_tol, verbose=False)
     grad_corr = contract_derivative_integrals(D, Yr, Wd, reference, perturbation)
     if perturbation is None:
         grad_corr -= integrals.nuclear_repulsion_deriv(reference.molecule)
-    return {"base": grad - grad_corr, "correction": grad_corr, "total": grad}
+    out = {"base": grad - grad_corr, "correction": grad_corr, "total": grad}
+    if properties is not None:
+        out["properties"] = props
+    return out
 
 
 def build_F_r_1A(D_v0, Y_v0, h, B, nfz):

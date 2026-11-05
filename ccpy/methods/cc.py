@@ -134,10 +134,11 @@ class CCBase(MethodBase):
         return self.reference_energy + self.correlation_energy
 
     # ------------------------------------------------------------------ gradients
-    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         left = self.left.ensure_solved()
         return self._gradient_function()(self.T, left.L, self.reference, zvector_tol=zvector_tol,
-                                         perturbation=perturbation)
+                                         perturbation=perturbation, properties=properties)
 
     def rdm1(self):
         return self.left.rdm1()
@@ -210,10 +211,11 @@ class CCPBase(CCBase):
         # t3_excitations is reordered in place along with T
         return cc_jacobi(update, self.T, dT, self.hamiltonian, X, self.options, self.t3_excitations)
 
-    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         left = self.left.ensure_solved()
         return self._gradient_function()(self.T, left.L, self.t3_excitations, self.reference,
-                                         zvector_tol=zvector_tol, perturbation=perturbation)
+                                         zvector_tol=zvector_tol, perturbation=perturbation, properties=properties)
 
 
 class CCSDT_P(CCPBase):

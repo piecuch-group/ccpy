@@ -20,6 +20,7 @@ GROUPS = {
     "corrections": "Noniterative and adaptive corrections",
     "left": "Left ground and excited states",
     "lrcc": "Linear response",
+    "mrcc": "State-universal multireference coupled cluster",
     "hbar": "Similarity-transformed Hamiltonians",
     "reference": "References and materialization warnings",
     "hamiltonian": "Factorized Hamiltonian",

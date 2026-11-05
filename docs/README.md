@@ -65,3 +65,7 @@ python examples/methods_api/geometry_workflows.py --task irc --method rhf --out-
 Each IRC example verifies the TS mode, both branches, relaxed endpoint frequencies
 and the ammonia inversion coordinate. Small default basis sets demonstrate the
 API; quantitative reaction energetics require independent convergence checks.
+
+Relaxed multipoles, native harmonic IR intensities and finite-field examples:
+[methods/multipoles.rst](methods/multipoles.rst), with runnable
+`examples/methods_api/multipole_ir.py`.

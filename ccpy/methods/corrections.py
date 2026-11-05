@@ -126,11 +126,12 @@ class GroundStateCorrectionBase(CorrectionBase):
     def has_analytic_gradient(self, **kwargs):
         return super().has_analytic_gradient(**kwargs) and self.stochastic is None
 
-    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         self.ensure_solved()
         hbar, left = self.hbar, self.left
         return self._gradient_function()(hbar.T, left.L, hbar.H, self.reference, delta=self.deltas[self.variant],
-                                         zvector_tol=zvector_tol, perturbation=perturbation)
+                                         zvector_tol=zvector_tol, perturbation=perturbation, properties=properties)
 
 
 class CRCC23(GroundStateCorrectionBase):
@@ -603,12 +604,13 @@ class ExcitedStateCorrectionBase(CorrectionBase):
         total = self.eom.raw_energy() + np.array([d[self.variant] for d in self.deltas])
         return total if root is None else total[root]
 
-    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         self.ensure_solved()
         eom, left, hbar = self.eom, self.left, self.eom.hbar
         return self._gradient_function()(hbar.T, eom.R[root], eom.r0[root], left.L[root], eom.omega[root], hbar.H,
                                          self.reference, delta=self.deltas[root][self.variant],
-                                         zvector_tol=zvector_tol, perturbation=perturbation)
+                                         zvector_tol=zvector_tol, perturbation=perturbation, properties=properties)
 
 
 class CREOMCC23(ExcitedStateCorrectionBase):
@@ -651,14 +653,15 @@ class CREOMCC23(ExcitedStateCorrectionBase):
         total = self.eom.raw_energy() + np.array([d[self.variant] for d in self.deltas])
         return total if root is None else total[root]
 
-    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, **kwargs):
+    def _analytic_gradient(self, root=0, zvector_tol=1.0e-10, perturbation=None, properties=None,
+                           **kwargs):
         """Gradient of delta-CR-EOMCC(2,3)_A, E_EOMCCSD + ddeltas[root]["A"]: the analytic gradient
         drops the non-size-intensive r0 (ground-state moment) part of the correction."""
         self.ensure_solved()
         eom, left, hbar = self.eom, self.left, self.eom.hbar
         return self._gradient_function()(hbar.T, eom.R[root], eom.r0[root], left.L[root], eom.omega[root], hbar.H,
                                          self.reference, delta=self.ddeltas[root][self.variant],
-                                         zvector_tol=zvector_tol, perturbation=perturbation)
+                                         zvector_tol=zvector_tol, perturbation=perturbation, properties=properties)
 
 
 class EOMCCT3(ExcitedStateCorrectionBase):

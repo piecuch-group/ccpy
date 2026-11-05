@@ -62,6 +62,16 @@ reconstructed eigenvector. Those blocks are appropriate for ADC-FNO selection.
 They are not full state RDMs, transition moments or oscillator strengths.
 Ordinary STEOM returned singles likewise are not full property wavefunctions.
 
+Relaxed moments and vibrational intensities
+---------------------------------------------
+
+``multipole_moments`` and ``gradient_and_dipole`` now use the relaxed analytic
+gradient densities. The native Hessian helpers can differentiate dipoles and
+compute harmonic IR intensities. See :doc:`multipoles` for units, nuclear signs,
+combined gradient/property returns and a finite-field energy recipe for methods
+without an analytic property path. These relaxed property helpers are distinct
+from the unrelaxed T1-frame density getters above.
+
 One-body operators and LRCCSD
 -----------------------------
 
@@ -110,7 +120,8 @@ Gradients and finite differences
 
 For the complete derivative guide and availability table, see :doc:`gradients`.
 For pysisyphus minima, transition-state searches, frequencies and two-sided
-IRC validation, see :doc:`geometry`.
+IRC validation, see :doc:`geometry`. Harmonic frequencies and normal modes
+are covered in :doc:`frequencies`.
 
 .. code-block:: python
 

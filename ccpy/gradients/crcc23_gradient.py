@@ -34,9 +34,12 @@ The gradient is assembled as
 
   1. sources: the triples M, N, D in one pass over occupied triples (Fortran,
      ccpy/lib/fortran/crcc23_gradient_loops.f90) with the moments written as
-     M = A sum_g X_g . t_g (build_triples_intermediates_*), giving delta, s_lambda and s_t;
+     M = A sum_g X_g . t_g (build_triples_intermediates_*), giving delta and s_lambda; the
+     triples RDM (build_triples_rdm_1A ... 2C), whose rotation is the singles of s_t
+     (build_s_t_1A, 1B); and the doubles of s_t (build_triples_dt_2A ... 2C);
   2. responses: sigma (EOMCCSD HR), k (build_k_1A ... build_k_2C), pi (left-CCSD LH_fun);
-  3. the bare-frame densities D1 = dE/dh and Y_x = dE/dB_x of the Lagrangian:
+  3. the RDMs, in the bare frame D1 = dE/dh and Y_x = dE/dB_x, of the Lagrangian (the triples RDM
+     of step 1 and the response terms):
      <0|(1 + Lambda) Hbar|0> + <0|(Pi + C) Hbar|0> + <0|(1 + Lambda)[Hbar, Sigma]|0>
      + sum_K (v_K M_K + u_K N_K) - sum_K u_K v_K D_K;
   4. orbital relaxation (ccpy.gradients.orbital_response) and
@@ -68,12 +71,13 @@ from ccpy.models.integrals import Integral
 
 
 def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10, components=False, perturbation=None,
-                         verbose=True):
+                         properties=None, verbose=True):
     """Analytic CR-CC(2,3)_A nuclear gradient, (natoms, 3) in Eh/bohr, from converged CCSD (T),
     left-CCSD (L) and the CCSD HBar (Hbar) on the SCF reference (ccpy.methods.Reference).
     components=True returns a dict with the base (CCSD, nuclear repulsion included), correction
     and total gradients. perturbation: AO one-electron operator(s), for which dE/dlambda is
-    returned instead (see contract_derivative_integrals)."""
+    returned instead (see contract_derivative_integrals); with properties V, (gradient, dE/dlambda)
+    (components: a "properties" entry)."""
     if reference.system.cholesky:
         from ccpy.left.left_ccsd_chol import LH_fun
     else:
@@ -87,20 +91,22 @@ def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10,
 
     # 1. sources
     # the triples: M = <K|(H(T1) e^T2)_C|0> = A sum_g X_g . t_g, N = <0|(L1 + L2) Hbar|K>, D_K, in one
-    # pass over the occupied triples, accumulating delta and the cotangents (calc_triples)
+    # pass over the occupied triples (calc_triples), giving delta, G_g = sum_K v_K dM_K/dX_g, the
+    # T2 derivative of the trailing t_g, s_lambda and the N part of the triples RDM
     X = {"aaa": build_triples_intermediates_aaa(T, H), "aab": build_triples_intermediates_aab(T, H),
          "abb": build_triples_intermediates_abb(T, H), "bbb": build_triples_intermediates_bbb(T, H)}
     rdm1_Q, rdm2_Q = zero_triples_density(system)
     tr = calc_triples(X, T, L, H, reference, rdm1_Q, rdm2_Q)
     if delta is not None and abs(tr["delta"] - delta) > 1.0e-8:
         raise RuntimeError(f"delta from the moments ({tr['delta']:.12f}) does not match the energy ({delta:.12f}).")
-    # v . M through the intermediates X_g: the T2 gradient (dT) and the H(T1) densities (rdm_Q)
-    dT = {"aa": tr["dT"]["aa"].copy(), "ab": tr["dT"]["ab"].copy(), "bb": tr["dT"]["bb"].copy()}
-    backprop_triples_intermediates_aaa(tr["dX"]["aaa"], T, H, dT, rdm1_Q, rdm2_Q)
-    backprop_triples_intermediates_aab(tr["dX"]["aab"], T, H, dT, rdm1_Q, rdm2_Q)
-    backprop_triples_intermediates_abb(tr["dX"]["abb"], T, H, dT, rdm1_Q, rdm2_Q)
-    backprop_triples_intermediates_bbb(tr["dX"]["bbb"], T, H, dT, rdm1_Q, rdm2_Q)
-    # bare-frame densities of sum_K (v_K M_K + u_K N_K)
+    # the triples RDM, densities of sum_K (v_K M_K + u_K N_K) with respect to the H(T1) blocks: the
+    # M part from G_g (the N part is in rdm_Q already). It is needed here for the T1 source s_t(ai)
+    # and added to the total RDMs in step 3
+    build_triples_rdm_1A(rdm1_Q, tr["G"], T)
+    build_triples_rdm_1B(rdm1_Q, tr["G"], T)
+    build_triples_rdm_2A(rdm2_Q, tr["G"], T)
+    build_triples_rdm_2B(rdm2_Q, tr["G"], T)
+    build_triples_rdm_2C(rdm2_Q, tr["G"], T)
     D_Q, Y_Q = build_DY(rdm1_Q, rdm2_Q, None, H.chol, T, B, reference)
     # s_lambda(mu) = sum_K <mu|Hbar|K> u_K (doubles of the unique amplitudes: antisymmetrized)
     dL = tr["dL"]
@@ -109,11 +115,16 @@ def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10,
         aa=dL["aa"] - dL["aa"].transpose(1, 0, 2, 3) - dL["aa"].transpose(0, 1, 3, 2) + dL["aa"].transpose(1, 0, 3, 2),
         bb=dL["bb"] - dL["bb"].transpose(1, 0, 2, 3) - dL["bb"].transpose(0, 1, 3, 2) + dL["bb"].transpose(1, 0, 3, 2),
     )
-    # s_t(mu) = sum_K [v_K dM_K/dt_mu + u_K dN_K/dt_mu]
+    # s_t(mu) = sum_K [v_K dM_K/dt_mu + u_K dN_K/dt_mu]: singles from the triples RDM against
+    # [H(T1), a+ i]; doubles from the trailing t_g (loops) and the T2 inside the X_g (raw, then
+    # antisymmetrized)
+    dT_aa = tr["dT"]["aa"] + build_triples_dt_2A(tr["G"], H)
+    dT_ab = tr["dT"]["ab"] + build_triples_dt_2B(tr["G"], H)
+    dT_bb = tr["dT"]["bb"] + build_triples_dt_2C(tr["G"], H)
     s_t = SimpleNamespace(
-        a=build_s_t_1A(D_Q, Y_Q, h, B, nfz), b=build_s_t_1B(D_Q, Y_Q, h, B, nfz), ab=dT["ab"],
-        aa=dT["aa"] - dT["aa"].transpose(1, 0, 2, 3) - dT["aa"].transpose(0, 1, 3, 2) + dT["aa"].transpose(1, 0, 3, 2),
-        bb=dT["bb"] - dT["bb"].transpose(1, 0, 2, 3) - dT["bb"].transpose(0, 1, 3, 2) + dT["bb"].transpose(1, 0, 3, 2),
+        a=build_s_t_1A(D_Q, Y_Q, h, B, nfz), b=build_s_t_1B(D_Q, Y_Q, h, B, nfz), ab=dT_ab,
+        aa=dT_aa - dT_aa.transpose(1, 0, 2, 3) - dT_aa.transpose(0, 1, 3, 2) + dT_aa.transpose(1, 0, 3, 2),
+        bb=dT_bb - dT_bb.transpose(1, 0, 2, 3) - dT_bb.transpose(0, 1, 3, 2) + dT_bb.transpose(1, 0, 3, 2),
     )
 
     # 2. responses
@@ -209,7 +220,7 @@ def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10,
     Yc.b.ov += Y_L.b.oo[:, :, nfz:] @ S.b.T
     Yc.b.ov[:, nfz:, :] -= S.b.T @ Y_L.b.vv
     Yc.b.vv += Y_L.b.vo[:, :, nfz:] @ S.b.T
-    # sum_K (v_K M_K + u_K N_K)
+    # the triples RDM: sum_K (v_K M_K + u_K N_K)
     D1c.a.oo += D_Q.a.oo
     D1c.a.ov += D_Q.a.ov
     D1c.a.vo += D_Q.a.vo
@@ -264,13 +275,18 @@ def calc_crcc23_gradient(T, L, Hbar, reference, delta=None, zvector_tol=1.0e-10,
     grad = contract_derivative_integrals(D, Yr, W, reference, perturbation)
     if verbose:
         print_gradient(reference.molecule, grad, "CR-CC(2,3)_A Analytic Gradient", time.perf_counter() - t0)
+    if properties is not None:
+        props = contract_derivative_integrals(D, Yr, W, reference, properties)
     if not components:
-        return grad
+        return grad if properties is None else (grad, props)
     D, Yr, W = orbital_relaxation(D1c, Yc, reference, zvector_tol=zvector_tol, verbose=False)
     grad_corr = contract_derivative_integrals(D, Yr, W, reference, perturbation)
     if perturbation is None:
         grad_corr -= integrals.nuclear_repulsion_deriv(reference.molecule)
-    return {"base": grad - grad_corr, "correction": grad_corr, "total": grad}
+    out = {"base": grad - grad_corr, "correction": grad_corr, "total": grad}
+    if properties is not None:
+        out["properties"] = props
+    return out
 
 
 def build_s_t_1A(D_Q, Y_Q, h, B, nfz):
@@ -860,11 +876,14 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
         D_K = f_ii + f_jj + f_kk - f_aa - f_bb - f_cc (+ omega),   u_K = M_K / D_K,  v_K = N_K / D_K
 
     accumulating delta = sum_K v_K M_K, W = sum_K u_K v_K, F_r0 = sum_K v_K <K|(H(T1) e^T2)_C|0>,
-    d_p = -sum_K u_K v_K chi_Kp (d D_K/d f_pp = chi_Kp), and the raw cotangents (every stored
+    d_p = -sum_K u_K v_K chi_Kp (d D_K/d f_pp = chi_Kp), and the raw derivatives (every stored
     array entry independent):
-        dX_g = sum_K v_K dM_K/dX_g, dT = sum_K v_K dM_K/dt (trailing t_g), dL = sum_K u_K <mu|Hbar|K>,
-        rdm += sum_K u_K dN_K/dH(T1) (added to rdm1, rdm2: zero_triples_density),
-    and, for an excited state, dJT = sum_K v_K dM_K/dt (J_g . t_g), dXR = sum_K v_K dM_K/dX_g
+        G_g = sum_K v_K dM_K/dX_g (the triples contracted into each intermediate; the triples RDM
+              and T2 source follow from it, build_triples_rdm_* and build_triples_dt_*),
+        dT = sum_K v_K dM_K/dt (the trailing t_g), dL = sum_K u_K <mu|Hbar|K>,
+        rdm += sum_K u_K dN_K/dH(T1), the N part of the triples RDM (added to rdm1, rdm2:
+              zero_triples_density),
+    and, for an excited state, dJT = sum_K v_K dM_K/dt (J_g . t_g), GR_g = sum_K v_K dM_K/dX_g
     (X_g . r_g) and c'_X = <V3|R|X>. f is the bare Fock diagonal (reference.H), as in the energy.
     Ground state: J = X, R = T (unused); excited state (ccpy.gradients.creomcc23_gradient): R, r0,
     J_g = r0 X_g + X_g(T, H1) + X_g(R, H) (linear part), L the left EOMCCSD vector."""
@@ -879,7 +898,7 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
     f = np.asfortranarray
     out = {"delta": 0.0, "W": 0.0, "F_r0": 0.0,
            "d": {"a": {"o": np.zeros(noa), "v": np.zeros(nua)}, "b": {"o": np.zeros(nob), "v": np.zeros(nub)}},
-           "dX": {}, "dXR": {},
+           "G": {}, "GR": {},
            "dT": {"aa": np.zeros_like(T.aa), "ab": np.zeros_like(T.ab), "bb": np.zeros_like(T.bb)},
            "dJT": {"aa": np.zeros_like(T.aa), "ab": np.zeros_like(T.ab), "bb": np.zeros_like(T.bb)},
            "dL": {"a": np.zeros_like(L.a), "b": np.zeros_like(L.b), "aa": np.zeros_like(L.aa),
@@ -909,8 +928,8 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
     out["F_r0"] += fr0
     out["d"]["a"]["o"] += d_o
     out["d"]["a"]["v"] += d_v
-    out["dX"]["aaa"] = [dx1, dx2r.transpose(0, 1, 3, 2)]
-    out["dXR"]["aaa"] = [dxr1, dxr2r.transpose(0, 1, 3, 2)]
+    out["G"]["aaa"] = [dx1, dx2r.transpose(0, 1, 3, 2)]
+    out["GR"]["aaa"] = [dxr1, dxr2r.transpose(0, 1, 3, 2)]
     out["dT"]["aa"] += dt2
     out["dJT"]["aa"] += dtj2
     out["cprime"]["a"] += cp1
@@ -943,8 +962,8 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
     out["F_r0"] += fr0
     out["d"]["b"]["o"] += d_o
     out["d"]["b"]["v"] += d_v
-    out["dX"]["bbb"] = [dx1, dx2r.transpose(0, 1, 3, 2)]
-    out["dXR"]["bbb"] = [dxr1, dxr2r.transpose(0, 1, 3, 2)]
+    out["G"]["bbb"] = [dx1, dx2r.transpose(0, 1, 3, 2)]
+    out["GR"]["bbb"] = [dxr1, dxr2r.transpose(0, 1, 3, 2)]
     out["dT"]["bb"] += dt2
     out["dJT"]["bb"] += dtj2
     out["cprime"]["b"] += cp1
@@ -991,8 +1010,8 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
     out["d"]["b"]["o"] += d_[1]
     out["d"]["a"]["v"] += d_[2]
     out["d"]["b"]["v"] += d_[3]
-    out["dX"]["aab"] = [dxs[0], dxs[1], dxs[2].transpose(0, 1, 3, 2), dxs[3], dxs[4].transpose(0, 1, 3, 2), dxs[5]]
-    out["dXR"]["aab"] = [dxrs[0], dxrs[1], dxrs[2].transpose(0, 1, 3, 2), dxrs[3], dxrs[4].transpose(0, 1, 3, 2),
+    out["G"]["aab"] = [dxs[0], dxs[1], dxs[2].transpose(0, 1, 3, 2), dxs[3], dxs[4].transpose(0, 1, 3, 2), dxs[5]]
+    out["GR"]["aab"] = [dxrs[0], dxrs[1], dxrs[2].transpose(0, 1, 3, 2), dxrs[3], dxrs[4].transpose(0, 1, 3, 2),
                          dxrs[5]]
     out["dT"]["aa"] += dts[0] + dts[1].transpose(0, 1, 3, 2)
     out["dT"]["ab"] += dts[2] + dts[3].transpose(0, 1, 3, 2)
@@ -1051,8 +1070,8 @@ def calc_triples(X, T, L, H, reference, rdm1, rdm2, omega=0.0, R=None, r0=0.0, J
     out["d"]["b"]["o"] += d_[1]
     out["d"]["a"]["v"] += d_[2]
     out["d"]["b"]["v"] += d_[3]
-    out["dX"]["abb"] = [dxs[0].transpose(0, 1, 3, 2), dxs[1], dxs[2], dxs[3], dxs[4].transpose(0, 1, 3, 2), dxs[5]]
-    out["dXR"]["abb"] = [dxrs[0].transpose(0, 1, 3, 2), dxrs[1], dxrs[2], dxrs[3], dxrs[4].transpose(0, 1, 3, 2),
+    out["G"]["abb"] = [dxs[0].transpose(0, 1, 3, 2), dxs[1], dxs[2], dxs[3], dxs[4].transpose(0, 1, 3, 2), dxs[5]]
+    out["GR"]["abb"] = [dxrs[0].transpose(0, 1, 3, 2), dxrs[1], dxrs[2], dxrs[3], dxrs[4].transpose(0, 1, 3, 2),
                          dxrs[5]]
     out["dT"]["bb"] += dts[0] + dts[1].transpose(0, 1, 3, 2)
     out["dT"]["ab"] += dts[2] + dts[3].transpose(0, 1, 3, 2)
@@ -1339,288 +1358,502 @@ def build_triples_intermediates_bbb(T, H, constant=True):
     return [X1, X2]
 
 
-def backprop_triples_intermediates_aaa(dX, T, H, dT, rdm1, rdm2, constant=True):
-    """Chain rule of build_triples_intermediates_aaa for the cotangents dX_g of the X_g
-    (from the <ijkabc|...|0> moments): for every term c H(T1) T2 of X_g, the raw T2 gradient
-    dT += c dX_g . H and the H(T1) density rdm += c dX_g . T2 (rdm += c dX_g for the bare blocks)."""
-    dX1, dX2 = dX
+def build_triples_rdm_1A(rdm1, G, T):
+    """Adds to rdm1 the alpha one-body triples RDM of sum_K v_K <K|(H(T1) e^T2)_C|0>, the derivative with
+    respect to the H(T1) elements f(me). With the moments written as M_K = A sum_g X_g . t_g
+    (build_triples_intermediates_*) and G_g = sum_K v_K dM_K/dX_g (calc_triples), every term
+    c <..|..> t2 of an X_g contributes c G_g . t2.
+    T is the amplitude inside the X_g (T, or R for the linear part)."""
+    # aaa moments <ijkabc|(H(T1) e^T2)_C|0>
+    G1 = G["aaa"][0]
+    # X1(amij), times t(bc,mk) in <ijkabc|(H_N e^T2)_C|0>
+    #     f(me) t(ae,ij)
+    rdm1.a.ov -= 0.25 * np.einsum("amij,aeij->me", G1, T.aa, optimize=True)
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G1, G5 = G["aab"][0], G["aab"][4]
+    # X1(bcek), times t(ae,ij) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(me) t(bc~,mk~)
+    rdm1.a.ov -= 0.5 * np.einsum("bcek,bcmk->me", G1, T.ab, optimize=True)
+    # X5(abie), times t(ec~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(me) t(ab,im)
+    rdm1.a.ov -= 0.5 * np.einsum("abie,abim->me", G5, T.aa, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G3 = G["abb"][2]
+    # X3(caei), times t(eb~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(me) t(ca~,mi~)
+    rdm1.a.ov -= 1 * np.einsum("caei,cami->me", G3, T.ab, optimize=True)
+
+
+def build_triples_rdm_1B(rdm1, G, T):
+    """Adds to rdm1 the beta one-body triples RDM of sum_K v_K <K|(H(T1) e^T2)_C|0>, the derivative with
+    respect to the H(T1) elements f(m~e~). With the moments written as M_K = A sum_g X_g . t_g
+    (build_triples_intermediates_*) and G_g = sum_K v_K dM_K/dX_g (calc_triples), every term
+    c <..|..> t2 of an X_g contributes c G_g . t2.
+    T is the amplitude inside the X_g (T, or R for the linear part)."""
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G3 = G["aab"][2]
+    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(ac~,im~)
+    rdm1.b.ov -= 1 * np.einsum("acie,acim->me", G3, T.ab, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G1, G5 = G["abb"][0], G["abb"][4]
+    # X1(cbke), times t(a~e~,i~j~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(cb~,km~)
+    rdm1.b.ov -= 0.5 * np.einsum("cbke,cbkm->me", G1, T.ab, optimize=True)
+    # X5(abie), times t(ce~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(a~b~,i~m~)
+    rdm1.b.ov -= 0.5 * np.einsum("abie,abim->me", G5, T.bb, optimize=True)
+    # bbb moments <i~j~k~a~b~c~|(H(T1) e^T2)_C|0>
+    G1 = G["bbb"][0]
+    # X1(amij), times t(b~c~,m~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(a~e~,i~j~)
+    rdm1.b.ov -= 0.25 * np.einsum("amij,aeij->me", G1, T.bb, optimize=True)
+
+
+def build_triples_rdm_2A(rdm2, G, T, constant=True):
+    """Adds to rdm2 the aa two-body triples RDM of sum_K v_K <K|(H(T1) e^T2)_C|0>, the derivative with
+    respect to the H(T1) elements <pq||rs>. With the moments written as M_K = A sum_g X_g . t_g
+    (build_triples_intermediates_*) and G_g = sum_K v_K dM_K/dX_g (calc_triples), every term
+    c <..|..> t2 of an X_g contributes c G_g . t2 (c G_g for a bare H(T1) block, constant=True).
+    T is the amplitude inside the X_g (T, or R for the linear part with constant=False)."""
+    # aaa moments <ijkabc|(H(T1) e^T2)_C|0>
+    G1, G2 = G["aaa"][0], G["aaa"][1]
     # X1(amij), times t(bc,mk) in <ijkabc|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <am||ij>
-        rdm2.aa.vooo -= 0.25 * dX1
-    #     d/dH, d/dt of f(me) t(ae,ij)
-    rdm1.a.ov -= 0.25 * np.einsum("amij,aeij->me", dX1, T.aa, optimize=True)
-    dT["aa"] -= 0.25 * np.einsum("amij,me->aeij", dX1, H.a.ov, optimize=True)
-    #     d/dH, d/dt of <am||ef> t(ef,ij)
-    rdm2.aa.vovv -= 0.125 * np.einsum("amij,efij->amef", dX1, T.aa, optimize=True)
-    dT["aa"] -= 0.125 * np.einsum("amij,amef->efij", dX1, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <mn||jf> t(af,in)
-    rdm2.aa.ooov -= 0.5 * np.einsum("amij,afin->mnjf", dX1, T.aa, optimize=True)
-    dT["aa"] -= 0.5 * np.einsum("amij,mnjf->afin", dX1, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|jf~> t(af~,in~)
-    rdm2.ab.ooov -= 0.5 * np.einsum("amij,afin->mnjf", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("amij,mnjf->afin", dX1, H.ab.ooov, optimize=True)
+        rdm2.aa.vooo -= 0.25 * G1
+    #     <am||ef> t(ef,ij)
+    rdm2.aa.vovv -= 0.125 * np.einsum("amij,efij->amef", G1, T.aa, optimize=True)
+    #     <mn||jf> t(af,in)
+    rdm2.aa.ooov -= 0.5 * np.einsum("amij,afin->mnjf", G1, T.aa, optimize=True)
     # X2(abie), times t(ec,jk) in <ijkabc|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <ab||ie>
-        rdm2.aa.vvov += 0.25 * dX2
-    #     d/dH, d/dt of <mn||ie> t(ab,mn)
-    rdm2.aa.ooov += 0.125 * np.einsum("abie,abmn->mnie", dX2, T.aa, optimize=True)
-    dT["aa"] += 0.125 * np.einsum("abie,mnie->abmn", dX2, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <bn||ef> t(af,in)
-    rdm2.aa.vovv += 0.5 * np.einsum("abie,afin->bnef", dX2, T.aa, optimize=True)
-    dT["aa"] += 0.5 * np.einsum("abie,bnef->afin", dX2, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <bn~|ef~> t(af~,in~)
-    rdm2.ab.vovv += 0.5 * np.einsum("abie,afin->bnef", dX2, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("abie,bnef->afin", dX2, H.ab.vovv, optimize=True)
-
-
-def backprop_triples_intermediates_aab(dX, T, H, dT, rdm1, rdm2, constant=True):
-    """Chain rule of build_triples_intermediates_aab for the cotangents dX_g of the X_g
-    (from the <ijk~abc~|...|0> moments): for every term c H(T1) T2 of X_g, the raw T2 gradient
-    dT += c dX_g . H and the H(T1) density rdm += c dX_g . T2 (rdm += c dX_g for the bare blocks)."""
-    dX1, dX2, dX3, dX4, dX5, dX6 = dX
+        rdm2.aa.vvov += 0.25 * G2
+    #     <mn||ie> t(ab,mn)
+    rdm2.aa.ooov += 0.125 * np.einsum("abie,abmn->mnie", G2, T.aa, optimize=True)
+    #     <bn||ef> t(af,in)
+    rdm2.aa.vovv += 0.5 * np.einsum("abie,afin->bnef", G2, T.aa, optimize=True)
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G1, G2, G5, G6 = G["aab"][0], G["aab"][1], G["aab"][4], G["aab"][5]
     # X1(bcek), times t(ae,ij) in <ijk~abc~|(H_N e^T2)_C|0>
-    if constant:
-        #     (V_N T2)_C: <bc~|ek~>
-        rdm2.ab.vvvo += 0.5 * dX1
-    #     d/dH, d/dt of f(me) t(bc~,mk~)
-    rdm1.a.ov -= 0.5 * np.einsum("bcek,bcmk->me", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("bcek,me->bcmk", dX1, H.a.ov, optimize=True)
-    #     d/dH, d/dt of <nm~|ek~> t(bc~,nm~)
-    rdm2.ab.oovo += 0.5 * np.einsum("bcek,bcnm->nmek", dX1, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("bcek,nmek->bcnm", dX1, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <bm~|ef~> t(c~f~,k~m~)
-    rdm2.ab.vovv += 0.5 * np.einsum("bcek,cfkm->bmef", dX1, T.bb, optimize=True)
-    dT["bb"] += 0.5 * np.einsum("bcek,bmef->cfkm", dX1, H.ab.vovv, optimize=True)
-    #     d/dH, d/dt of <bm||ef> t(fc~,mk~)
-    rdm2.aa.vovv += 0.5 * np.einsum("bcek,fcmk->bmef", dX1, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("bcek,bmef->fcmk", dX1, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <mc~|ef~> t(bf~,mk~)
-    rdm2.ab.ovvv -= 0.5 * np.einsum("bcek,bfmk->mcef", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("bcek,mcef->bfmk", dX1, H.ab.ovvv, optimize=True)
+    #     <bm||ef> t(fc~,mk~)
+    rdm2.aa.vovv += 0.5 * np.einsum("bcek,fcmk->bmef", G1, T.ab, optimize=True)
     # X2(mcjk), times t(ab,im) in <ijk~abc~|(H_N e^T2)_C|0>
-    if constant:
-        #     (V_N T2)_C: <mc~|jk~>
-        rdm2.ab.ovoo -= 0.5 * dX2
-    #     d/dH, d/dt of <mn||jf> t(fc~,nk~)
-    rdm2.aa.ooov -= 0.5 * np.einsum("mcjk,fcnk->mnjf", dX2, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("mcjk,mnjf->fcnk", dX2, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|jf~> t(f~c~,n~k~)
-    rdm2.ab.ooov -= 0.5 * np.einsum("mcjk,fcnk->mnjf", dX2, T.bb, optimize=True)
-    dT["bb"] -= 0.5 * np.einsum("mcjk,mnjf->fcnk", dX2, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|fk~> t(fc~,jn~)
-    rdm2.ab.oovo += 0.5 * np.einsum("mcjk,fcjn->mnfk", dX2, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("mcjk,mnfk->fcjn", dX2, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <mc~|fe~> t(fe~,jk~)
-    rdm2.ab.ovvv -= 0.5 * np.einsum("mcjk,fejk->mcfe", dX2, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("mcjk,mcfe->fejk", dX2, H.ab.ovvv, optimize=True)
-    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
-    if constant:
-        #     (V_N T2)_C: <ac~|ie~>
-        rdm2.ab.vvov += dX3
-    #     d/dH, d/dt of f(m~e~) t(ac~,im~)
-    rdm1.b.ov -= 1 * np.einsum("acie,acim->me", dX3, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("acie,me->acim", dX3, H.b.ov, optimize=True)
-    #     d/dH, d/dt of <nm~|ie~> t(ac~,nm~)
-    rdm2.ab.ooov += 1 * np.einsum("acie,acnm->nmie", dX3, T.ab, optimize=True)
-    dT["ab"] += np.einsum("acie,nmie->acnm", dX3, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <mc~|fe~> t(af,im)
-    rdm2.ab.ovvv += 1 * np.einsum("acie,afim->mcfe", dX3, T.aa, optimize=True)
-    dT["aa"] += np.einsum("acie,mcfe->afim", dX3, H.ab.ovvv, optimize=True)
-    #     d/dH, d/dt of <c~m~||e~f~> t(af~,im~)
-    rdm2.bb.vovv += 1 * np.einsum("acie,afim->cmef", dX3, T.ab, optimize=True)
-    dT["ab"] += np.einsum("acie,cmef->afim", dX3, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <am~|fe~> t(fc~,im~)
-    rdm2.ab.vovv -= 1 * np.einsum("acie,fcim->amfe", dX3, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("acie,amfe->fcim", dX3, H.ab.vovv, optimize=True)
-    # X4(amik), times t(bc~,jm~) in <ijk~abc~|(H_N e^T2)_C|0>
-    if constant:
-        #     (V_N T2)_C: <am~|ik~>
-        rdm2.ab.vooo -= dX4
-    #     d/dH, d/dt of <m~n~||k~f~> t(af~,in~)
-    rdm2.bb.ooov -= 1 * np.einsum("amik,afin->mnkf", dX4, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("amik,mnkf->afin", dX4, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <nm~|fk~> t(af,in)
-    rdm2.ab.oovo -= 1 * np.einsum("amik,afin->nmfk", dX4, T.aa, optimize=True)
-    dT["aa"] -= np.einsum("amik,nmfk->afin", dX4, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <nm~|if~> t(af~,nk~)
-    rdm2.ab.ooov += 1 * np.einsum("amik,afnk->nmif", dX4, T.ab, optimize=True)
-    dT["ab"] += np.einsum("amik,nmif->afnk", dX4, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <am~|ef~> t(ef~,ik~)
-    rdm2.ab.vovv -= 1 * np.einsum("amik,efik->amef", dX4, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("amik,amef->efik", dX4, H.ab.vovv, optimize=True)
+    #     <mn||jf> t(fc~,nk~)
+    rdm2.aa.ooov -= 0.5 * np.einsum("mcjk,fcnk->mnjf", G2, T.ab, optimize=True)
     # X5(abie), times t(ec~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <ab||ie>
-        rdm2.aa.vvov += 0.5 * dX5
-    #     d/dH, d/dt of f(me) t(ab,im)
-    rdm1.a.ov -= 0.5 * np.einsum("abie,abim->me", dX5, T.aa, optimize=True)
-    dT["aa"] -= 0.5 * np.einsum("abie,me->abim", dX5, H.a.ov, optimize=True)
-    #     d/dH, d/dt of <mn||ie> t(ab,mn)
-    rdm2.aa.ooov += 0.25 * np.einsum("abie,abmn->mnie", dX5, T.aa, optimize=True)
-    dT["aa"] += 0.25 * np.einsum("abie,mnie->abmn", dX5, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <bn||ef> t(af,in)
-    rdm2.aa.vovv += 1 * np.einsum("abie,afin->bnef", dX5, T.aa, optimize=True)
-    dT["aa"] += np.einsum("abie,bnef->afin", dX5, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <bn~|ef~> t(af~,in~)
-    rdm2.ab.vovv += 1 * np.einsum("abie,afin->bnef", dX5, T.ab, optimize=True)
-    dT["ab"] += np.einsum("abie,bnef->afin", dX5, H.ab.vovv, optimize=True)
+        rdm2.aa.vvov += 0.5 * G5
+    #     <mn||ie> t(ab,mn)
+    rdm2.aa.ooov += 0.25 * np.einsum("abie,abmn->mnie", G5, T.aa, optimize=True)
+    #     <bn||ef> t(af,in)
+    rdm2.aa.vovv += 1 * np.einsum("abie,afin->bnef", G5, T.aa, optimize=True)
     # X6(amij), times t(bc~,mk~) in <ijk~abc~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <am||ij>
-        rdm2.aa.vooo -= 0.5 * dX6
-    #     d/dH, d/dt of <am||ef> t(ef,ij)
-    rdm2.aa.vovv -= 0.25 * np.einsum("amij,efij->amef", dX6, T.aa, optimize=True)
-    dT["aa"] -= 0.25 * np.einsum("amij,amef->efij", dX6, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <mn||jf> t(af,in)
-    rdm2.aa.ooov -= 1 * np.einsum("amij,afin->mnjf", dX6, T.aa, optimize=True)
-    dT["aa"] -= np.einsum("amij,mnjf->afin", dX6, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|jf~> t(af~,in~)
-    rdm2.ab.ooov -= 1 * np.einsum("amij,afin->mnjf", dX6, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("amij,mnjf->afin", dX6, H.ab.ooov, optimize=True)
+        rdm2.aa.vooo -= 0.5 * G6
+    #     <am||ef> t(ef,ij)
+    rdm2.aa.vovv -= 0.25 * np.einsum("amij,efij->amef", G6, T.aa, optimize=True)
+    #     <mn||jf> t(af,in)
+    rdm2.aa.ooov -= 1 * np.einsum("amij,afin->mnjf", G6, T.aa, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G3, G4 = G["abb"][2], G["abb"][3]
+    # X3(caei), times t(eb~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <cm||ef> t(fa~,mi~)
+    rdm2.aa.vovv += 1 * np.einsum("caei,fami->cmef", G3, T.ab, optimize=True)
+    # X4(maki), times t(cb~,mj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <mn||kf> t(fa~,ni~)
+    rdm2.aa.ooov -= 1 * np.einsum("maki,fani->mnkf", G4, T.ab, optimize=True)
 
 
-def backprop_triples_intermediates_abb(dX, T, H, dT, rdm1, rdm2, constant=True):
-    """Chain rule of build_triples_intermediates_abb for the cotangents dX_g of the X_g
-    (from the <ij~k~ab~c~|...|0> moments): for every term c H(T1) T2 of X_g, the raw T2 gradient
-    dT += c dX_g . H and the H(T1) density rdm += c dX_g . T2 (rdm += c dX_g for the bare blocks)."""
-    dX1, dX2, dX3, dX4, dX5, dX6 = dX
+def build_triples_rdm_2B(rdm2, G, T, constant=True):
+    """Adds to rdm2 the ab two-body triples RDM of sum_K v_K <K|(H(T1) e^T2)_C|0>, the derivative with
+    respect to the H(T1) elements <pq~|rs~>. With the moments written as M_K = A sum_g X_g . t_g
+    (build_triples_intermediates_*) and G_g = sum_K v_K dM_K/dX_g (calc_triples), every term
+    c <..|..> t2 of an X_g contributes c G_g . t2 (c G_g for a bare H(T1) block, constant=True).
+    T is the amplitude inside the X_g (T, or R for the linear part with constant=False)."""
+    # aaa moments <ijkabc|(H(T1) e^T2)_C|0>
+    G1, G2 = G["aaa"][0], G["aaa"][1]
+    # X1(amij), times t(bc,mk) in <ijkabc|(H_N e^T2)_C|0>
+    #     <mn~|jf~> t(af~,in~)
+    rdm2.ab.ooov -= 0.5 * np.einsum("amij,afin->mnjf", G1, T.ab, optimize=True)
+    # X2(abie), times t(ec,jk) in <ijkabc|(H_N e^T2)_C|0>
+    #     <bn~|ef~> t(af~,in~)
+    rdm2.ab.vovv += 0.5 * np.einsum("abie,afin->bnef", G2, T.ab, optimize=True)
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G1, G2, G3, G4, G5, G6 = G["aab"][0], G["aab"][1], G["aab"][2], G["aab"][3], G["aab"][4], G["aab"][5]
+    # X1(bcek), times t(ae,ij) in <ijk~abc~|(H_N e^T2)_C|0>
+    if constant:
+        #     (V_N T2)_C: <bc~|ek~>
+        rdm2.ab.vvvo += 0.5 * G1
+    #     <nm~|ek~> t(bc~,nm~)
+    rdm2.ab.oovo += 0.5 * np.einsum("bcek,bcnm->nmek", G1, T.ab, optimize=True)
+    #     <bm~|ef~> t(c~f~,k~m~)
+    rdm2.ab.vovv += 0.5 * np.einsum("bcek,cfkm->bmef", G1, T.bb, optimize=True)
+    #     <mc~|ef~> t(bf~,mk~)
+    rdm2.ab.ovvv -= 0.5 * np.einsum("bcek,bfmk->mcef", G1, T.ab, optimize=True)
+    # X2(mcjk), times t(ab,im) in <ijk~abc~|(H_N e^T2)_C|0>
+    if constant:
+        #     (V_N T2)_C: <mc~|jk~>
+        rdm2.ab.ovoo -= 0.5 * G2
+    #     <mn~|jf~> t(f~c~,n~k~)
+    rdm2.ab.ooov -= 0.5 * np.einsum("mcjk,fcnk->mnjf", G2, T.bb, optimize=True)
+    #     <mn~|fk~> t(fc~,jn~)
+    rdm2.ab.oovo += 0.5 * np.einsum("mcjk,fcjn->mnfk", G2, T.ab, optimize=True)
+    #     <mc~|fe~> t(fe~,jk~)
+    rdm2.ab.ovvv -= 0.5 * np.einsum("mcjk,fejk->mcfe", G2, T.ab, optimize=True)
+    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    if constant:
+        #     (V_N T2)_C: <ac~|ie~>
+        rdm2.ab.vvov += G3
+    #     <nm~|ie~> t(ac~,nm~)
+    rdm2.ab.ooov += 1 * np.einsum("acie,acnm->nmie", G3, T.ab, optimize=True)
+    #     <mc~|fe~> t(af,im)
+    rdm2.ab.ovvv += 1 * np.einsum("acie,afim->mcfe", G3, T.aa, optimize=True)
+    #     <am~|fe~> t(fc~,im~)
+    rdm2.ab.vovv -= 1 * np.einsum("acie,fcim->amfe", G3, T.ab, optimize=True)
+    # X4(amik), times t(bc~,jm~) in <ijk~abc~|(H_N e^T2)_C|0>
+    if constant:
+        #     (V_N T2)_C: <am~|ik~>
+        rdm2.ab.vooo -= G4
+    #     <nm~|fk~> t(af,in)
+    rdm2.ab.oovo -= 1 * np.einsum("amik,afin->nmfk", G4, T.aa, optimize=True)
+    #     <nm~|if~> t(af~,nk~)
+    rdm2.ab.ooov += 1 * np.einsum("amik,afnk->nmif", G4, T.ab, optimize=True)
+    #     <am~|ef~> t(ef~,ik~)
+    rdm2.ab.vovv -= 1 * np.einsum("amik,efik->amef", G4, T.ab, optimize=True)
+    # X5(abie), times t(ec~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <bn~|ef~> t(af~,in~)
+    rdm2.ab.vovv += 1 * np.einsum("abie,afin->bnef", G5, T.ab, optimize=True)
+    # X6(amij), times t(bc~,mk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <mn~|jf~> t(af~,in~)
+    rdm2.ab.ooov -= 1 * np.einsum("amij,afin->mnjf", G6, T.ab, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G1, G2, G3, G4, G5, G6 = G["abb"][0], G["abb"][1], G["abb"][2], G["abb"][3], G["abb"][4], G["abb"][5]
     # X1(cbke), times t(a~e~,i~j~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <cb~|ke~>
-        rdm2.ab.vvov += 0.5 * dX1
-    #     d/dH, d/dt of f(m~e~) t(cb~,km~)
-    rdm1.b.ov -= 0.5 * np.einsum("cbke,cbkm->me", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("cbke,me->cbkm", dX1, H.b.ov, optimize=True)
-    #     d/dH, d/dt of <mn~|ke~> t(cb~,mn~)
-    rdm2.ab.ooov += 0.5 * np.einsum("cbke,cbmn->mnke", dX1, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("cbke,mnke->cbmn", dX1, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <mb~|fe~> t(cf,km)
-    rdm2.ab.ovvv += 0.5 * np.einsum("cbke,cfkm->mbfe", dX1, T.aa, optimize=True)
-    dT["aa"] += 0.5 * np.einsum("cbke,mbfe->cfkm", dX1, H.ab.ovvv, optimize=True)
-    #     d/dH, d/dt of <b~m~||e~f~> t(cf~,km~)
-    rdm2.bb.vovv += 0.5 * np.einsum("cbke,cfkm->bmef", dX1, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("cbke,bmef->cfkm", dX1, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <cm~|fe~> t(fb~,km~)
-    rdm2.ab.vovv -= 0.5 * np.einsum("cbke,fbkm->cmfe", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("cbke,cmfe->fbkm", dX1, H.ab.vovv, optimize=True)
+        rdm2.ab.vvov += 0.5 * G1
+    #     <mn~|ke~> t(cb~,mn~)
+    rdm2.ab.ooov += 0.5 * np.einsum("cbke,cbmn->mnke", G1, T.ab, optimize=True)
+    #     <mb~|fe~> t(cf,km)
+    rdm2.ab.ovvv += 0.5 * np.einsum("cbke,cfkm->mbfe", G1, T.aa, optimize=True)
+    #     <cm~|fe~> t(fb~,km~)
+    rdm2.ab.vovv -= 0.5 * np.einsum("cbke,fbkm->cmfe", G1, T.ab, optimize=True)
     # X2(cmkj), times t(a~b~,i~m~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <cm~|kj~>
-        rdm2.ab.vooo -= 0.5 * dX2
-    #     d/dH, d/dt of <m~n~||j~f~> t(cf~,kn~)
-    rdm2.bb.ooov -= 0.5 * np.einsum("cmkj,cfkn->mnjf", dX2, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("cmkj,mnjf->cfkn", dX2, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <nm~|fj~> t(fc,nk)
-    rdm2.ab.oovo -= 0.5 * np.einsum("cmkj,fcnk->nmfj", dX2, T.aa, optimize=True)
-    dT["aa"] -= 0.5 * np.einsum("cmkj,nmfj->fcnk", dX2, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <nm~|kf~> t(cf~,nj~)
-    rdm2.ab.ooov += 0.5 * np.einsum("cmkj,cfnj->nmkf", dX2, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("cmkj,nmkf->cfnj", dX2, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <cm~|ef~> t(ef~,kj~)
-    rdm2.ab.vovv -= 0.5 * np.einsum("cmkj,efkj->cmef", dX2, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("cmkj,cmef->efkj", dX2, H.ab.vovv, optimize=True)
+        rdm2.ab.vooo -= 0.5 * G2
+    #     <nm~|fj~> t(fc,nk)
+    rdm2.ab.oovo -= 0.5 * np.einsum("cmkj,fcnk->nmfj", G2, T.aa, optimize=True)
+    #     <nm~|kf~> t(cf~,nj~)
+    rdm2.ab.ooov += 0.5 * np.einsum("cmkj,cfnj->nmkf", G2, T.ab, optimize=True)
+    #     <cm~|ef~> t(ef~,kj~)
+    rdm2.ab.vovv -= 0.5 * np.einsum("cmkj,efkj->cmef", G2, T.ab, optimize=True)
     # X3(caei), times t(eb~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <ca~|ei~>
-        rdm2.ab.vvvo += dX3
-    #     d/dH, d/dt of f(me) t(ca~,mi~)
-    rdm1.a.ov -= 1 * np.einsum("caei,cami->me", dX3, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("caei,me->cami", dX3, H.a.ov, optimize=True)
-    #     d/dH, d/dt of <mn~|ei~> t(ca~,mn~)
-    rdm2.ab.oovo += 1 * np.einsum("caei,camn->mnei", dX3, T.ab, optimize=True)
-    dT["ab"] += np.einsum("caei,mnei->camn", dX3, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <cm~|ef~> t(a~f~,i~m~)
-    rdm2.ab.vovv += 1 * np.einsum("caei,afim->cmef", dX3, T.bb, optimize=True)
-    dT["bb"] += np.einsum("caei,cmef->afim", dX3, H.ab.vovv, optimize=True)
-    #     d/dH, d/dt of <cm||ef> t(fa~,mi~)
-    rdm2.aa.vovv += 1 * np.einsum("caei,fami->cmef", dX3, T.ab, optimize=True)
-    dT["ab"] += np.einsum("caei,cmef->fami", dX3, H.aa.vovv, optimize=True)
-    #     d/dH, d/dt of <ma~|ef~> t(cf~,mi~)
-    rdm2.ab.ovvv -= 1 * np.einsum("caei,cfmi->maef", dX3, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("caei,maef->cfmi", dX3, H.ab.ovvv, optimize=True)
+        rdm2.ab.vvvo += G3
+    #     <mn~|ei~> t(ca~,mn~)
+    rdm2.ab.oovo += 1 * np.einsum("caei,camn->mnei", G3, T.ab, optimize=True)
+    #     <cm~|ef~> t(a~f~,i~m~)
+    rdm2.ab.vovv += 1 * np.einsum("caei,afim->cmef", G3, T.bb, optimize=True)
+    #     <ma~|ef~> t(cf~,mi~)
+    rdm2.ab.ovvv -= 1 * np.einsum("caei,cfmi->maef", G3, T.ab, optimize=True)
     # X4(maki), times t(cb~,mj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <ma~|ki~>
-        rdm2.ab.ovoo -= dX4
-    #     d/dH, d/dt of <mn||kf> t(fa~,ni~)
-    rdm2.aa.ooov -= 1 * np.einsum("maki,fani->mnkf", dX4, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("maki,mnkf->fani", dX4, H.aa.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|kf~> t(a~f~,i~n~)
-    rdm2.ab.ooov -= 1 * np.einsum("maki,afin->mnkf", dX4, T.bb, optimize=True)
-    dT["bb"] -= np.einsum("maki,mnkf->afin", dX4, H.ab.ooov, optimize=True)
-    #     d/dH, d/dt of <mn~|fi~> t(fa~,kn~)
-    rdm2.ab.oovo += 1 * np.einsum("maki,fakn->mnfi", dX4, T.ab, optimize=True)
-    dT["ab"] += np.einsum("maki,mnfi->fakn", dX4, H.ab.oovo, optimize=True)
-    #     d/dH, d/dt of <ma~|fe~> t(fe~,ki~)
-    rdm2.ab.ovvv -= 1 * np.einsum("maki,feki->mafe", dX4, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("maki,mafe->feki", dX4, H.ab.ovvv, optimize=True)
+        rdm2.ab.ovoo -= G4
+    #     <mn~|kf~> t(a~f~,i~n~)
+    rdm2.ab.ooov -= 1 * np.einsum("maki,afin->mnkf", G4, T.bb, optimize=True)
+    #     <mn~|fi~> t(fa~,kn~)
+    rdm2.ab.oovo += 1 * np.einsum("maki,fakn->mnfi", G4, T.ab, optimize=True)
+    #     <ma~|fe~> t(fe~,ki~)
+    rdm2.ab.ovvv -= 1 * np.einsum("maki,feki->mafe", G4, T.ab, optimize=True)
+    # X5(abie), times t(ce~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <nb~|fe~> t(fa~,ni~)
+    rdm2.ab.ovvv += 1 * np.einsum("abie,fani->nbfe", G5, T.ab, optimize=True)
+    # X6(amij), times t(cb~,km~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <nm~|fj~> t(fa~,ni~)
+    rdm2.ab.oovo -= 1 * np.einsum("amij,fani->nmfj", G6, T.ab, optimize=True)
+    # bbb moments <i~j~k~a~b~c~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["bbb"][0], G["bbb"][1]
+    # X1(amij), times t(b~c~,m~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     <nm~|fj~> t(fa~,ni~)
+    rdm2.ab.oovo -= 0.5 * np.einsum("amij,fani->nmfj", G1, T.ab, optimize=True)
+    # X2(abie), times t(e~c~,j~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     <nb~|fe~> t(fa~,ni~)
+    rdm2.ab.ovvv += 0.5 * np.einsum("abie,fani->nbfe", G2, T.ab, optimize=True)
+
+
+def build_triples_rdm_2C(rdm2, G, T, constant=True):
+    """Adds to rdm2 the bb two-body triples RDM of sum_K v_K <K|(H(T1) e^T2)_C|0>, the derivative with
+    respect to the H(T1) elements <p~q~||r~s~>. With the moments written as M_K = A sum_g X_g . t_g
+    (build_triples_intermediates_*) and G_g = sum_K v_K dM_K/dX_g (calc_triples), every term
+    c <..|..> t2 of an X_g contributes c G_g . t2 (c G_g for a bare H(T1) block, constant=True).
+    T is the amplitude inside the X_g (T, or R for the linear part with constant=False)."""
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G3, G4 = G["aab"][2], G["aab"][3]
+    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <c~m~||e~f~> t(af~,im~)
+    rdm2.bb.vovv += 1 * np.einsum("acie,afim->cmef", G3, T.ab, optimize=True)
+    # X4(amik), times t(bc~,jm~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <m~n~||k~f~> t(af~,in~)
+    rdm2.bb.ooov -= 1 * np.einsum("amik,afin->mnkf", G4, T.ab, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G1, G2, G5, G6 = G["abb"][0], G["abb"][1], G["abb"][4], G["abb"][5]
+    # X1(cbke), times t(a~e~,i~j~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <b~m~||e~f~> t(cf~,km~)
+    rdm2.bb.vovv += 0.5 * np.einsum("cbke,cfkm->bmef", G1, T.ab, optimize=True)
+    # X2(cmkj), times t(a~b~,i~m~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <m~n~||j~f~> t(cf~,kn~)
+    rdm2.bb.ooov -= 0.5 * np.einsum("cmkj,cfkn->mnjf", G2, T.ab, optimize=True)
     # X5(abie), times t(ce~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <a~b~||i~e~>
-        rdm2.bb.vvov += 0.5 * dX5
-    #     d/dH, d/dt of f(m~e~) t(a~b~,i~m~)
-    rdm1.b.ov -= 0.5 * np.einsum("abie,abim->me", dX5, T.bb, optimize=True)
-    dT["bb"] -= 0.5 * np.einsum("abie,me->abim", dX5, H.b.ov, optimize=True)
-    #     d/dH, d/dt of <m~n~||i~e~> t(a~b~,m~n~)
-    rdm2.bb.ooov += 0.25 * np.einsum("abie,abmn->mnie", dX5, T.bb, optimize=True)
-    dT["bb"] += 0.25 * np.einsum("abie,mnie->abmn", dX5, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <b~n~||e~f~> t(a~f~,i~n~)
-    rdm2.bb.vovv += 1 * np.einsum("abie,afin->bnef", dX5, T.bb, optimize=True)
-    dT["bb"] += np.einsum("abie,bnef->afin", dX5, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <nb~|fe~> t(fa~,ni~)
-    rdm2.ab.ovvv += 1 * np.einsum("abie,fani->nbfe", dX5, T.ab, optimize=True)
-    dT["ab"] += np.einsum("abie,nbfe->fani", dX5, H.ab.ovvv, optimize=True)
+        rdm2.bb.vvov += 0.5 * G5
+    #     <m~n~||i~e~> t(a~b~,m~n~)
+    rdm2.bb.ooov += 0.25 * np.einsum("abie,abmn->mnie", G5, T.bb, optimize=True)
+    #     <b~n~||e~f~> t(a~f~,i~n~)
+    rdm2.bb.vovv += 1 * np.einsum("abie,afin->bnef", G5, T.bb, optimize=True)
     # X6(amij), times t(cb~,km~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <a~m~||i~j~>
-        rdm2.bb.vooo -= 0.5 * dX6
-    #     d/dH, d/dt of <a~m~||e~f~> t(e~f~,i~j~)
-    rdm2.bb.vovv -= 0.25 * np.einsum("amij,efij->amef", dX6, T.bb, optimize=True)
-    dT["bb"] -= 0.25 * np.einsum("amij,amef->efij", dX6, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <m~n~||j~f~> t(a~f~,i~n~)
-    rdm2.bb.ooov -= 1 * np.einsum("amij,afin->mnjf", dX6, T.bb, optimize=True)
-    dT["bb"] -= np.einsum("amij,mnjf->afin", dX6, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <nm~|fj~> t(fa~,ni~)
-    rdm2.ab.oovo -= 1 * np.einsum("amij,fani->nmfj", dX6, T.ab, optimize=True)
-    dT["ab"] -= np.einsum("amij,nmfj->fani", dX6, H.ab.oovo, optimize=True)
-
-
-def backprop_triples_intermediates_bbb(dX, T, H, dT, rdm1, rdm2, constant=True):
-    """Chain rule of build_triples_intermediates_bbb for the cotangents dX_g of the X_g
-    (from the <i~j~k~a~b~c~|...|0> moments): for every term c H(T1) T2 of X_g, the raw T2 gradient
-    dT += c dX_g . H and the H(T1) density rdm += c dX_g . T2 (rdm += c dX_g for the bare blocks)."""
-    dX1, dX2 = dX
+        rdm2.bb.vooo -= 0.5 * G6
+    #     <a~m~||e~f~> t(e~f~,i~j~)
+    rdm2.bb.vovv -= 0.25 * np.einsum("amij,efij->amef", G6, T.bb, optimize=True)
+    #     <m~n~||j~f~> t(a~f~,i~n~)
+    rdm2.bb.ooov -= 1 * np.einsum("amij,afin->mnjf", G6, T.bb, optimize=True)
+    # bbb moments <i~j~k~a~b~c~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["bbb"][0], G["bbb"][1]
     # X1(amij), times t(b~c~,m~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <a~m~||i~j~>
-        rdm2.bb.vooo -= 0.25 * dX1
-    #     d/dH, d/dt of f(m~e~) t(a~e~,i~j~)
-    rdm1.b.ov -= 0.25 * np.einsum("amij,aeij->me", dX1, T.bb, optimize=True)
-    dT["bb"] -= 0.25 * np.einsum("amij,me->aeij", dX1, H.b.ov, optimize=True)
-    #     d/dH, d/dt of <a~m~||e~f~> t(e~f~,i~j~)
-    rdm2.bb.vovv -= 0.125 * np.einsum("amij,efij->amef", dX1, T.bb, optimize=True)
-    dT["bb"] -= 0.125 * np.einsum("amij,amef->efij", dX1, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <m~n~||j~f~> t(a~f~,i~n~)
-    rdm2.bb.ooov -= 0.5 * np.einsum("amij,afin->mnjf", dX1, T.bb, optimize=True)
-    dT["bb"] -= 0.5 * np.einsum("amij,mnjf->afin", dX1, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <nm~|fj~> t(fa~,ni~)
-    rdm2.ab.oovo -= 0.5 * np.einsum("amij,fani->nmfj", dX1, T.ab, optimize=True)
-    dT["ab"] -= 0.5 * np.einsum("amij,nmfj->fani", dX1, H.ab.oovo, optimize=True)
+        rdm2.bb.vooo -= 0.25 * G1
+    #     <a~m~||e~f~> t(e~f~,i~j~)
+    rdm2.bb.vovv -= 0.125 * np.einsum("amij,efij->amef", G1, T.bb, optimize=True)
+    #     <m~n~||j~f~> t(a~f~,i~n~)
+    rdm2.bb.ooov -= 0.5 * np.einsum("amij,afin->mnjf", G1, T.bb, optimize=True)
     # X2(abie), times t(e~c~,j~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
     if constant:
         #     (V_N T2)_C: <a~b~||i~e~>
-        rdm2.bb.vvov += 0.25 * dX2
-    #     d/dH, d/dt of <m~n~||i~e~> t(a~b~,m~n~)
-    rdm2.bb.ooov += 0.125 * np.einsum("abie,abmn->mnie", dX2, T.bb, optimize=True)
-    dT["bb"] += 0.125 * np.einsum("abie,mnie->abmn", dX2, H.bb.ooov, optimize=True)
-    #     d/dH, d/dt of <b~n~||e~f~> t(a~f~,i~n~)
-    rdm2.bb.vovv += 0.5 * np.einsum("abie,afin->bnef", dX2, T.bb, optimize=True)
-    dT["bb"] += 0.5 * np.einsum("abie,bnef->afin", dX2, H.bb.vovv, optimize=True)
-    #     d/dH, d/dt of <nb~|fe~> t(fa~,ni~)
-    rdm2.ab.ovvv += 0.5 * np.einsum("abie,fani->nbfe", dX2, T.ab, optimize=True)
-    dT["ab"] += 0.5 * np.einsum("abie,nbfe->fani", dX2, H.ab.ovvv, optimize=True)
+        rdm2.bb.vvov += 0.25 * G2
+    #     <m~n~||i~e~> t(a~b~,m~n~)
+    rdm2.bb.ooov += 0.125 * np.einsum("abie,abmn->mnie", G2, T.bb, optimize=True)
+    #     <b~n~||e~f~> t(a~f~,i~n~)
+    rdm2.bb.vovv += 0.5 * np.einsum("abie,afin->bnef", G2, T.bb, optimize=True)
+
+
+def build_triples_dt_2A(G, H):
+    """X = sum_K v_K dM_K/dt(ab,ij) through the T2 inside the intermediates X_g(T, H), the aa doubles
+    of the triples source: with M_K = A sum_g X_g . t_g and G_g = sum_K v_K dM_K/dX_g
+    (calc_triples), every term c <..|..> t2 of an X_g contributes c G_g . <..|..>. Raw gradient
+    (every stored element independent; antisymmetrize same-spin doubles); the trailing t_g of
+    X_g . t_g is added by the loops (calc_triples "dT")."""
+    X = np.zeros_like(H.aa.oovv.transpose(2, 3, 0, 1))
+    # aaa moments <ijkabc|(H(T1) e^T2)_C|0>
+    G1, G2 = G["aaa"][0], G["aaa"][1]
+    # X1(amij), times t(bc,mk) in <ijkabc|(H_N e^T2)_C|0>
+    #     f(me) t(ae,ij)
+    X -= 0.25 * np.einsum("amij,me->aeij", G1, H.a.ov, optimize=True)
+    #     <am||ef> t(ef,ij)
+    X -= 0.125 * np.einsum("amij,amef->efij", G1, H.aa.vovv, optimize=True)
+    #     <mn||jf> t(af,in)
+    X -= 0.5 * np.einsum("amij,mnjf->afin", G1, H.aa.ooov, optimize=True)
+    # X2(abie), times t(ec,jk) in <ijkabc|(H_N e^T2)_C|0>
+    #     <mn||ie> t(ab,mn)
+    X += 0.125 * np.einsum("abie,mnie->abmn", G2, H.aa.ooov, optimize=True)
+    #     <bn||ef> t(af,in)
+    X += 0.5 * np.einsum("abie,bnef->afin", G2, H.aa.vovv, optimize=True)
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G3, G4, G5, G6 = G["aab"][2], G["aab"][3], G["aab"][4], G["aab"][5]
+    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <mc~|fe~> t(af,im)
+    X += np.einsum("acie,mcfe->afim", G3, H.ab.ovvv, optimize=True)
+    # X4(amik), times t(bc~,jm~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <nm~|fk~> t(af,in)
+    X -= np.einsum("amik,nmfk->afin", G4, H.ab.oovo, optimize=True)
+    # X5(abie), times t(ec~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(me) t(ab,im)
+    X -= 0.5 * np.einsum("abie,me->abim", G5, H.a.ov, optimize=True)
+    #     <mn||ie> t(ab,mn)
+    X += 0.25 * np.einsum("abie,mnie->abmn", G5, H.aa.ooov, optimize=True)
+    #     <bn||ef> t(af,in)
+    X += np.einsum("abie,bnef->afin", G5, H.aa.vovv, optimize=True)
+    # X6(amij), times t(bc~,mk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <am||ef> t(ef,ij)
+    X -= 0.25 * np.einsum("amij,amef->efij", G6, H.aa.vovv, optimize=True)
+    #     <mn||jf> t(af,in)
+    X -= np.einsum("amij,mnjf->afin", G6, H.aa.ooov, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["abb"][0], G["abb"][1]
+    # X1(cbke), times t(a~e~,i~j~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <mb~|fe~> t(cf,km)
+    X += 0.5 * np.einsum("cbke,mbfe->cfkm", G1, H.ab.ovvv, optimize=True)
+    # X2(cmkj), times t(a~b~,i~m~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <nm~|fj~> t(fc,nk)
+    X -= 0.5 * np.einsum("cmkj,nmfj->fcnk", G2, H.ab.oovo, optimize=True)
+    return X
+
+
+def build_triples_dt_2B(G, H):
+    """X = sum_K v_K dM_K/dt(ab~,ij~) through the T2 inside the intermediates X_g(T, H), the ab doubles
+    of the triples source: with M_K = A sum_g X_g . t_g and G_g = sum_K v_K dM_K/dX_g
+    (calc_triples), every term c <..|..> t2 of an X_g contributes c G_g . <..|..>. Raw gradient
+    (every stored element independent; antisymmetrize same-spin doubles); the trailing t_g of
+    X_g . t_g is added by the loops (calc_triples "dT")."""
+    X = np.zeros_like(H.ab.oovv.transpose(2, 3, 0, 1))
+    # aaa moments <ijkabc|(H(T1) e^T2)_C|0>
+    G1, G2 = G["aaa"][0], G["aaa"][1]
+    # X1(amij), times t(bc,mk) in <ijkabc|(H_N e^T2)_C|0>
+    #     <mn~|jf~> t(af~,in~)
+    X -= 0.5 * np.einsum("amij,mnjf->afin", G1, H.ab.ooov, optimize=True)
+    # X2(abie), times t(ec,jk) in <ijkabc|(H_N e^T2)_C|0>
+    #     <bn~|ef~> t(af~,in~)
+    X += 0.5 * np.einsum("abie,bnef->afin", G2, H.ab.vovv, optimize=True)
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G1, G2, G3, G4, G5, G6 = G["aab"][0], G["aab"][1], G["aab"][2], G["aab"][3], G["aab"][4], G["aab"][5]
+    # X1(bcek), times t(ae,ij) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(me) t(bc~,mk~)
+    X -= 0.5 * np.einsum("bcek,me->bcmk", G1, H.a.ov, optimize=True)
+    #     <nm~|ek~> t(bc~,nm~)
+    X += 0.5 * np.einsum("bcek,nmek->bcnm", G1, H.ab.oovo, optimize=True)
+    #     <bm||ef> t(fc~,mk~)
+    X += 0.5 * np.einsum("bcek,bmef->fcmk", G1, H.aa.vovv, optimize=True)
+    #     <mc~|ef~> t(bf~,mk~)
+    X -= 0.5 * np.einsum("bcek,mcef->bfmk", G1, H.ab.ovvv, optimize=True)
+    # X2(mcjk), times t(ab,im) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <mn||jf> t(fc~,nk~)
+    X -= 0.5 * np.einsum("mcjk,mnjf->fcnk", G2, H.aa.ooov, optimize=True)
+    #     <mn~|fk~> t(fc~,jn~)
+    X += 0.5 * np.einsum("mcjk,mnfk->fcjn", G2, H.ab.oovo, optimize=True)
+    #     <mc~|fe~> t(fe~,jk~)
+    X -= 0.5 * np.einsum("mcjk,mcfe->fejk", G2, H.ab.ovvv, optimize=True)
+    # X3(acie), times t(be~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(ac~,im~)
+    X -= np.einsum("acie,me->acim", G3, H.b.ov, optimize=True)
+    #     <nm~|ie~> t(ac~,nm~)
+    X += np.einsum("acie,nmie->acnm", G3, H.ab.ooov, optimize=True)
+    #     <c~m~||e~f~> t(af~,im~)
+    X += np.einsum("acie,cmef->afim", G3, H.bb.vovv, optimize=True)
+    #     <am~|fe~> t(fc~,im~)
+    X -= np.einsum("acie,amfe->fcim", G3, H.ab.vovv, optimize=True)
+    # X4(amik), times t(bc~,jm~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <m~n~||k~f~> t(af~,in~)
+    X -= np.einsum("amik,mnkf->afin", G4, H.bb.ooov, optimize=True)
+    #     <nm~|if~> t(af~,nk~)
+    X += np.einsum("amik,nmif->afnk", G4, H.ab.ooov, optimize=True)
+    #     <am~|ef~> t(ef~,ik~)
+    X -= np.einsum("amik,amef->efik", G4, H.ab.vovv, optimize=True)
+    # X5(abie), times t(ec~,jk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <bn~|ef~> t(af~,in~)
+    X += np.einsum("abie,bnef->afin", G5, H.ab.vovv, optimize=True)
+    # X6(amij), times t(bc~,mk~) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <mn~|jf~> t(af~,in~)
+    X -= np.einsum("amij,mnjf->afin", G6, H.ab.ooov, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G1, G2, G3, G4, G5, G6 = G["abb"][0], G["abb"][1], G["abb"][2], G["abb"][3], G["abb"][4], G["abb"][5]
+    # X1(cbke), times t(a~e~,i~j~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(cb~,km~)
+    X -= 0.5 * np.einsum("cbke,me->cbkm", G1, H.b.ov, optimize=True)
+    #     <mn~|ke~> t(cb~,mn~)
+    X += 0.5 * np.einsum("cbke,mnke->cbmn", G1, H.ab.ooov, optimize=True)
+    #     <b~m~||e~f~> t(cf~,km~)
+    X += 0.5 * np.einsum("cbke,bmef->cfkm", G1, H.bb.vovv, optimize=True)
+    #     <cm~|fe~> t(fb~,km~)
+    X -= 0.5 * np.einsum("cbke,cmfe->fbkm", G1, H.ab.vovv, optimize=True)
+    # X2(cmkj), times t(a~b~,i~m~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <m~n~||j~f~> t(cf~,kn~)
+    X -= 0.5 * np.einsum("cmkj,mnjf->cfkn", G2, H.bb.ooov, optimize=True)
+    #     <nm~|kf~> t(cf~,nj~)
+    X += 0.5 * np.einsum("cmkj,nmkf->cfnj", G2, H.ab.ooov, optimize=True)
+    #     <cm~|ef~> t(ef~,kj~)
+    X -= 0.5 * np.einsum("cmkj,cmef->efkj", G2, H.ab.vovv, optimize=True)
+    # X3(caei), times t(eb~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(me) t(ca~,mi~)
+    X -= np.einsum("caei,me->cami", G3, H.a.ov, optimize=True)
+    #     <mn~|ei~> t(ca~,mn~)
+    X += np.einsum("caei,mnei->camn", G3, H.ab.oovo, optimize=True)
+    #     <cm||ef> t(fa~,mi~)
+    X += np.einsum("caei,cmef->fami", G3, H.aa.vovv, optimize=True)
+    #     <ma~|ef~> t(cf~,mi~)
+    X -= np.einsum("caei,maef->cfmi", G3, H.ab.ovvv, optimize=True)
+    # X4(maki), times t(cb~,mj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <mn||kf> t(fa~,ni~)
+    X -= np.einsum("maki,mnkf->fani", G4, H.aa.ooov, optimize=True)
+    #     <mn~|fi~> t(fa~,kn~)
+    X += np.einsum("maki,mnfi->fakn", G4, H.ab.oovo, optimize=True)
+    #     <ma~|fe~> t(fe~,ki~)
+    X -= np.einsum("maki,mafe->feki", G4, H.ab.ovvv, optimize=True)
+    # X5(abie), times t(ce~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <nb~|fe~> t(fa~,ni~)
+    X += np.einsum("abie,nbfe->fani", G5, H.ab.ovvv, optimize=True)
+    # X6(amij), times t(cb~,km~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <nm~|fj~> t(fa~,ni~)
+    X -= np.einsum("amij,nmfj->fani", G6, H.ab.oovo, optimize=True)
+    # bbb moments <i~j~k~a~b~c~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["bbb"][0], G["bbb"][1]
+    # X1(amij), times t(b~c~,m~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     <nm~|fj~> t(fa~,ni~)
+    X -= 0.5 * np.einsum("amij,nmfj->fani", G1, H.ab.oovo, optimize=True)
+    # X2(abie), times t(e~c~,j~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     <nb~|fe~> t(fa~,ni~)
+    X += 0.5 * np.einsum("abie,nbfe->fani", G2, H.ab.ovvv, optimize=True)
+    return X
+
+
+def build_triples_dt_2C(G, H):
+    """X = sum_K v_K dM_K/dt(a~b~,i~j~) through the T2 inside the intermediates X_g(T, H), the bb doubles
+    of the triples source: with M_K = A sum_g X_g . t_g and G_g = sum_K v_K dM_K/dX_g
+    (calc_triples), every term c <..|..> t2 of an X_g contributes c G_g . <..|..>. Raw gradient
+    (every stored element independent; antisymmetrize same-spin doubles); the trailing t_g of
+    X_g . t_g is added by the loops (calc_triples "dT")."""
+    X = np.zeros_like(H.bb.oovv.transpose(2, 3, 0, 1))
+    # aab moments <ijk~abc~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["aab"][0], G["aab"][1]
+    # X1(bcek), times t(ae,ij) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <bm~|ef~> t(c~f~,k~m~)
+    X += 0.5 * np.einsum("bcek,bmef->cfkm", G1, H.ab.vovv, optimize=True)
+    # X2(mcjk), times t(ab,im) in <ijk~abc~|(H_N e^T2)_C|0>
+    #     <mn~|jf~> t(f~c~,n~k~)
+    X -= 0.5 * np.einsum("mcjk,mnjf->fcnk", G2, H.ab.ooov, optimize=True)
+    # abb moments <ij~k~ab~c~|(H(T1) e^T2)_C|0>
+    G3, G4, G5, G6 = G["abb"][2], G["abb"][3], G["abb"][4], G["abb"][5]
+    # X3(caei), times t(eb~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <cm~|ef~> t(a~f~,i~m~)
+    X += np.einsum("caei,cmef->afim", G3, H.ab.vovv, optimize=True)
+    # X4(maki), times t(cb~,mj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <mn~|kf~> t(a~f~,i~n~)
+    X -= np.einsum("maki,mnkf->afin", G4, H.ab.ooov, optimize=True)
+    # X5(abie), times t(ce~,kj~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(a~b~,i~m~)
+    X -= 0.5 * np.einsum("abie,me->abim", G5, H.b.ov, optimize=True)
+    #     <m~n~||i~e~> t(a~b~,m~n~)
+    X += 0.25 * np.einsum("abie,mnie->abmn", G5, H.bb.ooov, optimize=True)
+    #     <b~n~||e~f~> t(a~f~,i~n~)
+    X += np.einsum("abie,bnef->afin", G5, H.bb.vovv, optimize=True)
+    # X6(amij), times t(cb~,km~) in <ij~k~ab~c~|(H_N e^T2)_C|0>
+    #     <a~m~||e~f~> t(e~f~,i~j~)
+    X -= 0.25 * np.einsum("amij,amef->efij", G6, H.bb.vovv, optimize=True)
+    #     <m~n~||j~f~> t(a~f~,i~n~)
+    X -= np.einsum("amij,mnjf->afin", G6, H.bb.ooov, optimize=True)
+    # bbb moments <i~j~k~a~b~c~|(H(T1) e^T2)_C|0>
+    G1, G2 = G["bbb"][0], G["bbb"][1]
+    # X1(amij), times t(b~c~,m~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     f(m~e~) t(a~e~,i~j~)
+    X -= 0.25 * np.einsum("amij,me->aeij", G1, H.b.ov, optimize=True)
+    #     <a~m~||e~f~> t(e~f~,i~j~)
+    X -= 0.125 * np.einsum("amij,amef->efij", G1, H.bb.vovv, optimize=True)
+    #     <m~n~||j~f~> t(a~f~,i~n~)
+    X -= 0.5 * np.einsum("amij,mnjf->afin", G1, H.bb.ooov, optimize=True)
+    # X2(abie), times t(e~c~,j~k~) in <i~j~k~a~b~c~|(H_N e^T2)_C|0>
+    #     <m~n~||i~e~> t(a~b~,m~n~)
+    X += 0.125 * np.einsum("abie,mnie->abmn", G2, H.bb.ooov, optimize=True)
+    #     <b~n~||e~f~> t(a~f~,i~n~)
+    X += 0.5 * np.einsum("abie,bnef->afin", G2, H.bb.vovv, optimize=True)
+    return X
 
 
 def cholesky_ladder(L2, B1, B2, max_elements=2 ** 26):

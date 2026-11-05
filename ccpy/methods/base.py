@@ -12,6 +12,8 @@ Reference, e.g. calc_crcc23_gradient(T, L, Hbar, reference, delta=...).
 """
 from importlib import import_module
 
+import numpy as np
+
 from ccpy.methods.reference import Reference, warn_df_port
 
 # options understood by the iterative solvers of ccpy.drivers.solvers
@@ -177,14 +179,15 @@ class MethodBase:
     def is_current(self):
         return self.converged and all(dep.version == v for dep, v in self._dependencies)
 
-    def gradient(self, perturbation=None, **kwargs):
+    def gradient(self, perturbation=None, properties=None, **kwargs):
         """Nuclear gradient (natoms, 3) in Eh/bohr: analytic when available, otherwise by
         central differences of energy(). With perturbation (AO integrals V, (nao, nao) or
         (ncomp, nao, nao), of one-electron operators added to h with strengths lambda), the
-        analytic dE/dlambda, (ncomp,), from the same orbital-relaxed density."""
+        analytic dE/dlambda, (ncomp,), from the same orbital-relaxed density; with properties V,
+        both, as (gradient, dE/dlambda)."""
         if self.has_analytic_gradient(**kwargs):
-            return self._analytic_gradient(perturbation=perturbation, **kwargs)
-        if perturbation is not None:
+            return self._analytic_gradient(perturbation=perturbation, properties=properties, **kwargs)
+        if perturbation is not None or properties is not None:
             raise NotImplementedError(f"{type(self).__name__} has no analytic gradient for this reference.")
         print(f"   {type(self).__name__}: no analytic gradient available; using finite differences.")
         return self.fd_gradient(**kwargs)
@@ -197,6 +200,15 @@ class MethodBase:
 
         _, V = multipole_integrals(self.molecule, order, origin)
         return multipole_moments(self.gradient(perturbation=V, **kwargs), self.molecule, order, origin)
+
+    def gradient_and_dipole(self, **kwargs):
+        """Nuclear gradient (natoms, 3) and orbital-relaxed dipole moment (3,), atomic units, from
+        one analytic gradient calculation (for fd_hessian(..., dipole=True))."""
+        from ccpy.gradients.derivative_integrals import multipole_integrals, multipole_moments
+
+        _, V = multipole_integrals(self.molecule, 1)
+        grad, dE = self.gradient(properties=V, **kwargs)
+        return grad, np.array(list(multipole_moments(dE, self.molecule, 1).values()))
 
     def energy_and_gradient(self, **kwargs):
         return self.energy(**kwargs), self.gradient(**kwargs)
