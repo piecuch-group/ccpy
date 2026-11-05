@@ -66,6 +66,13 @@ endif
 
 blas_name = get_option('blas')
 lapack_name = get_option('lapack')
+# auto: Apple Accelerate when it is available (macOS), otherwise OpenBLAS
+if blas_name == 'auto'
+  blas_name = dependency('accelerate', required: false).found() ? 'accelerate' : 'openblas'
+endif
+if lapack_name == 'auto'
+  lapack_name = blas_name
+endif
 # pkg-config uses a lower-case name while CMake uses a capitalized name, so try
 # that too to make the fallback detection with CMake work
 
@@ -111,6 +118,15 @@ sort_lib = static_library('sort',
 )
 
 omp_dep = dependency('openmp', language: 'fortran', required: false)
+# One OpenMP runtime per process: the kernels call BLAS inside OpenMP parallel regions, and
+# OpenBLAS keeps separate buffers only for threads of its own runtime (concurrent calls from
+# another runtime's threads share them and return wrong results). Homebrew's OpenBLAS uses LLVM
+# libomp, which also provides GCC's GOMP interface: link it instead of libgomp.
+if host_machine.system() == 'darwin' and blas_name == 'openblas'
+  libomp = meson.get_compiler('fortran').find_library('omp',
+    dirs: ['/opt/homebrew/opt/libomp/lib', '/usr/local/opt/libomp/lib'])
+  omp_dep = declare_dependency(compile_args: '-fopenmp', dependencies: libomp)
+endif
 
 # Shared sorting module used by the Fortran loops; not wrapped by f2py
 pspace_sort_lib = static_library('pspace_sort',
