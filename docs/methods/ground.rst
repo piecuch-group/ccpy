@@ -260,3 +260,92 @@ The statistical target must be small enough to resolve that tolerance; the
 wrapper checks this. Analytic gradients are disabled for stochastic correction
 instances; numerical differentiation of sampled energies needs its own noise
 assessment.
+
+State-universal multireference CC
+---------------------------------
+
+``SUMRCCSD(mf, n, m)`` solves the Jeziorski-Monkhorst SU-MRCCSD equations in the
+complete model space CAS(n, m) of RHF/ROHF orbitals, with the ``m`` active orbitals
+right above the core. Each model-space determinant (all spin states with the
+reference's :math:`M_s`) is a reference with its own CCSD-like cluster operator, and
+``energy()`` returns the eigenvalues of the effective Hamiltonian, one per determinant:
+
+.. code-block:: python
+
+   mr = SUMRCCSD(mf, 2, 2, nfrozen=1)
+   roots = mr.energy()             # ascending; mr.energy(0) is the lowest
+   mr.heff, mr.coefficients        # effective Hamiltonian, model-space eigenvectors
+   SUMRCCSD1(mf, 2, 2).energy()    # core-virtual amplitudes at first-order MRMBPT
+
+A general (incomplete) model space is given as a list of determinants instead, each
+listing the :math:`N_\alpha` occupied alpha and then the :math:`N_\beta` occupied beta
+correlated orbitals, numbered from 1 (as in ``ccpy.models.hilbert.Determinant``), e.g.
+a CAS with a determinant that causes convergence problems removed:
+
+.. code-block:: python
+
+   # H2, CAS(2,2) without the doubly excited determinant
+   mr = SUMRCCSD(mf, determinants=[[1, 1], [1, 2], [2, 1]])
+
+Orbitals occupied (empty) in every determinant are core (virtual). Amplitudes of the
+internal excitations, which take one reference into another, follow the C conditions of
+Li and Paldus [J. Chem. Phys. 119, 5320 (2003)]: internal singles vanish, internal
+doubles are :math:`-\mathcal{A}\,t_1 t_1`, and internal excitations of higher rank (at
+most the number of active electrons) carry amplitudes equal to minus their disconnected
+clusters. These enter the effective Hamiltonian and the coupling terms, keeping both
+connected, and the direct terms, where the internal triples and quadruples add their
+CCSDT/CCSDTQ contributions to the singles and doubles equations (higher ranks cannot reach
+them). In a complete model space all internal amplitudes vanish.
+
+Such determinants can also be dropped automatically: ``prune_intruders=gap`` removes
+determinants, highest energy first, until every single or double of the remaining ones
+lies at least ``gap`` (Eh) above the highest of them, at the orbital-energy estimate used
+for the intruder warning (``0.0`` removes exactly what the warning flags). A positive gap is
+necessary for the Jacobi iterations to converge but no value guarantees it; for H4/6-31G,
+CAS(4,4) converged from a gap of about 0.3 Eh. The removed determinants are printed, and
+their states are no longer computed.
+
+.. code-block:: python
+
+   mr = SUMRCCSD(mf, 4, 4, prune_intruders=0.3)
+   mr.model_space.determinants     # the determinants kept
+
+Noniterative triples corrections from the method of moments of the SU-MRCC equations,
+MM-SUCC(2,3) [Piecuch and Kowalski, Int. J. Mol. Sci. 3, 676 (2002)], are available as
+``mr.mmsucc23()`` (energies of all roots, or ``mr.mmsucc23(root)``):
+
+.. math::
+
+   E_\mu(2,3) = E_\mu + \frac{\sum_p c_{p\mu}\langle\Psi_\mu|\Gamma_3(p)|\Phi_p\rangle}
+                               {\langle\Psi_\mu|\Psi_\mu^{\mathrm{SU}}\rangle},
+
+where :math:`\Gamma_3(p)` are the triples moments of the SU-MRCC equations of each reference
+(direct and coupling terms) and the trial wave function is the multireference analog of
+CR-CCSD(T), :math:`\Psi_\mu = \sum_q c_{q\mu}(1 + T_1 + T_2 + Z_3)(q)|\Phi_q\rangle` with
+:math:`Z_3 = R_3[(V_N T_2)_C + (V_N T_1)_{DC}]` from the converged amplitudes. For one
+reference the triples part reduces to CR-CCSD(T)'s. Everything is evaluated on the fly over
+the triples of each reference (no triples are stored), at a CR-CC(2,3)-like cost per
+reference plus the projections of the other references' wave functions onto its triples.
+
+The effective Hamiltonian elements and coupling terms are exact for any model space and any
+number of active electrons: both come from one primitive, the coefficient of each single or
+double of reference :math:`p` in :math:`e^{T(q)}|\Phi_q\rangle`, evaluated by a recursion over
+the partitions of the excitation into cluster blocks (t1, t2, and the C-condition internal
+amplitudes), with array sizes set by the longest excitation present. The cost grows as the
+square of the number of determinants; pairs of references of different point-group symmetry
+are skipped, and in complete model spaces partitions without a core or virtual index in every
+block are pruned. To see the formula behind any element, list its terms:
+
+.. code-block:: python
+
+   from ccpy.mrcc.sumrcc import cluster_terms, format_cluster_terms
+   # alpha 1,2 -> 3,4 and beta 1 -> 3 relative to Phi_q (spin orbitals, 4 spatial orbitals)
+   print(format_cluster_terms(cluster_terms((0, 1, 4), (2, 3, 6), 4), 4))
+   # + t1(3a;1a) t1(4a;2a) t1(3b;1b)
+   # + t1(3a;1a) t2(4a,3b;2a,1b)
+   # ... Larger model spaces
+are prone to intruder states, which are reported when an external determinant lies
+below the highest reference. ``solver="auto"`` (default) runs Jacobi/DIIS and falls
+back to Newton-Krylov; ``"jacobi"`` and ``"newton_krylov"`` select one. The equations
+use the DF vectors directly: each reference stores its Fock matrix, Cholesky vectors and
+only the two-body integrals with at most two unoccupied indices.

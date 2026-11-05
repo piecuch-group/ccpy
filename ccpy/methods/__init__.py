@@ -37,6 +37,7 @@ from ccpy.methods.left import (LeftCC3, LeftCCBase, LeftCCSD, LeftCCSDT, LeftCCS
                                LeftEOMCCSDTA, LeftIPEOM2, LeftIPEOM3, LeftIPEOM3_P)
 from ccpy.methods.lrcc import LRCCSD, LRCCBase
 from ccpy.methods.mbpt import MP2, MP3, MP4, MBPTBase
+from ccpy.methods.mrcc import SUMRCCSD, SUMRCCSD1
 from ccpy.methods.reference import DFPortWarning, Reference
 
 

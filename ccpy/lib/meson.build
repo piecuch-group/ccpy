@@ -177,6 +177,7 @@ fortran_sources = [
   'fortran/leftipeom3_p_loops.f90',
   'fortran/reorder.f90',
   'fortran/stochastic_triples_loops.f90',
+  'fortran/sumrcc_loops.f90',
   'fortran/mbpt_loops.f90',
   'fortran/vvvv_contraction.f90',
 ]

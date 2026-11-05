@@ -1809,6 +1809,43 @@ LRCCSD
 * ``order = 2``.
 * ``module = 'ccpy.lrcc.lrccsd'``.
 
+State-universal multireference coupled cluster
+----------------------------------------------
+
+.. _methods-class-sumrccsd:
+
+SUMRCCSD
+~~~~~~~~
+
+.. code-block:: text
+
+   SUMRCCSD(upstream, nact_electrons=None, nact_orbitals=None, nfrozen=None, ndelete=None, *, determinants=None, solver='auto', prune_intruders=None, **options)
+
+Source description::
+
+   SU-MRCCSD (Jeziorski-Monkhorst) of RHF/ROHF orbitals in the complete model space
+   CAS(nact_electrons, nact_orbitals), with the active orbitals right above the core, or in a
+   general model space of given determinants (Li-Paldus C conditions on the internal amplitudes).
+
+* Defined in ``ccpy.methods.mrcc``.
+* Public members defined here: ``solve()``, ``mmsucc23(root=None)``, ``raw_energy(root=None)``, ``energy(root=None)``.
+
+.. _methods-class-sumrccsd1:
+
+SUMRCCSD1
+~~~~~~~~~
+
+.. code-block:: text
+
+   SUMRCCSD1(upstream, nact_electrons=None, nact_orbitals=None, nfrozen=None, ndelete=None, *, determinants=None, solver='auto', prune_intruders=None, **options)
+
+Source description::
+
+   SUMRCCSD(1): SU-MRCCSD with core->virtual t1 = 0 and core-core->virtual-virtual t2
+   fixed at their first-order MRMBPT values (Piecuch & Kowalski, IJMS 3, 676 (2002)).
+
+* Defined in ``ccpy.methods.mrcc``.
+
 Similarity-transformed Hamiltonians
 -----------------------------------
 

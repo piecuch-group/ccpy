@@ -12,7 +12,40 @@ def update(T, dT, H, X, shift, flag_RHF, denominator="mp"):
     # Jacobi denominators other than MP (see ccpy.cc.denominators), from T2 of this iteration
     D = None if denominator == "mp" else Denominators(T, H, denominator)
 
-    # pre-CCS intermediates
+    X = get_pre_intermediates(X, T, H, flag_RHF)
+
+    # update T1
+    T, dT = update_t1a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "a", shift)
+    if flag_RHF:
+        T.b = T.a.copy()
+        dT.b = dT.a.copy()
+    else:
+        T, dT = update_t1b(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "b", shift)
+
+    X = get_t1_transformed(X, T, H, flag_RHF)
+
+    # update T2
+    T, dT = update_t2a(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "aa", shift)
+    T, dT = update_t2b(T, dT, X, H, shift)
+    if D is not None:
+        T, dT = D.correct(T, dT, "ab", shift)
+    if flag_RHF:
+        T.bb = T.aa.copy()
+        dT.bb = dT.aa.copy()
+    else:
+        T, dT = update_t2c(T, dT, X, H, shift)
+        if D is not None:
+            T, dT = D.correct(T, dT, "bb", shift)
+    return T, dT
+
+def get_pre_intermediates(X, T, H, flag_RHF):
+    """One-body intermediates X.a/b (ov, vv, oo) used by the T1 update."""
     X.a.ov = H.a.ov + (
             np.einsum("mnef,fn->me", H.aa.oovv, T.a, optimize=True)
             + np.einsum("mnef,fn->me", H.ab.oovv, T.b, optimize=True)
@@ -67,19 +100,12 @@ def update(T, dT, H, X, shift, flag_RHF, denominator="mp"):
                 + np.einsum("nmfe,feni->mi", H.ab.oovv, T.ab, optimize=True)  #
         )
 
-    # update T1
-    T, dT = update_t1a(T, dT, X, H, shift)
-    if D is not None:
-        T, dT = D.correct(T, dT, "a", shift)
-    if flag_RHF:
-        T.b = T.a.copy()
-        dT.b = dT.a.copy()
-    else:
-        T, dT = update_t1b(T, dT, X, H, shift)
-        if D is not None:
-            T, dT = D.correct(T, dT, "b", shift)
+    return X
 
-    # Adjust (vv) intermediates
+
+def get_t1_transformed(X, T, H, flag_RHF):
+    """After the T1 update: X.a/b.vv adjusted and the T1-transformed Cholesky vectors X.chol, from
+    which every T1-dressed two-body integral is built."""
     X.a.vv -= np.einsum("me,am->ae", X.a.ov, T.a, optimize=True)
     if flag_RHF:
         X.b.vv = X.a.vv.copy()
@@ -111,21 +137,8 @@ def update(T, dT, H, X, shift, flag_RHF, denominator="mp"):
                 + np.einsum("xme,ei,am->xai", X.chol.b.ov, T.b, T.b, optimize=True)
         )
 
-    # update T2
-    T, dT = update_t2a(T, dT, X, H, shift)
-    if D is not None:
-        T, dT = D.correct(T, dT, "aa", shift)
-    T, dT = update_t2b(T, dT, X, H, shift)
-    if D is not None:
-        T, dT = D.correct(T, dT, "ab", shift)
-    if flag_RHF:
-        T.bb = T.aa.copy()
-        dT.bb = dT.aa.copy()
-    else:
-        T, dT = update_t2c(T, dT, X, H, shift)
-        if D is not None:
-            T, dT = D.correct(T, dT, "bb", shift)
-    return T, dT
+    return X
+
 
 # @profile
 def update_t1a(T, dT, X, H, shift):
