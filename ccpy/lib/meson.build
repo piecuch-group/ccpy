@@ -121,10 +121,15 @@ omp_dep = dependency('openmp', language: 'fortran', required: false)
 # One OpenMP runtime per process: the kernels call BLAS inside OpenMP parallel regions, and
 # OpenBLAS keeps separate buffers only for threads of its own runtime (concurrent calls from
 # another runtime's threads share them and return wrong results). Homebrew's OpenBLAS uses LLVM
-# libomp, which also provides GCC's GOMP interface: link it instead of libgomp.
+# libomp, which also provides GCC's GOMP interface: link it instead of libgomp. The toolchain's
+# own libomp comes first (in conda-forge environments it is the one OpenBLAS uses, and libgomp
+# is an alias of it); Homebrew's only otherwise, never a second copy.
 if host_machine.system() == 'darwin' and blas_name == 'openblas'
-  libomp = meson.get_compiler('fortran').find_library('omp',
-    dirs: ['/opt/homebrew/opt/libomp/lib', '/usr/local/opt/libomp/lib'])
+  libomp = meson.get_compiler('fortran').find_library('omp', required: false)
+  if not libomp.found()
+    libomp = meson.get_compiler('fortran').find_library('omp',
+      dirs: ['/opt/homebrew/opt/libomp/lib', '/usr/local/opt/libomp/lib'])
+  endif
   omp_dep = declare_dependency(compile_args: '-fopenmp', dependencies: libomp)
 endif
 
