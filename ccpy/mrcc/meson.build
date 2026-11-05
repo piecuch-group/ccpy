@@ -1,8 +1,5 @@
 python_sources = [
   '__init__.py',
-  'effective_hamiltonian.py',
-  'normal_order.py',
-  'mkmrccsd.py',
   'sumrcc.py',
   'sumrccsd.py',
   'mmsucc23.py'

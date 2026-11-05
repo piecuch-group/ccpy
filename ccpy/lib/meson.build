@@ -178,6 +178,7 @@ fortran_sources = [
   'fortran/reorder.f90',
   'fortran/stochastic_triples_loops.f90',
   'fortran/sumrcc_loops.f90',
+  'fortran/ccsd_p.f90',
   'fortran/mbpt_loops.f90',
   'fortran/vvvv_contraction.f90',
 ]
