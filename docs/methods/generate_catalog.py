@@ -25,6 +25,7 @@ GROUPS = {
     "reference": "References and materialization warnings",
     "hamiltonian": "Factorized Hamiltonian",
     "fno": "FNO policies, evaluations and preparation",
+    "cim": "Experimental cluster-in-molecule local correlation",
     "base": "Shared method protocol",
 }
 

@@ -15,6 +15,7 @@ vectors, and issue a DFPortWarning.
 """
 from ccpy.methods.base import MethodBase
 from ccpy.methods.adc import ADC2, EAADC2, IPADC2
+from ccpy.methods.cim import CIM, CIMDevelopmentWarning, CIMDomains, CIMOptions
 from ccpy.methods.fno import FNOEvaluation, FNOOptions, FNOResult, FNOTarget, prepare_fno, register_fno_provider
 from ccpy.methods.cc import (ACCD, ACCSD, ACCSDT_P, CC2, CC3, CC4, CCD, CCSD, CCSDT, CCSDT_P, CCSDTQ, ECCC2,
                              ACCBase, CCBase, CCPBase)

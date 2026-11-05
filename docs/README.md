@@ -68,4 +68,6 @@ API; quantitative reaction energetics require independent convergence checks.
 
 Relaxed multipoles, native harmonic IR intensities and finite-field examples:
 [methods/multipoles.rst](methods/multipoles.rst), with runnable
-`examples/methods_api/multipole_ir.py`.
+`examples/methods_api/multipole_ir.py`. The experimental CIM documentation is
+[cim.rst](cim.rst); its limited tests do not establish general local-correlation
+accuracy or performance.

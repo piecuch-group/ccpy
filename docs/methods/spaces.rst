@@ -1,6 +1,9 @@
 FNOs, active spaces and selected determinants
 =============================================
 
+Experimental CIM domains are a separate local-correlation model; see
+:doc:`../cim`. Current CIM wrappers cannot be composed with FNOs.
+
 Three different reductions
 ---------------------------
 

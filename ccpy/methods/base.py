@@ -53,6 +53,9 @@ class MethodBase:
     fno_targets : sequence of FNOTarget, optional
         Explicit target identities in returned EOM root order for state-specific
         completion. Defaults to the prepared reference's configured target order.
+    cim : CIMOptions, optional
+        Cluster-in-molecule local correlation: the constructor returns a
+        ccpy.methods.cim.CIM calculation of this method instead.
     **options
         Solver options (see SOLVER_OPTIONS) and fd_step/fd_npoints for finite-difference
         gradients. Solver options are passed on to the methods created internally.
@@ -64,12 +67,16 @@ class MethodBase:
     # analytic gradient kernel (ccpy.gradients), if there is one
     gradient_module = gradient_function = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, cim=None, **kwargs):
+        if cim is not None:
+            from ccpy.methods.cim import CIM
+
+            return CIM(cls, *args, cim=cim, **kwargs)
         obj = super().__new__(cls)
         obj._ctor_args = (args, kwargs)
         return obj
 
-    def __init__(self, upstream, nfrozen=None, ndelete=None, *, fno=None, fno_targets=None, **options):
+    def __init__(self, upstream, nfrozen=None, ndelete=None, *, fno=None, fno_targets=None, cim=None, **options):
         unknown = set(options) - set(SOLVER_OPTIONS) - set(METHOD_OPTIONS)
         if unknown:
             raise TypeError(f"{type(self).__name__}: unknown options {sorted(unknown)}")

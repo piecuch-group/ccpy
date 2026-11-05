@@ -11,7 +11,7 @@ Start with :doc:`setup`, choose a method from :doc:`ground` or :doc:`excited`,
 then use :doc:`guesses` to select excited roots. :doc:`spaces` explains frozen
 cores, FNOs and selected determinants; :doc:`properties` covers left states,
 densities and response. :doc:`multipoles` covers relaxed moments and IR
-intensities.
+intensities, and :doc:`../cim` explains the experimental local-correlation wrappers.
 :doc:`gradients` details analytic and numerical derivatives;
 :doc:`geometry` covers minima, transition states and two-sided IRC validation
 through pysisyphus. :doc:`frequencies` gives the full harmonic vibrational
@@ -27,6 +27,7 @@ its actual constructor, dependencies and equation implementation.
    excited
    guesses
    spaces
+   ../cim
    properties
    multipoles
    gradients

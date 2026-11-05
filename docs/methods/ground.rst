@@ -1,6 +1,10 @@
 Ground states and energy corrections
 ====================================
 
+For the experimental ``cim=CIMOptions(...)`` dispatch on supported ground
+levels, see :doc:`../cim`. It returns a local-correlation wrapper, not an ordinary
+global CC amplitude object; its restrictions and validation status differ.
+
 MPn and coupled-cluster levels
 ------------------------------
 

@@ -1828,6 +1828,7 @@ Source description::
    general model space of given determinants (Li-Paldus C conditions on the internal amplitudes).
 
 * Defined in ``ccpy.methods.mrcc``.
+* Class-level ``requires_df_port = False``.
 * Public members defined here: ``solve()``, ``mmsucc23(root=None)``, ``raw_energy(root=None)``, ``energy(root=None)``.
 
 .. _methods-class-sumrccsd1:
@@ -1845,6 +1846,7 @@ Source description::
    fixed at their first-order MRMBPT values (Piecuch & Kowalski, IJMS 3, 676 (2002)).
 
 * Defined in ``ccpy.methods.mrcc``.
+* Class-level ``requires_df_port = False``.
 
 Similarity-transformed Hamiltonians
 -----------------------------------
@@ -2116,6 +2118,74 @@ Source description::
 
 * Defined in ``ccpy.methods.fno``.
 
+Experimental cluster-in-molecule local correlation
+--------------------------------------------------
+
+.. _methods-class-cim:
+
+CIM
+~~~
+
+.. code-block:: text
+
+   CIM(method, upstream, nfrozen=None, ndelete=None, *, cim, fno=None, **kwargs)
+
+Source description::
+
+   CIM energy of a ground-state method; created by passing ``cim=CIMOptions(...)`` to a
+   method, e.g. ``CCSD(mf, nfrozen=1, cim=CIMOptions())``.
+
+* Defined in ``ccpy.methods.cim``.
+* Class-level ``requires_df_port = False``.
+* Public members defined here: ``at_geometry(molecule)``, ``has_analytic_gradient(**kwargs)``, ``energy()``, ``raw_energy()``, ``solve()``.
+
+.. _methods-class-cimdevelopmentwarning:
+
+CIMDevelopmentWarning
+~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: text
+
+   CIMDevelopmentWarning(*args, **kwargs)
+
+Source description::
+
+   Issued by every CIM calculation: CIM is under development, and its limited tests do not
+   establish general local-correlation accuracy or performance.
+
+* Defined in ``ccpy.methods.cim``.
+
+.. _methods-class-cimdomains:
+
+CIMDomains
+~~~~~~~~~~
+
+.. code-block:: text
+
+   CIMDomains(subsystems: tuple, populations: numpy.ndarray) -> None
+
+Source description::
+
+   Subsystems of one geometry, with the atomic Mulliken populations (nlmo, natoms) of its
+   LMOs used to identify the LMOs at other geometries.
+
+* Defined in ``ccpy.methods.cim``.
+
+.. _methods-class-cimoptions:
+
+CIMOptions
+~~~~~~~~~~
+
+.. code-block:: text
+
+   CIMOptions(zeta: float = 0.003, central_charge: float = 0.3, domain_charge: float = 1.98, bond_tolerance: float = 0.168, pao_threshold: float = 1e-06, levels: dict = <factory>, domains: 'CIMDomains' = None, localization_tol: float = 1e-12, localization_maxiter: int = 1000, verbose: bool = False) -> None
+
+Source description::
+
+   CIM settings.
+
+* Defined in ``ccpy.methods.cim``.
+
 Shared method protocol
 ----------------------
 
@@ -2126,7 +2196,7 @@ MethodBase
 
 .. code-block:: text
 
-   MethodBase(upstream, nfrozen=None, ndelete=None, *, fno=None, fno_targets=None, **options)
+   MethodBase(upstream, nfrozen=None, ndelete=None, *, fno=None, fno_targets=None, cim=None, **options)
 
 Source description::
 

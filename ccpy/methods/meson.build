@@ -4,6 +4,7 @@ python_sources = [
   'adc.py',
   'fno.py',
   'cc.py',
+  'cim.py',
   'mrcc.py',
   'corrections.py',
   'eomcc.py',
