@@ -14,6 +14,8 @@ Adapted from forte2 (https://github.com/evangelistalab/forte2, LGPL-3.0); see
 THIRD_PARTY_NOTICES.md.
 """
 
+from collections import OrderedDict
+
 import numpy as np
 import scipy.linalg
 
@@ -106,48 +108,70 @@ class DensityFitting:
         nbf = mol.nbf
         first, sizes = zip(*mol.basis.shell_first_and_size)
         shell_of = np.repeat(np.arange(len(first)), sizes)
-        columns = {}
+        # Store only unique AO pairs. This halves the projection work and vector
+        # storage without changing the (unweighted) pivot criterion.
+        pair_r, pair_s = np.triu_indices(nbf)
+        npair = len(pair_r)
+        columns = OrderedDict()
+        cache_bytes = 0
+        cache_limit = 64 * 1024**2
 
         def column(r, s):
             """(mn|rs) as a vector over the pairs mn (cached per shell pair)."""
+            nonlocal cache_bytes
+            if shell_of[r] > shell_of[s]:
+                r, s = s, r
             key = (shell_of[r], shell_of[s])
             if key not in columns:
-                if len(columns) > 64:
-                    columns.clear()
-                columns[key] = integrals.coulomb_4c_shell_column(mol, *key)
-            return columns[key][:, :, r - first[key[0]], s - first[key[1]]].reshape(nbf * nbf)
+                block = integrals.coulomb_4c_shell_column(mol, *key)[pair_r, pair_s]
+                while columns and cache_bytes + block.nbytes > cache_limit:
+                    _, old = columns.popitem(last=False)
+                    cache_bytes -= old.nbytes
+                columns[key] = block
+                cache_bytes += block.nbytes
+            columns.move_to_end(key)
+            return columns[key][:, r - first[key[0]], s - first[key[1]]]
+
+        pair_index = np.empty((nbf, nbf), dtype=np.intp)
+        pair_index[pair_r, pair_s] = np.arange(npair)
+        pair_index[pair_s, pair_r] = np.arange(npair)
 
         if mol.cholesky_pivots is not None:
             pivots = [(int(r), int(s)) for r, s in mol.cholesky_pivots]
             A = np.array([column(r, s) for r, s in pivots])                      # (J|mn)
-            M = A[:, [r * nbf + s for r, s in pivots]]                           # (J|K)
+            M = A[:, [pair_index[r, s] for r, s in pivots]]                      # (J|K)
             Lm = np.linalg.cholesky(M)
             B = scipy.linalg.solve_triangular(Lm, A, lower=True)
         else:
-            diag = integrals.coulomb_4c_diagonal(mol).reshape(nbf * nbf).copy()
-            V = np.empty((4 * nbf, nbf * nbf))  # Cholesky vectors (rows), grown as needed
+            diag = integrals.coulomb_4c_diagonal(mol)[pair_r, pair_s].copy()
+            V = np.empty((4 * nbf, npair))  # Cholesky vectors (rows), grown as needed
             pivots = []
-            while len(pivots) < nbf * nbf:
+            while len(pivots) < npair:
                 p = int(np.argmax(diag))
                 if diag[p] <= mol.cholesky_tol:
                     break
                 k = len(pivots)
                 if k == V.shape[0]:
                     V = np.concatenate([V, np.empty_like(V)])
-                r, s = divmod(p, nbf)
+                r, s = int(pair_r[p]), int(pair_s[p])
                 V[k] = (column(r, s) - V[:k, p] @ V[:k]) / np.sqrt(diag[p])
                 pivots.append((r, s))
                 diag -= V[k]**2
                 diag[diag < 0.0] = 0.0
             B = V[: len(pivots)]
-            Lm = B[:, [r * nbf + s for r, s in pivots]].T                        # M = Lm Lm^T
+            Lm = B[:, [pair_index[r, s] for r, s in pivots]].T                   # M = Lm Lm^T
         self.pivots = pivots
         self.Mm12 = scipy.linalg.solve_triangular(Lm, np.eye(len(pivots)), lower=True)
         mol.naux = len(pivots)
         if mol.verbose:
             print(f"   Cholesky decomposition of the AO ERIs (tol = {mol.cholesky_tol}): "
                   f"{mol.naux} vectors")
-        return B.reshape((-1, nbf, nbf))
+        # Preserve the contiguous public layout used by SCF/MO transformations,
+        # without an additional full-size temporary from advanced indexing.
+        full = np.empty((len(B), nbf, nbf))
+        full[:, pair_r, pair_s] = B
+        full[:, pair_s, pair_r] = B
+        return full
 
     # Coulomb and exchange
     def build_J(self, D):

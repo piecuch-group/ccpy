@@ -1436,7 +1436,9 @@ np_tensor4 coulomb_4c_shell_column(const Basis& basis, std::size_t s3, std::size
         const auto& results = engine.results();
         for (std::size_t s1 = s_begin; s1 < s_end; ++s1) {
             const std::size_t n1 = basis[s1].size();
-            for (std::size_t s2 = 0; s2 < ns; ++s2) {
+            // Each worker owns an unordered shell pair and both output blocks.
+            // (mn|rs) = (nm|rs), so the other half needs no engine call.
+            for (std::size_t s2 = 0; s2 <= s1; ++s2) {
                 const std::size_t n2 = basis[s2].size();
                 engine.compute(basis[s1], basis[s2], basis[s3], basis[s4]);
                 const double* buf = results[0];
@@ -1445,8 +1447,11 @@ np_tensor4 coulomb_4c_shell_column(const Basis& basis, std::size_t s3, std::size
                 for (std::size_t i = 0, ijkl = 0; i < n1; ++i)
                     for (std::size_t j = 0; j < n2; ++j)
                         for (std::size_t k = 0; k < n3; ++k)
-                            for (std::size_t l = 0; l < n4; ++l, ++ijkl)
+                            for (std::size_t l = 0; l < n4; ++l, ++ijkl) {
                                 v(off[s1] + i, off[s2] + j, k, l) = buf[ijkl];
+                                if (s1 != s2)
+                                    v(off[s2] + j, off[s1] + i, k, l) = buf[ijkl];
+                            }
             }
         }
     });
