@@ -42,12 +42,37 @@ settings, ``variant`` of CR-CC(2,3), ...) are passed on to the subsystem
 calculations.
 
 The implemented class filter accepts ground-state ``CCBase`` subclasses,
-MP2, and the concrete ``CRCC23`` class. Ordinary CCSD/CCSDT/CC3-style energies
+MP2, and the concrete ``CRCC23`` and ``AdaptiveCCPQ`` classes. Ordinary CCSD/CCSDT/CC3-style energies
 are assembled from their T1/T2 energy expression. Acceptance by that filter
 is not proof that every subclass or parameterized input is usable: selected
 CC(P) lists and external CI data need a subsystem-basis adaptation that this
-wrapper does not generally provide. Begin with MP2, CCSD, CCSDT or CRCC23,
-which have focused canonical-limit tests. The reference must be closed-shell
+wrapper does not generally provide. Begin with MP2, CCSD, CCSDT, CRCC23 or
+AdaptiveCCPQ, which have focused canonical-limit tests.
+
+Adaptive CC(P;Q) runs its macroiterations unchanged in every subsystem: each
+subsystem grows its own P space of triples (in its QCMO basis) by its own moment
+contributions and stops by its own energy test (``energy_tolerance`` applies to
+the subsystem energy). The central energy is the CC(P) energy from T1/T2 plus the
+central part of the CC(P;3)_D correction (two-body approximation) on the P space
+of the last macroiteration, partitioned like CR-CC(2,3) with the triples sum
+skipping the P space. With ``percentage=[..., 100.0]`` every subsystem reaches
+CCSDT, so the calculation converges to CIM-CCSDT. Its limitations:
+
+* the triples are ranked by their contributions to the whole subsystem
+  correction, not to its central part, so some are spent on environment-only
+  excitations;
+* the P spaces are labeled by subsystem QCMOs, which change with the geometry, so
+  ``at_geometry`` (fixed domains, finite differences) reselects them rather than
+  reusing them;
+* semi-stochastic corrections (``stochastic=``) are not supported.
+
+.. code-block:: python
+
+   from ccpy.methods.corrections import AdaptiveCCPQ
+
+   local = AdaptiveCCPQ(mf, nfrozen=ncore, percentage=[0.0, 1.0, 2.0, 5.0],
+                        cim=CIMOptions(zeta=0.003))
+   energy = local.energy() The reference must be closed-shell
 RHF without point-group symmetry or deleted virtuals.
 
 Out-of-the-box setup and what is returned
@@ -123,15 +148,28 @@ J. Phys. Chem. A **114**, 6721 (2010).
    :math:`\zeta` controls the calculation: :math:`\zeta = 0` gives one subsystem and
    the canonical result. Since subsystems are anchored on atoms, they do not
    rearrange unnecessarily as the nuclei move.
-3. **Unoccupied orbitals.** The AO domain of an LMO holds its largest-charge atoms
-   whose charges add up to ``domain_charge`` (1.98); the AO domain of a subsystem
-   is the union over its LMOs. The subsystem virtuals are the projected atomic
-   orbitals (PAOs) of these atoms, orthonormalized.
+3. **Local subsystem orbitals.** The AO domain of an occupied LMO (core included)
+   holds its largest-charge atoms whose charges add up to ``domain_charge`` (1.98);
+   the AO domain of a subsystem is the union over its LMOs. Its extended domain adds
+   every atom whose anchor (itself, or the non-hydrogen atom a hydrogen is bonded to)
+   lies within ``buffer_radius`` (4 angstrom) of the AO domain. The occupied LMOs whose
+   AO domains lie in the extended domain are projected onto its AOs (least squares)
+   and symmetrically orthonormalized; the subsystem's own ones are its occupied
+   orbitals. Its unoccupied orbitals span the exact orthogonal complement of those
+   projected LMOs in the extended domain (the span of its PAOs), restricted to the
+   orbitals that differ from their projection onto the AO-domain atoms by less than
+   ``eta`` (0.5) in norm. Every subsystem orbital is a combination of the AOs of its
+   extended domain only, and the subsystem orbitals are exactly orthonormal.
 4. **Quasi-canonical orbitals.** The occupied and unoccupied orbitals of each
    subsystem are rotated to the QCMOs that diagonalize its Fock blocks. Each
-   subsystem is an ordinary ``Reference`` in which the other occupied LMOs are frozen
-   (they enter through the Fock operator) and the other virtuals are dropped, so the
-   unmodified method runs on it.
+   subsystem is an ordinary ``Reference`` holding only its own orbitals: its Fock
+   matrix is that of the full system (the other occupied LMOs enter through it), and
+   its two-electron integrals are density fitted with the auxiliary functions of the
+   extended domain, formed one auxiliary atom at a time. No full-system MO integrals
+   are built, and the unmodified method runs on the subsystem. The occupied and
+   unoccupied subsystem orbitals are not exactly the HF ones, so the subsystem Fock
+   matrix has small occupied-unoccupied elements; CC methods include them, MP2
+   neglects them.
 5. **Mixed-index energies.** With :math:`R` the rotation from the LMOs to the QCMOs,
    :math:`\delta E_{i'}(\{P\})` is the energy expression with its first occupied
    index rotated back to the LMO :math:`i'` (Eqs. (15)-(22) of the 2009 paper). For
@@ -178,7 +216,8 @@ reference CIM calculation first so its domains exist:
 Frozen domain membership does not freeze the LMOs or QCMO coefficients. The
 orbitals are relocalized/rematched and subsystem orbitals rebuilt at each
 geometry. Population-based assignments can become ambiguous at degeneracies,
-and PAO rank changes can still affect smoothness. Verify energy/gradient
+and changes in the number of unoccupied orbitals passing ``eta`` can still affect
+smoothness. Verify energy/gradient
 continuity before using CIM for minima, transition states, frequencies or IRCs.
 Static property convenience methods currently request an analytic property
 gradient and therefore are unavailable on CIM; a consistent fixed-domain
@@ -232,8 +271,13 @@ Options
    paper.
 ``central_charge`` (0.3), ``domain_charge`` (1.98), ``bond_tolerance`` (0.168 angstrom)
    LMO-to-atom assignments; X-H bonds use covalent radii.
-``pao_threshold`` (1e-6)
-   smallest kept overlap eigenvalue of the normalized PAOs.
+``buffer_radius`` (4.0 angstrom)
+   buffer atoms of the extended domains, as in the 2009 paper. Much smaller values
+   let occupied orbitals of excluded neighbors leak into the unoccupied space; this is
+   detected (an unoccupied QCMO below the occupied ones) and raises a ``ValueError``.
+``eta`` (0.5)
+   selection of the unoccupied orbitals of a subsystem (step 12 of the 2009 paper,
+   which recommends 0.5 when the unoccupied orbitals are strictly orthonormalized).
 ``levels``, ``domains``
    multilevel methods and fixed subsystems.
 ``localization_tol`` (1e-12), ``localization_maxiter`` (1000)
@@ -244,25 +288,31 @@ Options
 Differences from the papers
 ---------------------------
 
-* The occupied orbitals of a subsystem are the exact LMOs, and its virtuals are the
-  PAOs of its AO-domain atoms projected against the full occupied space, rather than
-  orbitals projected onto the AO domain (and the extended domain with buffer atoms
-  of steps 7-12 of the 2009 paper). Every subsystem space is exactly orthonormal and
-  the integrals come from the full DF vectors, which keeps the subsystem references
-  exact but makes the integral transformation scale with the full system.
-* Only CR-CC(2,3) among the noniterative corrections has the mixed-index triples
-  partition; CCSD(T), CC(t;3), CC(P;Q), EOM, and open-shell references are not
-  supported yet.
+* The subsystem orbitals are kept in the extended domain (AO domain plus buffer)
+  rather than projected back onto the AO domain, and they are strictly orthonormal
+  (an option in the 2009 paper). The ``eta`` selection is applied to the whole
+  unoccupied space of the extended domain at once (the subspace with weight above
+  1 - eta^2 on the AO-domain atoms) instead of to its Boys-localized orbitals. With an
+  extended domain covering the molecule and one subsystem, the canonical calculation
+  is recovered.
+* The two-electron integrals are fitted locally, with the auxiliary functions of the
+  extended domain.
+* X-H bonds use covalent radii plus ``bond_tolerance``.
+* Among the noniterative corrections only CR-CC(2,3) and the CC(P;3) correction of
+  adaptive CC(P;Q) have the triples partition; CCSD(T), CC(t;3), CC(P;3) with a given
+  P space, EOM, and open-shell references are not supported yet. Adaptive CC(P;Q) is
+  not part of the papers.
 
 Restrictions, custom domains and validation status
 ---------------------------------------------------
 
-CIM is currently closed-shell native RHF, C1, without deleted virtuals. It does
+CIM is currently closed-shell native RHF, C1, without deleted virtuals, with density
+fitting (``cholesky_tei`` molecules are not supported). It does
 not support UHF/ROHF, EE/IP/EA/DEA/DIP/SF EOM, ADC or STEOM. FNO+CIM composition
 is unsupported, including starting from an already FNO-reduced reference.
-Noniterative CCSD(T), CC(t;3), CC(P;Q) and quadruples corrections do not have
-this wrapper's mixed-index correction partition. Stochastic CIM correction
-sampling is not implemented: the CRCC23 central correction path directly calls
+Noniterative CCSD(T), CC(t;3), standalone CC(P;3) and quadruples corrections do not
+have this wrapper's correction partition. Stochastic CIM correction sampling is not
+implemented: the CRCC23 and adaptive CC(P;Q) central correction paths directly call
 deterministic kernels. Do not infer availability from kwargs that a subsystem
 class otherwise accepts.
 
@@ -281,7 +331,8 @@ check that every inner iterative solve converged.
 
 ``tests/methods/test_cim.py`` contains focused checks for full-space limits
 (MP2, CCSD, CCSDT, CRCC23), a dense mixed-index CRCC23_A partition oracle,
-water-trimer subsystem construction, fixed-domain matching, multilevel
+water-trimer subsystem construction, truncated extended domains (n-decane), the
+buffer-too-small check, fixed-domain matching, multilevel
 assignment and rejected unsupported classes/references. These are limited
 implementation checks, not a broad method/reference/basis benchmark or a
 production scaling test. Derivatives, large/localized systems and general

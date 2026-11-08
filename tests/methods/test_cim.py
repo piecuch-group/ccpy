@@ -120,18 +120,65 @@ def test_mixed_index_partition_matches_dense_oracle(water_rhf):
         assert result["energy"] == pytest.approx(central_oracle(canonical, P), abs=1.0e-9)
 
 
+def test_adaptive_ccpq_canonical_limit_and_partition(water_rhf):
+    """Adaptive CC(P;Q): one subsystem with every orbital selects the canonical P spaces, and two
+    subsystems with every orbital and central LMOs (0, 1) and (2, 3) add up to the canonical
+    energy, so the central CC(P;3) parts (triples sum skipping the P space) partition it."""
+    from ccpy.methods.corrections import AdaptiveCCPQ
+
+    options = dict(nfrozen=1, percentage=[0.0, 2.0, 5.0], energy_tolerance=1.0e-10, **OPTS)
+    canonical = AdaptiveCCPQ(water_rhf, **options)
+    expected = quiet(canonical.energy)
+    assert len(canonical.ccpq_energies) == 3
+    single = AdaptiveCCPQ(water_rhf, cim=CIMOptions(zeta=0.0), **options)
+    assert quiet(single.energy) == pytest.approx(expected, abs=1.0e-9)
+    C = water_rhf.mo_coeff[:, 1:5]
+    U = boys_localize(C, water_rhf.mol)
+    subsystems = tuple(CIMSubsystem(central, central + tuple(i for i in range(4) if i not in central),
+                                    (0, 1, 2), AdaptiveCCPQ) for central in ((0, 1), (2, 3)))
+    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=CIMDomains(subsystems, lmo_populations(C @ U, water_rhf.mol))),
+                         **options)
+    assert quiet(split.energy) == pytest.approx(expected, abs=1.0e-9)
+
+
 def test_secim_water_trimer(trimer_rhf):
-    """One subsystem per water (its four LMOs central, a neighbor as environment), and 99.7% of
+    """One subsystem per water (its four LMOs central, a neighbor as environment), and 99.5% of
     the canonical CCSD correlation energy at zeta = 0.01."""
     expected = quiet(lambda: CCSD(trimer_rhf, nfrozen=3, **OPTS).energy()) - trimer_rhf.e_tot
     cim = CCSD(trimer_rhf, nfrozen=3, cim=CIMOptions(zeta=0.01), **OPTS)
     correlation = quiet(cim.energy) - trimer_rhf.e_tot
     assert sorted(i for s in cim.domains.subsystems for i in s.central) == list(range(12))
     assert [(len(s.central), len(s.occupied), len(s.atoms)) for s in cim.domains.subsystems] == [(4, 8, 6)] * 3
-    assert correlation / expected == pytest.approx(0.99745, abs=1.0e-4)
+    assert correlation / expected == pytest.approx(0.99508, abs=1.0e-4)
     # tighter zeta: one subsystem
     assert len(quiet(lambda: CCSD(trimer_rhf, nfrozen=3, cim=CIMOptions(zeta=0.003), **OPTS).ensure_solved())
                .domains.subsystems) == 1
+
+
+def test_local_subsystems_decane():
+    """Subsystem orbitals and integrals are built from the AOs of each extended domain only:
+    with a 2.5 angstrom buffer the outer subsystems exclude atoms of n-decane, and CIM-MP2 stays
+    within 0.3 mEh of the CIM-MP2 whose extended domains are the whole molecule. The parent
+    reference holds no MO integrals."""
+    xyz = []
+    for k in range(10):
+        x, y, s = 1.27 * k, (0.42, -0.42)[k % 2 == 0], (1, -1)[k % 2 == 0]
+        xyz += [f"C {x} {y} 0", f"H {x} {y + 0.63 * s} 0.89", f"H {x} {y + 0.63 * s} -0.89"]
+    xyz += ["H -1.03 -0.10 0", "H 12.46 0.10 0"]
+    mf = converged_scf(RHF, Molecule("; ".join(xyz), "6-31g", auxiliary_basis=AUX, verbose=False))
+    full = MP2(mf, nfrozen=10, cim=CIMOptions(zeta=0.003), **OPTS)
+    local = MP2(mf, nfrozen=10, cim=CIMOptions(zeta=0.003, buffer_radius=2.5), **OPTS)
+    assert quiet(local.energy) == pytest.approx(quiet(full.energy), abs=3.0e-4)
+    assert all(len(s.extended) == 32 for s in full.domains.subsystems)
+    assert min(len(s.extended) for s in local.domains.subsystems) < 32
+    assert not hasattr(local.reference, "B_mo")
+
+
+def test_buffer_too_small(trimer_rhf):
+    """Without buffer atoms the lone pairs of the excluded water leak into the unoccupied space,
+    which is detected instead of producing a meaningless energy."""
+    with pytest.raises(ValueError, match="buffer_radius"):
+        quiet(CCSD(trimer_rhf, nfrozen=3, cim=CIMOptions(zeta=0.01, buffer_radius=0.0), **OPTS).energy)
 
 
 def test_fixed_domains_follow_the_lmos(trimer_rhf):

@@ -2178,7 +2178,7 @@ CIMOptions
 
 .. code-block:: text
 
-   CIMOptions(zeta: float = 0.003, central_charge: float = 0.3, domain_charge: float = 1.98, bond_tolerance: float = 0.168, pao_threshold: float = 1e-06, levels: dict = <factory>, domains: 'CIMDomains' = None, localization_tol: float = 1e-12, localization_maxiter: int = 1000, verbose: bool = False) -> None
+   CIMOptions(zeta: float = 0.003, central_charge: float = 0.3, domain_charge: float = 1.98, bond_tolerance: float = 0.168, eta: float = 0.5, buffer_radius: float = 4.0, levels: dict = <factory>, domains: 'CIMDomains' = None, localization_tol: float = 1e-12, localization_maxiter: int = 1000, verbose: bool = False) -> None
 
 Source description::
 
