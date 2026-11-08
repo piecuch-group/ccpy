@@ -10,10 +10,11 @@ from ccpy.models.operators import ClusterOperator
 from ccpy.models.system import System
 from ccpy.models.integrals import Integral
 #
-from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates
+from ccpy.hbar.hbar_ccsd_chol import get_ccsd_intermediates, contract_vv_t1_exchange
 from ccpy.lib.core import vvvv_contraction
 from ccpy.lib.core import ccsdt_p_loops, ccsdt_p_chol_loops
 from ccpy.cc.denominators import Denominators
+from ccpy.cc.chol_ppl import add_vvvv_t2, add_vvvv_t3
 
 def update(T: ClusterOperator,
            dT: ClusterOperator,
@@ -52,10 +53,9 @@ def update(T: ClusterOperator,
             np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
             + np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
     )
-    bxt1 = -np.einsum("xne,fn->xfe", H.chol.a.ov, T.a, optimize=True)
     X.a.vv += (
             np.einsum("xae,x->ae", H.chol.a.vv, bt1, optimize=True)
-            + np.einsum("xaf,xfe->ae", H.chol.a.vv, bxt1, optimize=True)
+            + contract_vv_t1_exchange(H.chol.a.vv, H.chol.a.ov, T.a)
     )
     X.a.oo = H.a.oo + (
             np.einsum("mnif,fn->mi", H.aa.ooov, T.a, optimize=True)
@@ -81,10 +81,9 @@ def update(T: ClusterOperator,
                 np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
                 + np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
         )
-        bxt1 = -np.einsum("xne,fn->xfe", H.chol.b.ov, T.b, optimize=True)
         X.b.vv += (
                 np.einsum("xae,x->ae", H.chol.b.vv, bt1, optimize=True)
-                + np.einsum("xaf,xfe->ae", H.chol.b.vv, bxt1, optimize=True)
+                + contract_vv_t1_exchange(H.chol.b.vv, H.chol.b.ov, T.b)
         )
         X.b.oo = H.b.oo + (
                 + np.einsum("mnif,fn->mi", H.bb.ooov, T.b, optimize=True)
@@ -113,9 +112,12 @@ def update(T: ClusterOperator,
     else:
         X.b.vv -= np.einsum("me,am->ae", X.b.ov, T.b, optimize=True)
     # T1-transform Cholesky vectors
-    X.chol.a.ov = H.chol.a.ov.copy()
+    X.chol.a.ov = np.ascontiguousarray(H.chol.a.ov)
     X.chol.a.oo = H.chol.a.oo.copy() + np.einsum("xme,ei->xmi", X.chol.a.ov, T.a, optimize=True)
-    X.chol.a.vv = H.chol.a.vv.copy() - np.einsum("xme,am->xae", X.chol.a.ov, T.a, optimize=True)
+    X.chol.a.vv = H.chol.a.vv - np.einsum("xme,am->xae", X.chol.a.ov, T.a, optimize=True)
+    # Keep mathematical (x,a,e) indexing while storing the native (x,e,a)
+    # view in Fortran order. All PPL/T3 calls reuse this single packed factor.
+    X.chol.a.vv = np.asfortranarray(X.chol.a.vv.transpose(0, 2, 1)).transpose(0, 2, 1)
     X.chol.a.vo = (
             H.chol.a.vo.copy()
             - np.einsum("xmi,am->xai", X.chol.a.oo, T.a, optimize=True)
@@ -123,14 +125,15 @@ def update(T: ClusterOperator,
             + np.einsum("xme,ei,am->xai", X.chol.a.ov, T.a, T.a, optimize=True)
     )
     if flag_RHF:
-        X.chol.b.ov = X.chol.a.ov.copy()
+        X.chol.b.ov = X.chol.a.ov
         X.chol.b.oo = X.chol.a.oo.copy()
-        X.chol.b.vv = X.chol.a.vv.copy()
+        X.chol.b.vv = X.chol.a.vv
         X.chol.b.vo = X.chol.a.vo.copy()
     else:
-        X.chol.b.ov = H.chol.b.ov.copy()
+        X.chol.b.ov = np.ascontiguousarray(H.chol.b.ov)
         X.chol.b.oo = H.chol.b.oo.copy() + np.einsum("xme,ei->xmi", X.chol.b.ov, T.b, optimize=True)
-        X.chol.b.vv = H.chol.b.vv.copy() - np.einsum("xme,am->xae", X.chol.b.ov, T.b, optimize=True)
+        X.chol.b.vv = H.chol.b.vv - np.einsum("xme,am->xae", X.chol.b.ov, T.b, optimize=True)
+        X.chol.b.vv = np.asfortranarray(X.chol.b.vv.transpose(0, 2, 1)).transpose(0, 2, 1)
         X.chol.b.vo = (
                 H.chol.b.vo.copy()
                 - np.einsum("xmi,am->xai", X.chol.b.oo, T.b, optimize=True)
@@ -138,20 +141,19 @@ def update(T: ClusterOperator,
                 + np.einsum("xme,ei,am->xai", X.chol.b.ov, T.b, T.b, optimize=True)
         )
 
-    # update T2
-    T, dT = update_t2a(T, dT, X, H, shift, t3_excitations)
-    if D is not None:
-        T, dT = D.correct(T, dT, "aa", shift)
-    T, dT = update_t2b(T, dT, X, H, shift, t3_excitations)
-    if D is not None:
-        T, dT = D.correct(T, dT, "ab", shift)
+    # Build all T2 residuals at the updated T1 and unchanged T2.
+    T, dT = update_t2a(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    T, dT = update_t2b(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    if not flag_RHF:
+        T, dT = update_t2c(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    add_vvvv_t2(T, dT, X, flag_RHF)
+    T, dT = update_t2_amplitudes(T, dT, X, H, shift, t3_excitations, flag_RHF)
+    for spin in (("aa", "ab") if flag_RHF else ("aa", "ab", "bb")):
+        if D is not None:
+            T, dT = D.correct(T, dT, spin, shift)
     if flag_RHF:
         T.bb = T.aa.copy()
         dT.bb = dT.aa.copy()
-    else:
-        T, dT = update_t2c(T, dT, X, H, shift, t3_excitations)
-        if D is not None:
-            T, dT = D.correct(T, dT, "bb", shift)
 
     # CCSD intermediates
     #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
@@ -173,15 +175,44 @@ def update(T: ClusterOperator,
         X.ab.ovov = X.ab.ovov.transpose(0, 3, 1, 2)
         X.bb.voov = X.bb.voov.transpose(1, 3, 0, 2)
 
-    # update T3
+        for block, names in ((X.aa, ("vvov", "voov", "oooo")),
+                             (X.ab, ("vvov", "vvvo", "voov", "ovvo", "vovo", "ovov", "oooo"))):
+            for name in names:
+                setattr(block, name, np.asfortranarray(getattr(block, name)))
+        if flag_RHF:
+            X.bb.vvov = X.aa.vvov
+            X.bb.voov = X.aa.voov
+            X.bb.oooo = X.aa.oooo
+        else:
+            for name in ("vvov", "voov", "oooo"):
+                setattr(X.bb, name, np.asfortranarray(getattr(X.bb, name)))
+
+    # Build all T3 residuals at the updated T2 and unchanged T3. Native
+    # routines may reorder a P list, but must not change its amplitudes yet.
     if do_t3["aaa"]:
-        T, dT, t3_excitations = update_t3a(T, dT, X, H, shift, t3_excitations)
-        if D is not None:
-            T, dT = D.correct(T, dT, "aaa", shift, t3_excitations["aaa"])
+        T, dT, t3_excitations = update_t3a(T, dT, X, H, shift, t3_excitations, residual_only=True)
     if do_t3["aab"]:
-        T, dT, t3_excitations = update_t3b(T, dT, X, H, shift, t3_excitations)
-        if D is not None:
-            T, dT = D.correct(T, dT, "aab", shift, t3_excitations["aab"])
+        T, dT, t3_excitations = update_t3b(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    if not flag_RHF:
+        if do_t3["abb"]:
+            T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations, residual_only=True)
+        if do_t3["bbb"]:
+            T, dT, t3_excitations = update_t3d(T, dT, X, H, shift, t3_excitations, residual_only=True)
+
+    if build_hbar:
+        add_vvvv_t3(T, dT, X, H, t3_excitations, flag_RHF)
+    for spin in (("aaa", "aab") if flag_RHF else ("aaa", "aab", "abb", "bbb")):
+        if do_t3[spin]:
+            exc = t3_excitations[spin] - 1
+            denom = np.zeros(len(exc))
+            for p, s in enumerate(spin):
+                denom += np.diagonal(getattr(H, s).oo)[exc[:, p + 3]]
+                denom -= np.diagonal(getattr(H, s).vv)[exc[:, p]]
+            step = getattr(dT, spin) / (denom - shift)
+            setattr(dT, spin, step)
+            setattr(T, spin, getattr(T, spin) + step)
+            if D is not None:
+                T, dT = D.correct(T, dT, spin, shift, t3_excitations[spin])
     if flag_RHF:
        T.abb = T.aab.copy()
        dT.abb = dT.aab.copy()
@@ -189,15 +220,6 @@ def update(T: ClusterOperator,
        T.bbb = T.aaa.copy()
        dT.bbb = dT.aaa.copy()
        t3_excitations["bbb"] = t3_excitations["aaa"].copy()
-    else:
-        if do_t3["abb"]:
-            T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations)
-            if D is not None:
-                T, dT = D.correct(T, dT, "abb", shift, t3_excitations["abb"])
-        if do_t3["bbb"]:
-            T, dT, t3_excitations = update_t3d(T, dT, X, H, shift, t3_excitations)
-            if D is not None:
-                T, dT = D.correct(T, dT, "bbb", shift, t3_excitations["bbb"])
 
     return T, dT
 
@@ -263,7 +285,7 @@ def update_t1b(T, dT, H, X, shift, t3_excitations):
     )
     return T, dT
 
-def update_t2a(T, dT, X, H, shift, t3_excitations):
+def update_t2a(T, dT, X, H, shift, t3_excitations, residual_only=False):
     """
     Update t2a amplitudes by calculating the projection <ijab|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -288,11 +310,13 @@ def update_t2a(T, dT, X, H, shift, t3_excitations):
                     np.einsum("xmi,xne->mnie", X.chol.a.oo, X.chol.a.ov, optimize=True)
                     - np.einsum("xni,xme->mnie", X.chol.a.oo, X.chol.a.ov, optimize=True)
     )
-    h2a_vovv = (
-                    np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.a.ov, optimize=True)
-                    - np.einsum("xaf,xme->amef", X.chol.a.vv, X.chol.a.ov, optimize=True)
-    )
-    h2b_vovv = np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.b.ov, optimize=True)
+    # Exchange is an index permutation of the same Coulomb product.
+    coulomb = np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.a.ov, optimize=True)
+    h2a_vovv = np.asfortranarray(coulomb - coulomb.swapaxes(2, 3))
+    if X.chol.a.ov is X.chol.b.ov:  # RHF factors shared by update()
+        h2b_vovv = np.asfortranarray(coulomb)
+    else:
+        h2b_vovv = np.asfortranarray(np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.b.ov, optimize=True))
     # save some voov intermediates for T2B update
     X.aa.voov = h2a_voov
     X.ab.voov = h2b_voov
@@ -313,9 +337,14 @@ def update_t2a(T, dT, X, H, shift, t3_excitations):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_aa(a, b, X)
     #        dT.aa[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.aa, optimize=True)
+    if residual_only:
+        return T, dT
     tmp = vvvv_contraction.vvvv_t2_sym(X.chol.a.vv.transpose(0, 2, 1), 0.5 * T.aa.transpose(3, 2, 1, 0))
     dT.aa += tmp.transpose(3, 2, 1, 0)
-    #
+    return _update_t2a_amplitudes(T, dT, X, H, shift, t3_excitations)
+
+
+def _update_t2a_amplitudes(T, dT, X, H, shift, t3_excitations):
     T.aa, dT.aa = ccsdt_p_loops.update_t2a(
         T.aa,
         dT.aa,
@@ -329,7 +358,7 @@ def update_t2a(T, dT, X, H, shift, t3_excitations):
     )
     return T, dT
 
-def update_t2b(T, dT, X, H, shift, t3_excitations):
+def update_t2b(T, dT, X, H, shift, t3_excitations, residual_only=False):
     """
     Update t2b amplitudes by calculating the projection <ij~ab~|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -362,13 +391,13 @@ def update_t2b(T, dT, X, H, shift, t3_excitations):
                     np.einsum("xmi,xne->mnie", X.chol.b.oo, X.chol.b.ov, optimize=True)
                     - np.einsum("xni,xme->mnie", X.chol.b.oo, X.chol.b.ov, optimize=True)
     )
-    h2b_ovvv = (
-                    np.einsum("xmf,xae->mafe", X.chol.a.ov, X.chol.b.vv, optimize=True)
-    )
-    h2c_vovv = (
-                    np.einsum("xae,xmf->amef", X.chol.b.vv, X.chol.b.ov, optimize=True)
-                    - np.einsum("xaf,xme->amef", X.chol.b.vv, X.chol.b.ov, optimize=True)
-    )
+    if X.chol.a.vv is X.chol.b.vv and X.chol.a.ov is X.chol.b.ov:
+        h2b_ovvv = np.asfortranarray(X.ab.vovv.transpose(1, 0, 3, 2))
+        h2c_vovv = X.aa.vovv  # read-only throughout the remaining update
+    else:
+        h2b_ovvv = np.asfortranarray(np.einsum("xmf,xae->mafe", X.chol.a.ov, X.chol.b.vv, optimize=True))
+        coulomb = np.einsum("xae,xmf->amef", X.chol.b.vv, X.chol.b.ov, optimize=True)
+        h2c_vovv = np.asfortranarray(coulomb - coulomb.swapaxes(2, 3))
     # save intermediates
     X.ab.ovvv = h2b_ovvv
     X.ab.oovo = h2b_oovo
@@ -392,9 +421,14 @@ def update_t2b(T, dT, X, H, shift, t3_excitations):
     # for a in range(T.a.shape[0]):
     #     batch_ints = build_3index_batch_vvvv_ab(a, X)
     #     dT.ab[a, :, :, :] += np.einsum("bef,efij->bij", batch_ints, T.ab, optimize=True)
+    if residual_only:
+        return T, dT
     tmp = vvvv_contraction.vvvv_t2(X.chol.a.vv.transpose(0, 2, 1), X.chol.b.vv.transpose(0, 2, 1), T.ab.transpose(3, 2, 1, 0))
     dT.ab += tmp.transpose(3, 2, 1, 0)
-    #
+    return _update_t2b_amplitudes(T, dT, X, H, shift, t3_excitations)
+
+
+def _update_t2b_amplitudes(T, dT, X, H, shift, t3_excitations):
     T.ab, dT.ab = ccsdt_p_loops.update_t2b(
         T.ab,
         dT.ab,
@@ -409,7 +443,7 @@ def update_t2b(T, dT, X, H, shift, t3_excitations):
     )
     return T, dT
 
-def update_t2c(T, dT, X, H, shift, t3_excitations):
+def update_t2c(T, dT, X, H, shift, t3_excitations, residual_only=False):
     """
     Update t2c amplitudes by calculating the projection <i~j~a~b~|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -442,9 +476,14 @@ def update_t2c(T, dT, X, H, shift, t3_excitations):
     #        # <ab|ef> = <x|ae><x|bf>
     #        batch_ints = build_2index_batch_vvvv_bb(a, b, X)
     #        dT.bb[a, b, :, :] += 0.25 * np.einsum("ef,efij->ij", batch_ints, T.bb, optimize=True)
+    if residual_only:
+        return T, dT
     tmp = vvvv_contraction.vvvv_t2_sym(X.chol.b.vv.transpose(0, 2, 1), 0.5 * T.bb.transpose(3, 2, 1, 0))
     dT.bb += tmp.transpose(3, 2, 1, 0)
-    #
+    return _update_t2c_amplitudes(T, dT, X, H, shift, t3_excitations)
+
+
+def _update_t2c_amplitudes(T, dT, X, H, shift, t3_excitations):
     T.bb, dT.bb = ccsdt_p_loops.update_t2c(
         T.bb,
         dT.bb,
@@ -458,7 +497,15 @@ def update_t2c(T, dT, X, H, shift, t3_excitations):
     )
     return T, dT
 
-def update_t3a(T, dT, H, H0, shift, t3_excitations):
+def update_t2_amplitudes(T, dT, X, H, shift, t3_excitations, flag_RHF):
+    """Finish T2 after its vvvv layer, including T3 terms and antisymmetry."""
+    T, dT = _update_t2a_amplitudes(T, dT, X, H, shift, t3_excitations)
+    T, dT = _update_t2b_amplitudes(T, dT, X, H, shift, t3_excitations)
+    if not flag_RHF:
+        T, dT = _update_t2c_amplitudes(T, dT, X, H, shift, t3_excitations)
+    return T, dT
+
+def update_t3a(T, dT, H, H0, shift, t3_excitations, residual_only=False):
     """
     Update t3a amplitudes by calculating the projection <ijkabc|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -474,11 +521,11 @@ def update_t3a(T, dT, H, H0, shift, t3_excitations):
         H.aa.oooo, H.aa.voov, H.chol.a.vv.transpose(0, 2, 1),
         H0.ab.oovv, H.ab.voov,
         H0.a.oo, H0.a.vv,
-        shift
+        shift, residual_only=residual_only
     )
     return T, dT, t3_excitations
 
-def update_t3b(T, dT, H, H0, shift, t3_excitations):
+def update_t3b(T, dT, H, H0, shift, t3_excitations, residual_only=False):
     """
     Update t3b amplitudes by calculating the projection <ijk~abc~|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -499,11 +546,11 @@ def update_t3b(T, dT, H, H0, shift, t3_excitations):
         H.ab.oooo, H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.chol.b.vv.transpose(0, 2, 1),
         H0.bb.oovv, H.bb.voov,
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-        shift
+        shift, residual_only=residual_only
     )
     return T, dT, t3_excitations
 
-def update_t3c(T, dT, H, H0, shift, t3_excitations):
+def update_t3c(T, dT, H, H0, shift, t3_excitations, residual_only=False):
     """
     Update t3c amplitudes by calculating the projection <ij~k~ab~c~|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -524,11 +571,11 @@ def update_t3c(T, dT, H, H0, shift, t3_excitations):
         H.ab.voov, H.ab.vovo, H.ab.ovov, H.ab.ovvo, H.chol.a.vv.transpose(0, 2, 1),
         H0.bb.oovv, I2C_vooo, H.bb.vvov, H.bb.oooo, H.bb.voov, H.chol.b.vv.transpose(0, 2, 1),
         H0.a.oo, H0.a.vv, H0.b.oo, H0.b.vv,
-        shift
+        shift, residual_only=residual_only
     )
     return T, dT, t3_excitations
 
-def update_t3d(T, dT, H, H0, shift, t3_excitations):
+def update_t3d(T, dT, H, H0, shift, t3_excitations, residual_only=False):
     """
     Update t3d amplitudes by calculating the projection <i~j~k~a~b~c~|(H_N exp(T1+T2+T3))_C|0>.
     """
@@ -544,6 +591,6 @@ def update_t3d(T, dT, H, H0, shift, t3_excitations):
         H.bb.oooo, H.bb.voov, H.chol.b.vv.transpose(0, 2, 1),
         H0.ab.oovv, H.ab.ovvo,
         H0.b.oo, H0.b.vv,
-        shift
+        shift, residual_only=residual_only
     )
     return T, dT, t3_excitations

@@ -19,9 +19,11 @@ module ccsdt_p_chol_loops
                                       fA_oo, fA_vv,&
                                       shift,&
                                       n3aaa, n3aab,&
-                                      noa, nua, nob, nub, nchol)
+                                      noa, nua, nob, nub, nchol, residual_only)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, nchol
+                  logical, optional, intent(in) :: residual_only
+                  logical :: build_residual
                   integer, intent(in) :: t3b_excits(n3aab,6)
                   real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),&
                                               H1A_oo(noa,noa), H1A_vv(nua,nua),&
@@ -74,6 +76,9 @@ module ccsdt_p_chol_loops
                   integer, allocatable :: off_ab(:), off_ac(:), off_bc(:), det_ab(:), det_ac(:), det_bc(:)
 
                   ! Start the VT3 intermediates at Hbar (factor of 1/2 to compensate for antisymmetrization)
+
+                  build_residual=.false.
+                  if (present(residual_only)) build_residual=residual_only
                   I2A_vooo = 0.5d0 * H2A_vooo
                   I2A_vvov = 0.5d0 * H2A_vvov
                   call calc_I2A_vooo(I2A_vooo,&
@@ -1600,6 +1605,7 @@ module ccsdt_p_chol_loops
                   end do
                   !$omp end parallel do
 
+                  if (.not.build_residual) then
                   !!!! diagram 4: 1/2 A(c/ab) h2a(abef) * t3a(ebcijk)
                   ! allocate new sorting arrays
                   nloc = noa*(noa-1)*(noa-2)/6*nua
@@ -1751,6 +1757,11 @@ module ccsdt_p_chol_loops
                   deallocate(idx_table_copy1,idx_table_copy2,idx_table_copy3)
                   deallocate(loc_arr_copy1,loc_arr_copy2,loc_arr_copy3)
 
+                  end if ! legacy vvvv
+                  if (build_residual) then
+                      call release_sort_workspace()
+                      return
+                  end if
                   ! Update t3 vector
                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                   do idet = 1,n3aaa
@@ -1778,9 +1789,11 @@ module ccsdt_p_chol_loops
                                       fA_oo, fA_vv, fB_oo, fB_vv,&
                                       shift,&
                                       n3aaa, n3aab, n3abb,&
-                                      noa, nua, nob, nub, nchol)
+                                      noa, nua, nob, nub, nchol, residual_only)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aaa, n3aab, n3abb, nchol
+                  logical, optional, intent(in) :: residual_only
+                  logical :: build_residual
                   integer, intent(in) :: t3a_excits(n3aaa,6), t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t2a(1:nua,1:nua,1:noa,1:noa),&
                                               t2b(1:nua,1:nub,1:noa,1:nob),&
@@ -1865,6 +1878,9 @@ module ccsdt_p_chol_loops
                   integer, allocatable :: off_x(:), det_x(:), off_y(:), det_y(:)
 
                   ! compute VT3 intermediates
+
+                  build_residual=.false.
+                  if (present(residual_only)) build_residual=residual_only
                   I2A_vooo = 0.5d0 * H2A_vooo
                   call calc_I2A_vooo(I2A_vooo,&
                                H2A_oovv,H2B_oovv,&
@@ -1905,9 +1921,9 @@ module ccsdt_p_chol_loops
                   ! allocate new sorting arrays
                   nloc = nua*(nua-1)/2*nub*nob
                   allocate(loc_arr(2,nloc))
-                  allocate(idx_table(nua,nua,nub,noa))
-                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, noa)
-                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, noa, nloc, n3aab, resid)
+                  allocate(idx_table(nua,nua,nub,nob))
+                  call get_index_table(idx_table, (/1,nua-1/), (/-1,nua/), (/1,nub/), (/1,nob/), nua, nua, nub, nob)
+                  call sort4(t3b_excits, t3b_amps, loc_arr, idx_table, (/1,2,3,6/), nua, nua, nub, nob, nloc, n3aab, resid)
                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,hmatel,hmatel1,hmatel2,hmatel3,hmatel4,i,idet,idx,j,jdet,k,l,m)
                   do idet = 1, n3aab
                      a = t3b_excits(idet,1); b = t3b_excits(idet,2); c = t3b_excits(idet,3);
@@ -2836,6 +2852,7 @@ module ccsdt_p_chol_loops
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
 
+                  if (.not.build_residual) then
                   !!!! diagram 6: A(ab) 1/2 h2a(abef)*t3b(ebcmjk)
                   !!! CIJK LOOP !!!
                   ! allocate new sorting arrays
@@ -2967,6 +2984,7 @@ module ccsdt_p_chol_loops
                   deallocate(t3b_excits1,t3b_excits2,t3b_amps1,t3b_amps2)
 
                   !
+                  end if ! legacy vvvv
                   ! Moment contributions
                   !
                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
@@ -3089,6 +3107,10 @@ module ccsdt_p_chol_loops
                   !$omp end parallel do
                   deallocate(xbuf)
 
+                  if (build_residual) then
+                      call release_sort_workspace()
+                      return
+                  end if
                   ! Update t3 vector
                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                   do idet = 1, n3aab
@@ -3116,9 +3138,11 @@ module ccsdt_p_chol_loops
                                       fA_oo, fA_vv, fB_oo, fB_vv,&
                                       shift,&
                                       n3aab, n3abb, n3bbb,&
-                                      noa, nua, nob, nub, nchol)
+                                      noa, nua, nob, nub, nchol, residual_only)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3aab, n3abb, n3bbb, nchol
+                  logical, optional, intent(in) :: residual_only
+                  logical :: build_residual
                   integer, intent(in) :: t3b_excits(n3aab,6), t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t2b(1:nua,1:nub,1:noa,1:nob),&
                                               t2c(1:nub,1:nub,1:nob,1:nob),&
@@ -3202,6 +3226,9 @@ module ccsdt_p_chol_loops
                   integer, allocatable :: off_x(:), det_x(:), off_y(:), det_y(:)
 
                   ! VT3 intermediates
+
+                  build_residual=.false.
+                  if (present(residual_only)) build_residual=residual_only
                   I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
                   call calc_I2C_vooo(I2C_vooo,&
                                H2B_oovv,H2C_oovv,&
@@ -4192,6 +4219,7 @@ module ccsdt_p_chol_loops
                   ! deallocate t3 buffer arrays
                   deallocate(t3_amps_buff,t3_excits_buff)
 
+                  if (.not.build_residual) then
                   !!!! diagram 6: A(bc) 1/2 h2c(bcef)*t3c(aefijk)
                   !!! JKIA LOOP !!!
                   ! allocate new sorting arrays
@@ -4325,6 +4353,7 @@ module ccsdt_p_chol_loops
                   deallocate(t3c_amps1,t3c_amps2)
 
                   !
+                  end if ! legacy vvvv
                   ! Moment contributions
                   !
                   !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,e,i,idet,j,k)
@@ -4447,14 +4476,18 @@ module ccsdt_p_chol_loops
                    !$omp end parallel do
                    deallocate(xbuf)
 
+                   if (build_residual) then
+                       call release_sort_workspace()
+                       return
+                   end if
                    ! Update t3
                    !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                    do idet = 1, n3abb
-                       a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
-                       i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
-                       denom = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
-                       resid(idet) = resid(idet)/(denom - shift)
-                       t3c_amps(idet) = t3c_amps(idet) + resid(idet)
+                      a = t3c_excits(idet,1); b = t3c_excits(idet,2); c = t3c_excits(idet,3);
+                      i = t3c_excits(idet,4); j = t3c_excits(idet,5); k = t3c_excits(idet,6);
+                      denom = fA_oo(i,i) + fB_oo(j,j) + fB_oo(k,k) - fA_vv(a,a) - fB_vv(b,b) - fB_vv(c,c)
+                      resid(idet) = resid(idet)/(denom - shift)
+                      t3c_amps(idet) = t3c_amps(idet) + resid(idet)
                    end do
                    !$omp end parallel do
                   call release_sort_workspace()
@@ -4472,9 +4505,11 @@ module ccsdt_p_chol_loops
                                       fB_oo, fB_vv,&
                                       shift,&
                                       n3abb, n3bbb,&
-                                      noa, nua, nob, nub, nchol)
+                                      noa, nua, nob, nub, nchol, residual_only)
 
                   integer, intent(in) :: noa, nua, nob, nub, n3abb, n3bbb, nchol
+                  logical, optional, intent(in) :: residual_only
+                  logical :: build_residual
                   integer, intent(in) :: t3c_excits(n3abb,6)
                   real(kind=8), intent(in) :: t2c(nub,nub,nob,nob),&
                                               t3c_amps(n3abb),&
@@ -4526,6 +4561,9 @@ module ccsdt_p_chol_loops
                   integer, allocatable :: off_ab(:), off_ac(:), off_bc(:), det_ab(:), det_ac(:), det_bc(:)
 
                   ! compute VT3 intermediates
+
+                  build_residual=.false.
+                  if (present(residual_only)) build_residual=residual_only
                   I2C_vooo(:,:,:,:) = 0.5d0 * H2C_vooo(:,:,:,:)
                   call calc_I2C_vooo(I2C_vooo,&
                                H2B_oovv,H2C_oovv,&
@@ -6000,6 +6038,7 @@ module ccsdt_p_chol_loops
                  ! deallocate t3 buffer arrays
                  deallocate(t3_amps_buff,t3_excits_buff)
 
+                  if (.not.build_residual) then
                   !!!! diagram 4: 1/2 A(c/ab) h2c(abef) * t3d(ebcijk)
                   ! allocate new sorting arrays
                   nloc = nob*(nob-1)*(nob-2)/6*nub
@@ -6152,6 +6191,7 @@ module ccsdt_p_chol_loops
                   deallocate(loc_arr_copy1,loc_arr_copy2,loc_arr_copy3)
 
                  !
+                  end if ! legacy vvvv
                  ! Moment contributions
                  !
                  allocate(xbuf(nob,nob,nub,nub))
@@ -6203,6 +6243,10 @@ module ccsdt_p_chol_loops
                  end do
                  !$omp end parallel do
 
+                 if (build_residual) then
+                     call release_sort_workspace()
+                     return
+                 end if
                  ! Update t3 vector
                  !$omp parallel do schedule(dynamic,256) default(shared) private(a,b,c,denom,i,idet,j,k)
                  do idet = 1,n3bbb

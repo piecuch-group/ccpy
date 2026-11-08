@@ -627,6 +627,10 @@ module pspace_sort
               off = 0
               if (empty_list(excits, n3p, .false.)) then
                  off = 1
+                 ! callers gather excits(dets(:),:) before looping over (empty) buckets
+                 do idet = 1, n3p
+                    dets(idet) = idet
+                 end do
                  return
               end if
               allocate(keys(n3p))

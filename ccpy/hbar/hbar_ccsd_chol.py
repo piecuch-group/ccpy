@@ -44,10 +44,9 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
             np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
             + np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
     )
-    bxt1 = -np.einsum("xne,fn->xfe", H.chol.a.ov, T.a, optimize=True)
     H.a.vv += (
             np.einsum("xae,x->ae", H.chol.a.vv, bt1, optimize=True)
-            + np.einsum("xaf,xfe->ae", H.chol.a.vv, bxt1, optimize=True)
+            + contract_vv_t1_exchange(H.chol.a.vv, H.chol.a.ov, T.a)
             - np.einsum("me,am->ae", H.a.ov, T.a, optimize=True)
     )
     if RHF_symmetry:
@@ -62,10 +61,9 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
                 np.einsum("xnf,fn->x", H.chol.b.ov, T.b, optimize=True)
                 + np.einsum("xnf,fn->x", H.chol.a.ov, T.a, optimize=True)
         )
-        bxt1 = -np.einsum("xne,fn->xfe", H.chol.b.ov, T.b, optimize=True)
         H.b.vv += (
                 np.einsum("xae,x->ae", H.chol.b.vv, bt1, optimize=True)
-                + np.einsum("xaf,xfe->ae", H.chol.b.vv, bxt1, optimize=True)
+                + contract_vv_t1_exchange(H.chol.b.vv, H.chol.b.ov, T.b)
         )
 
     # -------------------------------------------------------------------------
@@ -310,6 +308,17 @@ def build_hbar_ccsd_chol(T, H0, RHF_symmetry, *args):
     # -------------------------------------------------------------------------
     return H
 
+def contract_vv_t1_exchange(chol_vv, chol_ov, t1):
+    """Contract -sum(x,f,n) L(x,a,f) L(x,n,e) t(f,n).
+
+    Associate vv with t1 first to use an auxiliary/virtual/occupied
+    temporary instead of an auxiliary/virtual/virtual temporary, and
+    reduce the final contraction from O(naux*v**3) to O(naux*v**2*o).
+    """
+    vo = np.einsum("xaf,fn->xan", chol_vv, t1, optimize=True)
+    return -np.einsum("xan,xne->ae", vo, chol_ov, optimize=True)
+
+
 def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
 
     # Cholesky-based intermediates folding some T2
@@ -365,10 +374,9 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
             np.einsum("xnf,fn->x", H0.chol.a.ov, T.a, optimize=True)
             + np.einsum("xnf,fn->x", H0.chol.b.ov, T.b, optimize=True)
     )
-    bxt1 = -np.einsum("xne,fn->xfe", H0.chol.a.ov, T.a, optimize=True)
     H.a.vv += (
             np.einsum("xae,x->ae", H0.chol.a.vv, bt1, optimize=True)
-            + np.einsum("xaf,xfe->ae", H0.chol.a.vv, bxt1, optimize=True)
+            + contract_vv_t1_exchange(H0.chol.a.vv, H0.chol.a.ov, T.a)
             - np.einsum("me,am->ae", H.a.ov, T.a, optimize=True)
     )
     if RHF_symmetry:
@@ -383,10 +391,9 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
                 np.einsum("xnf,fn->x", H0.chol.b.ov, T.b, optimize=True)
                 + np.einsum("xnf,fn->x", H0.chol.a.ov, T.a, optimize=True)
         )
-        bxt1 = -np.einsum("xne,fn->xfe", H0.chol.b.ov, T.b, optimize=True)
         H.b.vv += (
                 np.einsum("xae,x->ae", H0.chol.b.vv, bt1, optimize=True)
-                + np.einsum("xaf,xfe->ae", H0.chol.b.vv, bxt1, optimize=True)
+                + contract_vv_t1_exchange(H0.chol.b.vv, H0.chol.b.ov, T.b)
         )
     # H.a.ov = H0.a.ov.copy() + (
     #         np.einsum("imae,em->ia", H0.aa.oovv, T.a, optimize=True)
@@ -635,7 +642,7 @@ def get_ccsd_intermediates(T, H, H0, RHF_symmetry):
 
 def build_hbar_ccsd_chol_bak(T, H0, RHF_symmetry, *args):
 
-    # Reference to HBar is copied from reference H (not duplicated!) 
+    # Reference to HBar is copied from reference H (not duplicated!)
     H = H0
 
     # Orbital dimensions
@@ -723,7 +730,7 @@ def build_hbar_ccsd_chol_bak(T, H0, RHF_symmetry, *args):
 
     # -------------------------------------------------------------------------
     ### TYPE: OOOV
-    ### NEEDS: H0.ooov 
+    ### NEEDS: H0.ooov
     H.aa.ooov += np.einsum("mnfe,fi->mnie", H0.aa.oovv, T.a, optimize=True)
     if RHF_symmetry:
         H.bb.ooov = H.aa.ooov
@@ -944,7 +951,7 @@ def build_hbar_ccsd_chol_bak(T, H0, RHF_symmetry, *args):
         H.bb.vovv = H.aa.vovv
     else:
         H.bb.vovv -= np.einsum("mnfe,an->amef", H0.bb.oovv, T.b, optimize=True)
-    H.ab.vovv -= np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True) 
+    H.ab.vovv -= np.einsum("nmef,an->amef", H0.ab.oovv, T.a, optimize=True)
     H.ab.ovvv -= np.einsum("mnef,an->maef", H0.ab.oovv, T.b, optimize=True)
     # -------------------------------------------------------------------------
 
@@ -1036,7 +1043,7 @@ def build_hbar_ccsd_chol_debug(T, H0, RHF_symmetry, *args):
                 - 0.5 * np.einsum("mnbf,afmn->ab", H0.bb.oovv, T.bb, optimize=True)
                 - np.einsum("nmfb,fanm->ab", H0.ab.oovv, T.ab, optimize=True)
     )
-    
+
     Q1 = -np.einsum("mnfe,an->amef", H0.aa.oovv, T.a, optimize=True)
     I2A_vovv = H0.aa.vovv + 0.5 * Q1
     H.aa.vovv = I2A_vovv + 0.5 * Q1

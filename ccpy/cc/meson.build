@@ -11,6 +11,7 @@ python_sources = [
   'ccsd.py',
   'denominators.py',
   'ccsdt_p_chol.py',
+  'chol_ppl.py',
   'ccsdt_p.py',
   'ccsdt.py',
   'ccsdtq.py',
