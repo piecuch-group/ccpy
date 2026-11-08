@@ -19,11 +19,12 @@ from ccpy.methods.cim import CIM, CIMDevelopmentWarning, CIMDomains, CIMOptions
 from ccpy.methods.fno import FNOEvaluation, FNOOptions, FNOResult, FNOTarget, prepare_fno, register_fno_provider
 from ccpy.methods.cc import (ACCD, ACCSD, ACCSDT_P, CC2, CC3, CC4, CCD, CCSD, CCSDT, CCSDT_P, CCSDTQ, ECCC2,
                              ACCBase, CCBase, CCPBase)
-from ccpy.methods.corrections import (CCP3, CCP4, CCT3, AdaptiveCCPQ, CREACC23, CREOMCC23, CRCC23, CRCC24,
+from ccpy.methods.corrections import (CCP3, CCP4, CCT3, CREACC23, CREOMCC23, CRCC23, CRCC24,
                                       CRCC34, CRIPCC23,
                                       DIPEOMCCSDTA_star, EACCP3, EAEOMCCSDTA_star, EOMCCP3, EOMCCSDTA_star,
                                       EOMCCT3, IPCCP3, IPEOMCCSDTA_star, CCSDpT, CorrectionBase,
                                       ExcitedStateCorrectionBase, GroundStateCorrectionBase)
+from ccpy.methods.ccpq import AdaptiveCCPQ
 from ccpy.methods.eomcc import (DEAEOM2, DEAEOM3, DEAEOM4, DEAEOM4_P, DIPEOM3, DIPEOM4, DIPEOMCCSDT,
                                 DIPEOMCCSDTA, EAEOM2, EAEOM3, EAEOM3_P, EAEOMCCSDT, EOMCC2, EOMCC3, EOMCCSD,
                                 EOMCCSDT, EOMCCSDT_P, EOMCCSDTA, IPEOM2, IPEOM3, IPEOM3_P, IPEOMCCSDT,
