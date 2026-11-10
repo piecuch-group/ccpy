@@ -150,6 +150,7 @@ fortran_sources = [
   'fortran/ccsdpt_loops.f90',
   'fortran/ccsdt_p_chol_loops.f90',
   'fortran/ccsdt_p_loops.f90',
+  'fortran/ccsdtq_p_loops.f90',
   'fortran/cct3_loops.f90',
   'fortran/clusteranalysis.f90',
   'fortran/combinatorics.f90',

@@ -550,7 +550,7 @@ def eccc_jacobi(update_t, T, dT, H, X, T_ext, VT_ext, options):
 
     return T, energy, is_converged
 
-def cc_jacobi(update_t, T, dT, H, X, options, t3_excitations=None, acparray=None):
+def cc_jacobi(update_t, T, dT, H, X, options, t3_excitations=None, acparray=None, t4_excitations=None):
     from ccpy.energy.cc_energy import get_cc_energy
 
     # check whether DIIS is being used
@@ -579,7 +579,9 @@ def cc_jacobi(update_t, T, dT, H, X, options, t3_excitations=None, acparray=None
         t1 = time.perf_counter()
 
         # Update the T vector
-        if t3_excitations: # CC(P) update
+        if t4_excitations: # CCSDTQ(P) update
+            T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations, t4_excitations)
+        elif t3_excitations: # CC(P) update
             if acparray:
                 T, dT = update_t(T, dT, H, X, options["energy_shift"], options["RHF_symmetry"], t3_excitations, acparray)
             else:

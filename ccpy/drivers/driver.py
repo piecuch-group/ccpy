@@ -184,6 +184,11 @@ class Driver:
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
             self.operator_params["pspace_orders"] = [3]
+        elif method.lower() in ["ccsdtq_p"]:
+            self.operator_params["order"] = 4
+            self.operator_params["number_particles"] = 4
+            self.operator_params["number_holes"] = 4
+            self.operator_params["pspace_orders"] = [3, 4]
         elif method.lower() in ["ipeom2", "left_ipeom2"]:
             self.order = 2
             self.num_particles = 1
@@ -329,7 +334,7 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC calculation ended on", get_timestamp())
 
-    def run_ccp(self, method, t3_excitations, acparray=None):
+    def run_ccp(self, method, t3_excitations, acparray=None, t4_excitations=None):
         """
 
         Parameters
@@ -339,6 +344,10 @@ class Driver:
             Dictionary with the keys 'aaa', 'aab', 'abb', and 'bbb', corresponding to distinct T3 spincases, which are
             asociated with values given by the 2D Numpy array containing the triple excitations [a, b, c, i, j, k] belonging
             to the P space.
+        t4_excitations : Dict[np.ndarray]
+            For CCSDTQ(P): dictionary with the keys 'aaaa', 'aaab', 'aabb', 'abbb', and 'bbbb', corresponding to distinct
+            T4 spincases, whose values are the 2D Numpy arrays of quadruple excitations [a, b, c, d, i, j, k, l] in the
+            P space.
         acparray : List[float]
             List containing the ACP scaling factors for the 5 T2**2 diagrams
         """
@@ -357,6 +366,7 @@ class Driver:
 
         # Convert excitations array to Fortran continuous
         t3_excitations = convert_excitations_c_to_f(t3_excitations)
+        t4_excitations = convert_excitations_c_to_f(t4_excitations)
 
         # Print the options as a header
         self.print_options()
@@ -370,6 +380,8 @@ class Driver:
         n3abb = t3_excitations["abb"].shape[0]
         n3bbb = t3_excitations["bbb"].shape[0]
         excitation_count = [[n3aaa, n3aab, n3abb, n3bbb]]
+        if t4_excitations is not None:
+            excitation_count.append([t4_excitations[key].shape[0] for key in ["aaaa", "aaab", "aabb", "abbb", "bbbb"]])
 
         # If RHF, copy aab into abb and aaa in bbb
         if self.options["RHF_symmetry"]:
@@ -377,6 +389,9 @@ class Driver:
             assert (n3aab == n3abb)
             t3_excitations["bbb"] = t3_excitations["aaa"].copy()
             t3_excitations["abb"] = t3_excitations["aab"][:, [2, 0, 1, 5, 3, 4]]  # want abb excitations as a b~<c~ i j~<k~; MUST be this order!
+            if t4_excitations is not None:
+                t4_excitations["bbbb"] = t4_excitations["aaaa"].copy()
+                t4_excitations["abbb"] = t4_excitations["aaab"][:, [3, 0, 1, 2, 7, 4, 5, 6]]  # a b~<c~<d~ i j~<k~<l~
 
         if self.T is None:
             self.T = ClusterOperator(self.system,
@@ -406,7 +421,8 @@ class Driver:
                                                        cc_intermediates,
                                                        self.options,
                                                        t3_excitations,
-                                                       acparray=acparray)
+                                                       acparray=acparray,
+                                                       t4_excitations=t4_excitations)
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   CC(P) calculation ended on", get_timestamp())
 

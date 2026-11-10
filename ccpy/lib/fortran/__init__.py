@@ -12,6 +12,7 @@ from .hbar_cc3 import *
 from .mbgf_loops import *
 from .mbpt_loops import *
 from .ccsdt_p_loops import *
+from .ccsdtq_p_loops import *
 from .eomccsdt_p_loops import *
 from .leftccsdt_p_loops import *
 from .leftccsdt_p_intermediates import *

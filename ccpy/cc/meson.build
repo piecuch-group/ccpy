@@ -15,6 +15,7 @@ python_sources = [
   'ccsdt_p.py',
   'ccsdt.py',
   'ccsdtq.py',
+  'ccsdtq_p.py',
   'eccc2.py',
 ]
 
