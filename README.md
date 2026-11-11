@@ -1434,7 +1434,7 @@ located within `openblas/lib`, or something similar.
 ## CCpy Development Team
 
 Dr. Karthik Gururangan\
-Computational Scientist, DecisionNext\
+Principal Computational Scientist, DecisionNext\
 e-mail: kgururangan@gmail.com\
 (lead developer)
 
