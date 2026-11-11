@@ -140,6 +140,29 @@ pspace_sort_lib = static_library('pspace_sort',
   dependencies: [omp_dep],
 )
 
+# Generated CCSDTQ(P) T4 kernels (devtools/ccp_codegen/write_ccsdtq.py), one module per file so they
+# compile in parallel; used by ccsdtq_p_loops.f90, not wrapped by f2py
+ccsdtq_p_kernels_lib = static_library('ccsdtq_p_kernels',
+  'fortran/ccsdtq_p/t4a_p_lin.f90',
+  'fortran/ccsdtq_p/t4a_p_b3.f90',
+  'fortran/ccsdtq_p/t4a_p_b2.f90',
+  'fortran/ccsdtq_p/t4b_p_lin.f90',
+  'fortran/ccsdtq_p/t4b_p_b3.f90',
+  'fortran/ccsdtq_p/t4b_p_b2.f90',
+  'fortran/ccsdtq_p/t4c_p_lin.f90',
+  'fortran/ccsdtq_p/t4c_p_b3.f90',
+  'fortran/ccsdtq_p/t4c_p_b2.f90',
+  'fortran/ccsdtq_p/t4d_p_lin.f90',
+  'fortran/ccsdtq_p/t4d_p_b3.f90',
+  'fortran/ccsdtq_p/t4d_p_b2.f90',
+  'fortran/ccsdtq_p/t4e_p_lin.f90',
+  'fortran/ccsdtq_p/t4e_p_b3.f90',
+  'fortran/ccsdtq_p/t4e_p_b2.f90',
+  fortran_args: '-ffree-line-length-512',
+  dependencies: [omp_dep],
+  link_with: [pspace_sort_lib],
+)
+
 fortran_sources = [
   'fortran/cc3_loops.f90',
   'fortran/cc_loops2.f90',
@@ -201,7 +224,7 @@ fortran_lib = static_library('fortran',
   fortran_sources,
   fortran_args: '-ffree-line-length-512',
   dependencies: [omp_dep],
-  link_with: [pspace_sort_lib],
+  link_with: [pspace_sort_lib, ccsdtq_p_kernels_lib],
 )
 
 fortran_serial_lib = static_library('fortran_serial',
@@ -224,7 +247,7 @@ py3.extension_module('_fortran',
   c_args: numpy_nodepr_api,
   include_directories: [inc_np, inc_f2py],
   dependencies: [fortranobject_dep, lapack_dep, blas_dep, omp_dep],
-  link_with:[fortran_lib, fortran_serial_lib, pspace_sort_lib, sort_lib],
+  link_with:[fortran_lib, fortran_serial_lib, pspace_sort_lib, ccsdtq_p_kernels_lib, sort_lib],
   link_language: 'fortran',
   install: true,
   subdir: 'ccpy/lib'

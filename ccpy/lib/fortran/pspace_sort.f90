@@ -28,6 +28,18 @@ module pspace_sort
       public :: argsort, argsort_r8_descend
       public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace
       public :: release_sort_workspace, keep_largest
+      public :: pspace_index, index_pspace
+
+      ! Non-permuting index of an excitation list by the key of some of its columns: the rows with
+      ! key key(b) are perm(off(b):off(b+1)-1), for the nblock keys that occur (key ascending;
+      ! locate one with pspace_find(ind%key, ind%nblock, pspace_key(vals, ncol, ind%dims, ind%chain))).
+      type :: pspace_index
+         integer :: nblock = 0
+         integer :: dims(8) = 0
+         logical :: chain(8) = .false.
+         integer, allocatable :: perm(:), off(:)
+         integer(kind=8), allocatable :: key(:)
+      end type pspace_index
 
       ! smallest list for which the sorting and bucketing loops are threaded
       integer, parameter :: min_parallel = 65536
@@ -429,10 +441,24 @@ module pspace_sort
                  binomial = 0
                  return
               end if
-              binomial = 1
-              do t = 1, k
-                 binomial = binomial * (n - k + t) / t
-              end do
+              ! closed forms for the small k of CC keys: pspace_key calls this per index per row
+              select case (k)
+              case (0)
+                 binomial = 1
+              case (1)
+                 binomial = n
+              case (2)
+                 binomial = int(n,8)*(n-1)/2
+              case (3)
+                 binomial = int(n,8)*(n-1)*(n-2)/6
+              case (4)
+                 binomial = int(n,8)*(n-1)*(n-2)*(n-3)/24
+              case default
+                 binomial = 1
+                 do t = 1, k
+                    binomial = binomial * (n - k + t) / t
+                 end do
+              end select
       end function binomial
 
       pure integer(kind=8) function pspace_nkeys(ncol, dims, chain)
@@ -487,28 +513,24 @@ module pspace_sort
               pspace_key = pspace_key + 1
       end function pspace_key
 
-      subroutine sort_pspace(excits, amps, n3p, ncol, cols, dims, chain, nblock, block_key, block_off, resid)
-      ! Sort excits(n3p,:), amps, and (optionally) resid by the key of the columns cols. On
-      ! exit, the excitations with key block_key(b) occupy positions
-      ! block_off(b):block_off(b+1)-1, for the nblock keys that occur (block_key ascending;
-      ! use pspace_find to locate a key).
+      subroutine index_pspace(excits, n3p, ncol, cols, dims, chain, ind)
+      ! Build ind (see pspace_index) for the key of columns cols; excits is not changed. On exit
+      ! ws_perm(1:n3p) also holds ind%perm.
               integer, intent(in) :: n3p, ncol, cols(ncol), dims(ncol)
               logical, intent(in) :: chain(ncol)
-              integer, intent(inout) :: excits(:,:)
-              real(kind=8), intent(inout) :: amps(:)
-              real(kind=8), intent(inout), optional :: resid(:)
-              integer, intent(out) :: nblock
-              integer(kind=8), allocatable, intent(out) :: block_key(:)
-              integer, allocatable, intent(out) :: block_off(:)
+              integer, intent(in) :: excits(:,:)
+              type(pspace_index), intent(out) :: ind
               integer(kind=8), allocatable :: keys(:)
               integer(kind=8) :: nk
-              integer :: idet, k, vals(6)
+              integer :: idet, k, vals(8)
               integer, allocatable :: first(:), last(:)
 
+              ind%dims(1:ncol) = dims
+              ind%chain(1:ncol) = chain
               if (empty_list(excits, n3p, .false.)) then
-                 nblock = 0
-                 allocate(block_key(0), block_off(1))
-                 block_off(1) = 1
+                 ind%nblock = 0
+                 allocate(ind%key(0), ind%off(1), ind%perm(0))
+                 ind%off(1) = 1
                  return
               end if
               call ensure_workspace(n3p)
@@ -529,29 +551,52 @@ module pspace_sort
                  call radix_sort(keys, n3p, nk)
               end if
               ! blocks of equal keys in the sorted order
-              nblock = 0
+              ind%nblock = 0
               do idet = 1, n3p
                  if (idet == 1) then
-                    nblock = 1
+                    ind%nblock = 1
                  elseif (keys(ws_perm(idet)) /= keys(ws_perm(idet-1))) then
-                    nblock = nblock + 1
+                    ind%nblock = ind%nblock + 1
                  end if
               end do
-              allocate(block_key(nblock), block_off(nblock+1))
-              nblock = 0
+              allocate(ind%key(ind%nblock), ind%off(ind%nblock+1), ind%perm(n3p))
+              ind%nblock = 0
               do idet = 1, n3p
                  if (idet == 1) then
-                    nblock = 1
+                    ind%nblock = 1
                  elseif (keys(ws_perm(idet)) /= keys(ws_perm(idet-1))) then
-                    nblock = nblock + 1
+                    ind%nblock = ind%nblock + 1
                  else
                     cycle
                  end if
-                 block_key(nblock) = keys(ws_perm(idet))
-                 block_off(nblock) = idet
+                 ind%key(ind%nblock) = keys(ws_perm(idet))
+                 ind%off(ind%nblock) = idet
               end do
-              block_off(nblock+1) = n3p + 1
+              ind%off(ind%nblock+1) = n3p + 1
+              ind%perm(:) = ws_perm(1:n3p)
               deallocate(keys)
+      end subroutine index_pspace
+
+      subroutine sort_pspace(excits, amps, n3p, ncol, cols, dims, chain, nblock, block_key, block_off, resid)
+      ! Sort excits(n3p,:), amps, and (optionally) resid by the key of the columns cols. On
+      ! exit, the excitations with key block_key(b) occupy positions
+      ! block_off(b):block_off(b+1)-1, for the nblock keys that occur (block_key ascending;
+      ! use pspace_find to locate a key).
+              integer, intent(in) :: n3p, ncol, cols(ncol), dims(ncol)
+              logical, intent(in) :: chain(ncol)
+              integer, intent(inout) :: excits(:,:)
+              real(kind=8), intent(inout) :: amps(:)
+              real(kind=8), intent(inout), optional :: resid(:)
+              integer, intent(out) :: nblock
+              integer(kind=8), allocatable, intent(out) :: block_key(:)
+              integer, allocatable, intent(out) :: block_off(:)
+              type(pspace_index) :: ind
+
+              call index_pspace(excits, n3p, ncol, cols, dims, chain, ind)
+              nblock = ind%nblock
+              call move_alloc(ind%key, block_key)
+              call move_alloc(ind%off, block_off)
+              if (n3p == 0 .or. size(ind%perm) == 0) return
               call permute_rows(excits, n3p)
               call permute_real(amps, n3p)
               if (present(resid)) call permute_real(resid, n3p)
