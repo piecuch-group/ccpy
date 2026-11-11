@@ -1,0 +1,379 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytic gradients and finite differences &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Geometry optimization, transition states and IRC validation" href="geometry.html" />
+    <link rel="prev" title="Multipole moments and harmonic IR intensities" href="multipoles.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Analytic gradients and finite differences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#the-common-method-interface">The common method interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#which-methods-use-analytic-kernels">Which methods use analytic kernels?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-an-analytic-gradient-contains">What an analytic gradient contains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#force-numerical-gradients-deliberately">Force numerical gradients deliberately</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#energy-only-functions-and-partial-checks">Energy-only functions and partial checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#excited-state-gradients-and-state-following">Excited-state gradients and state following</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fnos-discrete-spaces-and-smooth-surfaces">FNOs, discrete spaces and smooth surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#runnable-validation">Runnable validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Analytic gradients and finite differences</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/gradients.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="analytic-gradients-and-finite-differences">
+<h1>Analytic gradients and finite differences<a class="headerlink" href="#analytic-gradients-and-finite-differences" title="Link to this heading"></a></h1>
+<p>An energy gradient is the derivative of a specified scalar energy surface.
+Before using a derivative, choose the electronic method, frozen core, correction
+variant and (for excited states) returned root. The same choices must be used
+at every displaced or optimized geometry. Geometry optimizers need the gradient
+of the energy they are minimizing, including any enabled energy completion.</p>
+<p>For relaxed multipole moments and vibrational IR intensities, see
+<a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a>. Property-perturbation requests have their own return shapes
+and analytic availability; their fallback differs from nuclear gradients.</p>
+<section id="the-common-method-interface">
+<h2>The common method interface<a class="headerlink" href="#the-common-method-interface" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 .05 .1173; H 0 .7572 -.4692; H .1 -.7572 -.4692"</span><span class="p">,</span>
+               <span class="s2">"6-31g"</span><span class="p">,</span> <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span>
+               <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span>
+          <span class="n">fd_step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">fd_npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">has_analytic_gradient</span><span class="p">())</span>
+<span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">cc</span><span class="o">.</span><span class="n">converged</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span><span class="p">)</span>  <span class="c1"># Eh; array (natoms, 3), Eh/bohr</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gradient()</span></code> automatically chooses the analytic route when
+<code class="docutils literal notranslate"><span class="pre">has_analytic_gradient()</span></code> permits it. Otherwise it calls <code class="docutils literal notranslate"><span class="pre">fd_gradient()</span></code>.
+<code class="docutils literal notranslate"><span class="pre">energy_and_gradient()</span></code> first obtains the energy, then the gradient on the
+same calculation object, so analytic routes can share CC, HBar and left-state
+work. An optimizer’s forces are minus this gradient; pass gradients to CCpy’s
+adapter, which performs that sign conversion itself.</p>
+<p>An analytic routine that raises an import, convergence or numerical error does
+<strong>not</strong> silently fall back to finite differences. <code class="docutils literal notranslate"><span class="pre">has_analytic_gradient</span></code> is
+a dispatch/capability check, not a substitute for testing an installed kernel
+and checking all electronic convergence flags. Most ordinary CC/EOM wrappers
+can retain unconverged iterates rather than raise exceptions; do not feed those
+values into an optimization or derivative comparison.</p>
+</section>
+<section id="which-methods-use-analytic-kernels">
+<h2>Which methods use analytic kernels?<a class="headerlink" href="#which-methods-use-analytic-kernels" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Current methods-layer dispatch</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 28.0%" />
+<col style="width: 34.0%" />
+<col style="width: 38.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Analytic path</p></th>
+<th class="head"><p>Additional conditions / interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code></p></td>
+<td><p>Registered CCSD kernel.</p></td>
+<td><p>RHF/UHF; no deleted virtuals or FNOs. Includes required Lambda/orbital response.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">EOMCCSD</span></code></p></td>
+<td><p>Registered EOMCCSD kernel.</p></td>
+<td><p>Same reference restrictions; select the returned root; left/response work is required.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CRCC23</span></code></p></td>
+<td><p>Variant A only.</p></td>
+<td><p>Deterministic correction; other variants use numerical gradients.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CREOMCC23</span></code></p></td>
+<td><p>Variant A only.</p></td>
+<td><p>Gradient of the size-intensive delta-CR energy returned by energy(), not full_energy().</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSDT_P</span></code></p></td>
+<td><p>Conditional registration.</p></td>
+<td><p>Requires the selected CC density module; check the actual object. No guarantee from class name alone.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ground left-CC wrappers</p></td>
+<td><p>Delegate to the parent’s analytic gradient when available.</p></td>
+<td><p>Their energy is the right ground-state energy; they do not define a new surface.</p></td>
+</tr>
+<tr class="row-even"><td><p>MP2/MP3/MP4, ADC, STEOM, other CC/EOM levels and unregistered corrections</p></td>
+<td><p>Finite-difference fallback.</p></td>
+<td><p>Even when their energy equations use DF, they do not thereby have an analytic gradient.</p></td>
+</tr>
+</tbody>
+</table>
+<p>ROHF, FNO references and <code class="docutils literal notranslate"><span class="pre">ndelete</span> <span class="pre">!=</span> <span class="pre">0</span></code> do not currently pass the general
+methods-layer analytic eligibility check. Stochastic correction instances also
+use the fallback. Frozen <strong>occupied</strong> cores are distinct from deleted virtuals;
+a frozen core alone does not disable the registered RHF/UHF analytic routes.</p>
+<p>For a deterministic CR-CC(2,3)_A example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CRCC23</span>
+
+<span class="n">cr</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"A"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">cr</span><span class="o">.</span><span class="n">has_analytic_gradient</span><span class="p">()</span>
+<span class="n">corrected_energy</span><span class="p">,</span> <span class="n">corrected_gradient</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Use the same correction variant in energy and gradient. In particular, changing
+the default D correction to A changes the energy model, not just the derivative
+algorithm. <code class="docutils literal notranslate"><span class="pre">CREOMCC23.full_energy()</span></code> has no separate analytic gradient method
+in this wrapper; if that full energy is required, differentiate that scalar
+explicitly with a callback.</p>
+</section>
+<section id="what-an-analytic-gradient-contains">
+<h2>What an analytic gradient contains<a class="headerlink" href="#what-an-analytic-gradient-contains" title="Link to this heading"></a></h2>
+<p>CC energy depends on nuclear positions through AO integrals, basis overlap and
+molecular orbitals, as well as the correlated state. Analytic methods use left
+amplitudes/response equations to account for this dependence without displacing
+every coordinate. They include the appropriate integral and orbital response;
+contracting an unrelaxed stored RDM with an integral derivative alone generally
+does not produce the full molecular gradient.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cc.rdm1()/rdm2()</span></code> expose derivative densities in the T1-transformed frame;
+<a class="reference internal" href="properties.html"><span class="doc">Left states, densities, response and gradients</span></a> explains that convention. These are not directly relaxed AO
+total-state RDMs. <code class="docutils literal notranslate"><span class="pre">zvector_tol</span></code> controls orbital-response solves on analytic
+routes that accept it. Use it only after checking that the requested route is
+analytic: arbitrary analytic-only kwargs are not filtered out when a method
+falls back to numerical differentiation and may reach <code class="docutils literal notranslate"><span class="pre">energy()</span></code> instead.</p>
+</section>
+<section id="force-numerical-gradients-deliberately">
+<h2>Force numerical gradients deliberately<a class="headerlink" href="#force-numerical-gradients-deliberately" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">numerical</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">fd_gradient</span><span class="p">()</span>  <span class="c1"># bypasses analytic dispatch</span>
+<span class="n">analytic</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">gradient</span><span class="p">()</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"max difference (Eh/bohr):"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">analytic</span> <span class="o">-</span> <span class="n">numerical</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"net gradient:"</span><span class="p">,</span> <span class="n">analytic</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">mol</span><span class="o">.</span><span class="n">atoms</span><span class="p">])</span>  <span class="c1"># bohr</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"net torque diagnostic:"</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">analytic</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Set <code class="docutils literal notranslate"><span class="pre">fd_step</span></code> and <code class="docutils literal notranslate"><span class="pre">fd_npoints</span></code> on the method constructor. Do not call
+<code class="docutils literal notranslate"><span class="pre">method.fd_gradient(step=...)</span></code>: its kwargs specify energy arguments such as
+<code class="docutils literal notranslate"><span class="pre">root</span></code>, not stencil settings. To change stencil settings after construction,
+recreate the method with explicit constructor options; this also preserves the
+settings correctly when <code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> rebuilds the chain.</p>
+<p>The available central stencils use 2, 4 or 6 points per coordinate, with leading
+truncation error of order h squared, h to the fourth or h to the sixth.
+For the four-point stencil:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial E}{\partial x}\simeq
+\frac{E(x-2h)-8E(x-h)+8E(x+h)-E(x+2h)}{12h}.\]</div>
+<p>The default is h=1e-3 bohr and four points. A complete p-point gradient of an
+N-atom molecule requires p times 3N displaced scalar energy evaluations,
+in addition to any central energy requested separately. All displaced
+calculations rebuild SCF and the recorded correlated chain. This implementation
+does not propagate converged amplitudes/orbitals between geometries as a warm
+start.</p>
+<p>Compare more than one displacement if precision matters. Making h smaller
+reduces truncation error but amplifies electronic energy noise approximately
+as energy_error/h. Tighten SCF, CC and left/response convergence before using
+very small steps. Translation/rotation sum rules are useful diagnostics at a
+fixed isolated-molecule geometry, but alone do not establish correctness of
+every gradient component or the electronic state identity.</p>
+</section>
+<section id="energy-only-functions-and-partial-checks">
+<h2>Energy-only functions and partial checks<a class="headerlink" href="#energy-only-functions-and-partial-checks" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MP2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.finite_difference</span><span class="w"> </span><span class="kn">import</span> <span class="n">fd_gradient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">fd_energy_and_gradient</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">energy_at</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">MP2</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">energy</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">method</span><span class="o">.</span><span class="n">converged</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"MP2 setup did not converge"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">energy</span>
+
+<span class="n">gradient</span> <span class="o">=</span> <span class="n">fd_gradient</span><span class="p">(</span><span class="n">energy_at</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">atom0_only</span> <span class="o">=</span> <span class="n">fd_gradient</span><span class="p">(</span><span class="n">energy_at</span><span class="p">,</span> <span class="n">mol</span><span class="p">,</span> <span class="n">atoms</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">callback</span> <span class="o">=</span> <span class="n">fd_energy_and_gradient</span><span class="p">(</span><span class="n">energy_at</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">callback</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The function must return a scalar total energy for a supplied native
+<code class="docutils literal notranslate"><span class="pre">Molecule</span></code> and repeat the full electronic calculation. <code class="docutils literal notranslate"><span class="pre">atoms</span></code> contains
+zero-based atom indices; unchecked rows of the returned gradient are zero.
+Such a partial gradient is useful for validation, not an unconstrained geometry
+optimization. The helper <code class="docutils literal notranslate"><span class="pre">fd_energy_and_gradient</span></code> packages numerical
+differentiation for the pysisyphus interface.</p>
+</section>
+<section id="excited-state-gradients-and-state-following">
+<h2>Excited-state gradients and state following<a class="headerlink" href="#excited-state-gradients-and-state-following" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">EOMCCSD</span>
+
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<span class="n">total</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">numerical</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">fd_gradient</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">root=1</span></code> is the second returned state, seeded by guess index 3. It is
+not the second guess in the original pool. Calling <code class="docutils literal notranslate"><span class="pre">energy_and_gradient()</span></code>
+without <code class="docutils literal notranslate"><span class="pre">root</span></code> on a multiroot method does not define a single scalar surface:
+<code class="docutils literal notranslate"><span class="pre">energy()</span></code> returns an array while the analytic gradient route defaults to
+root 0; numerical differentiation can reject a nonscalar energy. This is not
+the scalar energy/gradient pair required by the optimization calculator. Always select one returned root in an explicit
+callback for excited-state optimization.</p>
+<p>Keep the same physical state at displaced geometries and along an optimization
+or IRC. <code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> copies guess settings; it does not provide a universal
+cross-geometry state-overlap tracker. Inspect character, irreps and neighboring
+states near avoided crossings and degeneracies. The TS Hessian mode index is
+unrelated to an electronic EOM root index. See <a class="reference internal" href="geometry.html"><span class="doc">Geometry optimization, transition states and IRC validation</span></a> for a scalar
+excited-state callback and optimizer setup.</p>
+</section>
+<section id="fnos-discrete-spaces-and-smooth-surfaces">
+<h2>FNOs, discrete spaces and smooth surfaces<a class="headerlink" href="#fnos-discrete-spaces-and-smooth-surfaces" title="Link to this heading"></a></h2>
+<p>Numerical differentiation evaluates the <strong>completed</strong> <code class="docutils literal notranslate"><span class="pre">energy()</span></code> by default.
+For FNOs it rebuilds the density, virtual selection, transformed factors and
+low-level completion at each displacement. Analytic gradients do not currently
+include these FNO-selection derivatives. A cutoff crossing, changing protected
+span or lost target root can make the energy nonsmooth. Check retained counts,
+root identity and step/threshold convergence before trusting gradients or
+Hessian signs. A fixed retained count alone does not establish smoothness at
+degeneracies.</p>
+<p>Selected P/Q spaces and external CI data must also remain meaningful across
+geometries. <code class="docutils literal notranslate"><span class="pre">AdaptiveCCPQ.at_geometry</span></code> reuses its recorded determinant spaces;
+that is different from rerunning independent adaptive selection at each
+geometry. Ordinary user-supplied determinant labels are not automatic orbital
+tracking. For stochastic energies, differentiation can amplify sampling noise;
+use deterministic corrections for derivative checks and stationary-point work
+unless a consistent noise-controlled protocol has been established.</p>
+</section>
+<section id="runnable-validation">
+<h2>Runnable validation<a class="headerlink" href="#runnable-validation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="nv">OPENBLAS_NUM_THREADS</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--task<span class="w"> </span>gradient-check<span class="w"> </span>--method<span class="w"> </span>ccsd<span class="w"> </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>gradient-check
+</pre></div>
+</div>
+<p>This example compares automatic analytic CCSD gradients with an independently
+displaced energy gradient at a distorted water geometry. Method-layer tests are
+in <code class="docutils literal notranslate"><span class="pre">tests/methods/test_method_gradients.py</span></code>; additional SCF and correction
+checks are in <code class="docutils literal notranslate"><span class="pre">tests/scf</span></code>. The example’s small basis demonstrates the workflow,
+not a benchmark-quality geometry or barrier.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="multipoles.html" class="btn btn-neutral float-left" title="Multipole moments and harmonic IR intensities" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="geometry.html" class="btn btn-neutral float-right" title="Geometry optimization, transition states and IRC validation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

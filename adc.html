@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Density-fitted ADC(2) &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Spin-integrated STEOM-CCSD" href="steomcc.html" />
+    <link rel="prev" title="Frozen natural orbitals" href="fno.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Density-fitted ADC(2)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#formulations-and-root-targeting">Formulations and root targeting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#equations-and-storage">Equations and storage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#state-densities-and-fno-integration">State densities and FNO integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation-and-references">Validation and references</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Density-fitted ADC(2)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/adc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="density-fitted-adc-2">
+<h1>Density-fitted ADC(2)<a class="headerlink" href="#density-fitted-adc-2" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">ADC2</span></code>, <code class="docutils literal notranslate"><span class="pre">IPADC2</span></code> and <code class="docutils literal notranslate"><span class="pre">EAADC2</span></code> implement strict second-order ADC for
+neutral excitation, ionization and electron attachment from real RHF, ROHF
+and UHF references, including noncanonical occupied and virtual orbitals. It uses the same <code class="docutils literal notranslate"><span class="pre">MethodBase</span></code> and
+<code class="docutils literal notranslate"><span class="pre">InitialGuessMixin</span></code> contracts as EOMCC. Its CIS/CISd initial guesses operate on
+the bare DF Hamiltonian; no coupled-cluster amplitudes or HBar are computed.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">ADC2</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 0 0; H 0 0 .96; H .93 0 -.24"</span><span class="p">,</span> <span class="s2">"6-31g"</span><span class="p">,</span>
+               <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">)</span>
+<span class="n">adc</span> <span class="o">=</span> <span class="n">ADC2</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">adc</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">totals</span> <span class="o">=</span> <span class="n">adc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>         <span class="c1"># SCF + MP2 correlation + ADC excitation energy</span>
+<span class="n">excitation_energies</span> <span class="o">=</span> <span class="n">adc</span><span class="o">.</span><span class="n">omega</span>
+<span class="n">virtual_density</span> <span class="o">=</span> <span class="n">adc</span><span class="o">.</span><span class="n">virtual_density</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># {"a": Dvv_alpha, "b": Dvv_beta}</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">roots_per_irrep</span></code>, <code class="docutils literal notranslate"><span class="pre">roots</span></code>, <code class="docutils literal notranslate"><span class="pre">use_symmetry</span></code>, <code class="docutils literal notranslate"><span class="pre">nacto</span></code> and <code class="docutils literal notranslate"><span class="pre">nactu</span></code> have
+the same meaning as in EOMCC. <code class="docutils literal notranslate"><span class="pre">method=&quot;cis&quot;</span></code> is also supported. Closed-shell restricted
+references support singlet/triplet guesses; open-shell references can use <code class="docutils literal notranslate"><span class="pre">multiplicity=-1</span></code>
+for unadapted guesses. Spin-adapted UHF guesses do not make a spin-contaminated
+UHF ADC Hamiltonian spin-pure.</p>
+<p>Charged states use the existing bare-Hamiltonian guess API:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">IPADC2</span><span class="p">,</span> <span class="n">EAADC2</span>
+
+<span class="n">ip</span> <span class="o">=</span> <span class="n">IPADC2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">formulation</span><span class="o">=</span><span class="s2">"full"</span><span class="p">)</span>
+<span class="n">ip</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"ipcisd"</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                 <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="n">ionized_totals</span> <span class="o">=</span> <span class="n">ip</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">ea</span> <span class="o">=</span> <span class="n">EAADC2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">formulation</span><span class="o">=</span><span class="s2">"full"</span><span class="p">)</span>
+<span class="n">ea</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"eacisd"</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                 <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="n">attached_totals</span> <span class="o">=</span> <span class="n">ea</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ipcis</span></code> and <code class="docutils literal notranslate"><span class="pre">eacis</span></code> are also supported. Charged operators use the alpha
+removal/attachment branch of CCpy’s existing IP/EA API. Their default guess
+multiplicity is -1. The signed energy is <code class="docutils literal notranslate"><span class="pre">omega</span> <span class="pre">=</span> <span class="pre">E(target)-E(parent)</span></code>:
+IP roots are ionization potentials, while positive electron affinities equal
+<code class="docutils literal notranslate"><span class="pre">-ea.omega</span></code>. Root indices and irrep selection follow the EOMCC interface.</p>
+<section id="formulations-and-root-targeting">
+<h2>Formulations and root targeting<a class="headerlink" href="#formulations-and-root-targeting" title="Link to this heading"></a></h2>
+<p>All three methods accept <code class="docutils literal notranslate"><span class="pre">formulation=&quot;folded&quot;</span></code> (default) or
+<code class="docutils literal notranslate"><span class="pre">formulation=&quot;full&quot;</span></code>. Folded mode targets states dominated by singles (EE),
+one hole (IP), or one particle (EA). Its default guesses are respectively
+<code class="docutils literal notranslate"><span class="pre">cis</span></code>, <code class="docutils literal notranslate"><span class="pre">ipcis</span></code> and <code class="docutils literal notranslate"><span class="pre">eacis</span></code>. Full mode defaults to <code class="docutils literal notranslate"><span class="pre">cisd</span></code>, <code class="docutils literal notranslate"><span class="pre">ipcisd</span></code> and
+<code class="docutils literal notranslate"><span class="pre">eacisd</span></code> and retains explicit doubles/satellite vectors for targeting states
+with strong higher-excitation character. Explicit guess selection remains
+available in either mode; a folded guess with no primary component is rejected.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">adc</span> <span class="o">=</span> <span class="n">ADC2</span><span class="p">(</span><span class="n">mf</span><span class="p">)</span>                          <span class="c1"># folded, CIS guesses</span>
+<span class="n">satellites</span> <span class="o">=</span> <span class="n">IPADC2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">formulation</span><span class="o">=</span><span class="s2">"full"</span><span class="p">)</span>
+<span class="n">satellites</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"ipcisd"</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                         <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Writing the full matrix as <code class="docutils literal notranslate"><span class="pre">[[A,B],[B.T,D]]</span></code>, folded mode evaluates</p>
+<div class="math notranslate nohighlight">
+\[R_2=(\omega I-D)^{-1}B^\dagger R_1,\qquad
+[A+B(\omega I-D)^{-1}B^\dagger]R_1=\omega R_1.\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">D</span></code> is diagonal in the internal semicanonical basis. Each outer energy
+iteration solves the primary-space Hermitian problem with CCpy’s
+<code class="docutils literal notranslate"><span class="pre">eomcc_davidson</span></code> and uses a Newton energy update including the resolvent
+derivative. Only primary vectors enter the Davidson subspace; satellite work
+arrays are reconstructed during matrix actions. Final normalized full vectors
+are retained for densities and FNO root following. This is not an
+amplitude-direct ground-state implementation: MP2 doubles remain stored.
+Satellite poles raise an explicit error recommending full mode.</p>
+<p>Full mode uses the expanded linear problem with sequential orthogonal root
+locking. Folded roots use overlap following without Euclidean primary-space
+locking, because different roots are orthogonal in the reconstructed full-space
+metric. Duplicate converged roots raise an error. Every final eigenpair is
+checked against the original expanded matrix action; unconverged states cannot
+supply FNO densities or corrections. <code class="docutils literal notranslate"><span class="pre">davidson_solver=&quot;standard&quot;</span></code> is the
+supported mode.</p>
+</section>
+<section id="equations-and-storage">
+<h2>Equations and storage<a class="headerlink" href="#equations-and-storage" title="Link to this heading"></a></h2>
+<p>The implementation uses antisymmetrized spin-orbital integrals
+<code class="docutils literal notranslate"><span class="pre">g_ijab</span> <span class="pre">=</span> <span class="pre">&lt;ij||ab&gt;</span></code> and first-order MP2 amplitudes</p>
+<div class="math notranslate nohighlight">
+\[t_{ij}^{ab} = -g_{ijab}/\Delta_{ij}^{ab}, \qquad
+\Delta_{ij}^{ab} = \epsilon_a+\epsilon_b-\epsilon_i-\epsilon_j.\]</div>
+<p>The ADC secular matrix has the strict ADC(2) orders</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}M = \begin{pmatrix}
+    M_{11}^{(0)}+M_{11}^{(1)}+M_{11}^{(2)} &amp; M_{12}^{(1)}\\
+    M_{21}^{(1)} &amp; M_{22}^{(0)}
+    \end{pmatrix}.\end{split}\]</div>
+<p>The singles action is evaluated through the CIS action, occupied/virtual
+self-energy intermediates, and symmetrized products of the MP2-amplitude and
+<code class="docutils literal notranslate"><span class="pre">g_imae</span></code> singles-space actions. The satellite block is diagonal in the internal semicanonical
+orbitals. Singles–doubles couplings are evaluated as staged contractions with
+the DF <code class="docutils literal notranslate"><span class="pre">oo</span></code>, <code class="docutils literal notranslate"><span class="pre">ov</span></code> and <code class="docutils literal notranslate"><span class="pre">vv</span></code> factors. The native implementation builds
+neither the secular matrix nor <code class="docutils literal notranslate"><span class="pre">ovvv</span></code>/<code class="docutils literal notranslate"><span class="pre">vvvv</span></code> integral tensors.</p>
+<p>The general-reference spin-Fock partition diagonalizes occupied and virtual
+spin blocks internally, within irreps, and transforms guesses and state densities
+between that basis and the supplied working orbitals. The supplied occupied
+orbitals are unchanged. The occupied–virtual Fock block belongs to the
+perturbation, with <code class="docutils literal notranslate"><span class="pre">t1</span> <span class="pre">=</span> <span class="pre">-Fov/(epsilon_v-epsilon_o)</span></code>. Both secular matrices
+and virtual densities retain its first-order singles contributions. Thus ROHF
+support includes nonzero Fov; it uses this specified spin-Fock perturbation
+convention rather than assuming Brillouin’s theorem. Ground correlation includes
+the corresponding <code class="docutils literal notranslate"><span class="pre">Fov*t1</span></code> contribution.</p>
+<p>Ground-state MP2 doubles and spin-orbital doubles work arrays require
+<code class="docutils literal notranslate"><span class="pre">O(o^2</span> <span class="pre">v^2)</span></code> storage; this is not an amplitude-direct ADC implementation.
+Packing retains only independent same-spin occupied/virtual pairs and all
+opposite-spin doubles. <code class="docutils literal notranslate"><span class="pre">R[k].flatten()</span></code> has a Euclidean independent-determinant
+metric. <code class="docutils literal notranslate"><span class="pre">R[k].as_cluster()</span></code> converts to CCpy’s redundant spin-block amplitudes;
+do not compare their unweighted norms.</p>
+<p><code class="docutils literal notranslate"><span class="pre">correlation_energy</span></code> is the raw DF-MP2 ground-state correlation energy.
+<code class="docutils literal notranslate"><span class="pre">omega</span></code> remains the raw ADC excitation energy, and <code class="docutils literal notranslate"><span class="pre">raw_energy()</span></code> returns
+uncompleted truncated-space totals. FNO <code class="docutils literal notranslate"><span class="pre">energy()</span></code> and <code class="docutils literal notranslate"><span class="pre">completed_omega</span></code>
+apply the configured MethodBase completion policy.</p>
+</section>
+<section id="state-densities-and-fno-integration">
+<h2>State densities and FNO integration<a class="headerlink" href="#state-densities-and-fno-integration" title="Link to this heading"></a></h2>
+<p>The virtual state-density blocks use the second-order, unrelaxed intermediate
+state representation (ISR) formulas, including the quadratic MP2-amplitude
+corrections to the singles contribution. They are not transition densities,
+MP2 ground densities, or simply CIS particle densities. Full state RDMs,
+transition moments, oscillator strengths and analytic ADC gradients are not
+implemented by this interface.</p>
+<p>The built-in <code class="docutils literal notranslate"><span class="pre">adc2</span></code> FNO provider is installed automatically unless a custom
+provider has already been registered:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span><span class="p">,</span> <span class="n">FNOOptions</span><span class="p">,</span> <span class="n">FNOTarget</span>
+
+<span class="n">targets</span> <span class="o">=</span> <span class="p">(</span><span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EE"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">),)</span>
+<span class="n">fno</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"adc2"</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">,</span>
+                 <span class="n">energy_completion</span><span class="o">=</span><span class="s2">"state_specific"</span><span class="p">)</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">fno</span><span class="p">,</span> <span class="n">fno_targets</span><span class="o">=</span><span class="n">targets</span><span class="p">)</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The full-space provider uses the selected formulation and its corresponding
+bare-Hamiltonian guesses, with up to two active occupied and virtual orbitals
+for CISd. Set <code class="docutils literal notranslate"><span class="pre">FNOTarget(...,</span> <span class="pre">formulation=&quot;full&quot;)</span></code> for doubles/satellite
+state selection; its default is <code class="docutils literal notranslate"><span class="pre">&quot;folded&quot;</span></code>. Targets with different formulations
+can be combined in one FNO policy. The reduced-space calculation projects each full-space ISR vector
+through the actual orbital transformation and uses it as its Davidson seed.
+A normalized projected overlap below 0.5 is treated as a lost root and raises
+an error. Degenerate-state identification may require a larger retained space
+or a custom provider with subspace tracking. Full/reduced calculations use the
+same frozen core, DF factors and perturbation convention. Multiple spin groups
+reuse one set of ground-state ADC intermediates.</p>
+<p>The native ADC-FNO provider supports EE, IP and EA for RHF/ROHF/UHF and
+noncanonical references. DEA, DIP and SF ADC models remain unsupported and
+raise explicit capability errors. Ordinary MP2-FNO preparation remains available
+for all existing CC/EOM families.</p>
+</section>
+<section id="validation-and-references">
+<h2>Validation and references<a class="headerlink" href="#validation-and-references" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tests/methods/test_adc2.py</span></code> compares random full matrix actions and virtual
+state densities with PySCF 2.14.0’s independent UADC spin-block implementation
+on RHF and UHF references, using exactly the same DF integrals. EE also
+checks the ROHF branch. The charged PySCF ROHF path omits Fov contributions,
+so it is not used as an oracle for those terms.
+<code class="docutils literal notranslate"><span class="pre">tests/methods/test_adc2_general_reference.py</span></code> independently constructs the
+second-order BCH effective Hamiltonian and virtual density in small full Fock
+spaces, checking the charged non-Brillouin terms. It also checks matrix-action,
+density and Davidson-energy invariance under occupied/virtual rotations on
+RHF, ROHF and UHF references. The tests also check
+matrix symmetry, diagonal, determinant metric, Davidson residuals, a dense
+small-molecule spectrum, spin/irrep/root targeting, frozen core and full-retention
+ADC-FNO completion. PySCF is optional and used only for numerical tests.</p>
+<p>The equations are based on J. Schirmer’s ADC construction and the transparent
+spin-block reference implementations by the PySCF ADC authors:</p>
+<ul class="simple">
+<li><p>J. Schirmer, Phys. Rev. A <strong>26</strong>, 2395 (1982),
+<a class="reference external" href="https://doi.org/10.1103/PhysRevA.26.2395">https://doi.org/10.1103/PhysRevA.26.2395</a></p></li>
+<li><p>T. Stahl, S. Banerjee and A. Sokolov, J. Chem. Phys. <strong>157</strong>, 044106 (2022),
+<a class="reference external" href="https://doi.org/10.1063/5.0097333">https://doi.org/10.1063/5.0097333</a> and <a class="reference external" href="https://arxiv.org/abs/2204.13164">https://arxiv.org/abs/2204.13164</a></p></li>
+<li><p>PySCF ADC source and documentation:
+<a class="reference external" href="https://pyscf.org/_modules/pyscf/adc/uadc_ee.html">https://pyscf.org/_modules/pyscf/adc/uadc_ee.html</a>
+<a class="reference external" href="https://pyscf.org/_modules/pyscf/adc/uadc_ip.html">https://pyscf.org/_modules/pyscf/adc/uadc_ip.html</a>,
+<a class="reference external" href="https://pyscf.org/_modules/pyscf/adc/uadc_ea.html">https://pyscf.org/_modules/pyscf/adc/uadc_ea.html</a>
+and <a class="reference external" href="https://pyscf.org/user/adc.html">https://pyscf.org/user/adc.html</a></p></li>
+</ul>
+<p>Attribution and the Apache-2.0 license are retained in
+<code class="docutils literal notranslate"><span class="pre">THIRD_PARTY_NOTICES.md</span></code> and <code class="docutils literal notranslate"><span class="pre">ccpy/adc/LICENSE.apache2</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tests/methods/test_adc2_formulations.py</span></code> checks folded/full energies, vectors
+and densities, explicit satellite roots, pole/guess guards and FNO selection
+with each formulation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="fno.html" class="btn btn-neutral float-left" title="Frozen natural orbitals" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="steomcc.html" class="btn btn-neutral float-right" title="Spin-integrated STEOM-CCSD" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,380 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CCpy: A coupled-cluster package written in Python &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CCpy: A coupled-cluster package written in Python</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ccpy-a-coupled-cluster-package-written-in-python">
+<h1>CCpy: A coupled-cluster package written in Python<a class="headerlink" href="#ccpy-a-coupled-cluster-package-written-in-python" title="Link to this heading"></a></h1>
+<p>CCpy is a research-level Python package for performing non-relativistic electronic structure
+calculations for molecular systems using methods based on the ground-state coupled-cluster
+(CC) theory and its equation-of-motion (EOM) extension to electronic excited, attached,
+and ionized states. As a design philosophy, CCpy favors simplicity over efficiency, and this
+is reflected in the usage of computational routines that are transparent enough so that they
+can be easily used, modified, and extended, while still maintaining reasonable efficiency.
+To this end, CCpy employs a hybrid Python-Fortran programming approach made possible with the
+<code class="code docutils literal notranslate"><span class="pre">f2py</span></code> package, which allows one to compile Fortran code into shared object libraries
+containing subroutines that are callable from Python and interoperable with Numpy arrays.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-pypi">Installing from PyPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-via-source-code">Installing via Source Code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="methods/setup.html">Molecules, references and composing calculations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/setup.html#geometry-integrals-and-scf">Geometry, integrals and SCF</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/setup.html#frozen-core-and-working-orbitals">Frozen core and working orbitals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/setup.html#short-form-and-explicit-composition">Short form and explicit composition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/setup.html#options-and-restart-ownership">Options and restart ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/ground.html">Ground states and energy corrections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#mpn-and-coupled-cluster-levels">MPn and coupled-cluster levels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#approximate-coupled-pair-and-external-correction-inputs">Approximate coupled-pair and external correction inputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#ground-state-noniterative-corrections">Ground-state noniterative corrections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#selected-triples-cc-t-3-and-cc-p-3">Selected triples, CC(t;3), and CC(P;3)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#adaptive-cc-p-q">Adaptive CC(P;Q)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#semi-stochastic-triples-corrections">Semi-stochastic triples corrections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/ground.html#state-universal-multireference-cc">State-universal multireference CC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/excited.html">Excitation, attachment, ionization, ADC and STEOM</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#energy-and-sector-conventions">Energy and sector conventions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#neutral-eom-catalog">Neutral EOM catalog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#charged-eom-catalog">Charged EOM catalog</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#double-attachment-removal-and-spin-flip">Double attachment/removal and spin flip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#correcting-excited-states">Correcting excited states</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#adc-2-full-and-folded">ADC(2): full and folded</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/excited.html#steom-automatic-and-manual-calculations">STEOM: automatic and manual calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/guesses.html">Initial guesses, symmetry and choosing roots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/guesses.html#guess-configuration-is-separate-from-the-final-equation-model">Guess configuration is separate from the final equation model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/guesses.html#request-a-guess-pool-then-choose-entries-from-it">Request a guess pool, then choose entries from it</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/guesses.html#irrep-dictionaries-integer-counts-and-disabled-symmetry">Irrep dictionaries, integer counts and disabled symmetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/guesses.html#spin-multiplicity">Spin multiplicity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/guesses.html#following-state-character">Following state character</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/spaces.html">FNOs, active spaces and selected determinants</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#three-different-reductions">Three different reductions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#enable-df-mp2-fnos-at-the-start-of-a-chain">Enable DF-MP2 FNOs at the start of a chain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#automatic-composite-energy-completion">Automatic composite energy completion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#state-specific-adc-fnos">State-specific ADC-FNOs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#multiple-targets-and-root-identities">Multiple targets and root identities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#protected-orbitals-and-reference-inspection">Protected orbitals and reference inspection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#active-and-selected-spaces-after-fno-preparation">Active and selected spaces after FNO preparation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#custom-fno-providers">Custom FNO providers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/spaces.html#external-determinant-space-readers">External determinant-space readers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cim.html">Cluster-in-molecule local correlation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#out-of-the-box-setup-and-what-is-returned">Out-of-the-box setup and what is returned</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#method">Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#potential-energy-surfaces">Potential energy surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#multilevel-cim">Multilevel CIM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#differences-from-the-papers">Differences from the papers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cim.html#restrictions-custom-domains-and-validation-status">Restrictions, custom domains and validation status</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/properties.html">Left states, densities, response and gradients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#left-ground-and-excited-states">Left ground and excited states</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#ccsd-densities-and-their-frame">CCSD densities and their frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#relaxed-moments-and-vibrational-intensities">Relaxed moments and vibrational intensities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#one-body-operators-and-lrccsd">One-body operators and LRCCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#gradients-and-finite-differences">Gradients and finite differences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/properties.html#geometry-reconstruction">Geometry reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/multipoles.html">Multipole moments and harmonic IR intensities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#analytic-property-derivatives">Analytic property derivatives</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#state-moments-units-and-origin">State moments, units and origin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#analytic-convenience-versus-a-generic-finite-field-route">Analytic convenience versus a generic finite-field route</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#compute-frequencies-and-ir-intensities-together">Compute frequencies and IR intensities together</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#saved-tensors-isotope-reanalysis-and-intensity-scope">Saved tensors, isotope reanalysis and intensity scope</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/multipoles.html#run-the-examples-and-inspect-validation">Run the examples and inspect validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/gradients.html">Analytic gradients and finite differences</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#the-common-method-interface">The common method interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#which-methods-use-analytic-kernels">Which methods use analytic kernels?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#what-an-analytic-gradient-contains">What an analytic gradient contains</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#force-numerical-gradients-deliberately">Force numerical gradients deliberately</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#energy-only-functions-and-partial-checks">Energy-only functions and partial checks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#excited-state-gradients-and-state-following">Excited-state gradients and state following</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#fnos-discrete-spaces-and-smooth-surfaces">FNOs, discrete spaces and smooth surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/gradients.html#runnable-validation">Runnable validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/geometry.html">Geometry optimization, transition states and IRC validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#installation-and-units">Installation and units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#minimize-an-electronic-method-directly">Minimize an electronic method directly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#use-a-callback-for-custom-calculations">Use a callback for custom calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#optimization-controls-and-result-fields">Optimization controls and result fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#hessian-evaluation-and-cost">Hessian evaluation and cost</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#find-a-transition-state">Find a transition state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#projected-vibrational-analysis">Projected vibrational analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#run-both-irc-branches-with-run-irc">Run both IRC branches with run_irc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#optimize-and-validate-the-endpoints">Optimize and validate the endpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#electronic-excited-states-and-custom-surfaces">Electronic excited states and custom surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#runnable-end-to-end-examples">Runnable end-to-end examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#validation-of-the-shipped-example">Validation of the shipped example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/geometry.html#external-documentation-and-version-checks">External documentation and version checks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/frequencies.html">Computing vibrational frequencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#native-frequency-and-ir-helpers">Native frequency and IR helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#a-complete-optimized-geometry-example">A complete optimized-geometry example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#reading-the-returned-arrays">Reading the returned arrays</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#inspect-a-mode-displacement">Inspect a mode displacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#displacement-size-cost-and-accuracy">Displacement size, cost and accuracy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#isotopes-and-other-electronic-surfaces">Isotopes and other electronic surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/frequencies.html#run-the-shipped-example">Run the shipped example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/options.html">Solver controls, diagnostics and custom calculations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/options.html#shared-correlated-method-options">Shared correlated-method options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/options.html#convergence-and-result-inspection">Convergence and result inspection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/options.html#flexible-combinations-and-hbar-choices">Flexible combinations and HBar choices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/options.html#implementing-another-method-level">Implementing another method level</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/options.html#troubleshooting-common-setup-mistakes">Troubleshooting common setup mistakes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/catalog.html">Complete methods API catalog</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#moller-plesset-perturbation-theory">Moller-Plesset perturbation theory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#ground-state-coupled-cluster">Ground-state coupled cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#equation-of-motion-methods">Equation-of-motion methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#algebraic-diagrammatic-construction">Algebraic-diagrammatic construction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#steom-ccsd">STEOM-CCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#extended-steom">Extended STEOM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#noniterative-and-adaptive-corrections">Noniterative and adaptive corrections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#left-ground-and-excited-states">Left ground and excited states</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#linear-response">Linear response</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#state-universal-multireference-coupled-cluster">State-universal multireference coupled cluster</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#similarity-transformed-hamiltonians">Similarity-transformed Hamiltonians</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#references-and-materialization-warnings">References and materialization warnings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#factorized-hamiltonian">Factorized Hamiltonian</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#fno-policies-evaluations-and-preparation">FNO policies, evaluations and preparation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#experimental-cluster-in-molecule-local-correlation">Experimental cluster-in-molecule local correlation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#shared-method-protocol">Shared method protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="methods/catalog.html#preparation-and-registry-functions">Preparation and registry functions</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fno.html">Frozen natural orbitals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fno.html#df-mp2-usage">DF-MP2 usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fno.html#selection-and-reference-handling">Selection and reference handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fno.html#adc-2-provider-hook">ADC(2) provider hook</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adc.html">Density-fitted ADC(2)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="adc.html#formulations-and-root-targeting">Formulations and root targeting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adc.html#equations-and-storage">Equations and storage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adc.html#state-densities-and-fno-integration">State densities and FNO integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="adc.html#validation-and-references">Validation and references</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="steomcc.html">Spin-integrated STEOM-CCSD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#manual-active-spaces">Manual active spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#automatic-selection">Automatic selection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#equations-and-diagnostics">Equations and diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#current-scope">Current scope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#higher-rank-auxiliaries-and-an-sd-sized-neutral-problem">Higher-rank auxiliaries and an SD-sized neutral problem</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="steomcc.html#p-space-selection">P-space selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steomcc.html#transformation-and-neutral-sigma-vectors">Transformation and neutral sigma vectors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steomcc.html#spin-and-solver-behavior">Spin and solver behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="steomcc.html#additional-validation">Additional validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="steomcc.html#targeting-neutral-cis-or-cisd-roots">Targeting neutral CIS or CISd roots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#using-the-pyscf-interface">Using the PySCF Interface</a></li>
+<li class="toctree-l3"><a class="reference internal" href="getting_started.html#using-the-gamess-interface">Using the GAMESS Interface</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="computational_options.html">Computational Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ccd">CCD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ccsd">CCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ccsd-t">CCSD(T)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cc3">CC3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ccsdt">CCSDt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#id1">CCSDT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cc4">CC4</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ccsdtq">CCSDTQ</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#eomccsd">EOMCCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#eom-cc3">EOM-CC3</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#eomccsdt-a">EOMCCSDT(a)*</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#eomccsdt">EOMCCSDt</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#id2">EOMCCSDT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ip-eomccsd-2h-1p">IP-EOMCCSD(2h-1p)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ip-eomccsd-3h-2p">IP-EOMCCSD(3h-2p)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ip-eomccsdt-a">IP-EOMCCSDT(a)*</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ea-eomccsd-2p-1h">EA-EOMCCSD(2p-1h)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ea-eomccsd-3p-2h">EA-EOMCCSD(3p-2h)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ea-eomccsdt-a">EA-EOMCCSDT(a)*</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#dea-eomccsd-2p">DEA-EOMCCSD(2p)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#dea-eomccsd-3p-1h">DEA-EOMCCSD(3p-1h)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#dea-eomccsd-4p-2h">DEA-EOMCCSD(4p-2h)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#sf-eomccsd">SF-EOMCCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cr-cc-2-3">CR-CC(2,3)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cr-cc-2-4">CR-CC(2,4)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cc-t-3">CC(t;3)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cipsi-driven-cc-p-q-aimed-at-converging-ccsdt">CIPSI-driven CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#adaptive-cc-p-q-aimed-at-converging-ccsdt">Adaptive CC(<em>P</em> ;<em>Q</em>) aimed at converging CCSDT</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#cr-eomcc-2-3-and-delta-cr-eomcc-2-3">CR-EOMCC(2,3) and <span class="math notranslate nohighlight">\(\delta\)</span>-CR-EOMCC(2,3)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ec-cc-ii">ec-CC-II</a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ec-cc-ii3">ec-CC-II<sub>3</sub></a></li>
+<li class="toctree-l3"><a class="reference internal" href="computational_options.html#ec-cc-ii3-4">ec-CC-II<sub>3,4</sub></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="walkthrough.html">Specific Walkthroughs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="walkthrough.html#completely-renormalized-cr-cc-calculations">Completely Renormalized (CR) CC Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="walkthrough.html#active-orbital-based-cc-p-q-calculations">Active-Orbital-Based CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="walkthrough.html#adaptive-cc-p-q-calculations">Adaptive CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="walkthrough.html#cipsi-driven-cc-p-q-calculations">CIPSI-Driven CC(<em>P</em>; <em>Q</em>) Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="walkthrough.html#cipsi-based-externally-corrected-ec-cc-calculations">CIPSI-Based Externally Corrected (ec) CC Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="cc_calculations.html">Coupled-Cluster Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="cc_calculations.html#ground-state-calculations">Ground-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cc_calculations.html#excited-state-calculations">Excited-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cc_calculations.html#electron-ionizing-calculations">Electron-Ionizing Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cc_calculations.html#electron-attaching-calculations">Electron-Attaching Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="cc_calculations.html#spin-flip-calculations">Spin-Flip Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ccpq_calculations.html">CC(<em>P</em> ;<em>Q</em>) Methodologies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ccpq_calculations.html#ground-state-calculations">Ground-State Calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ccpq_calculations.html#excited-state-calculations">Excited-State Calculations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="eccc_calculations.html">Externally Corrected Coupled-Cluster</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="eccc_calculations.html#selected-configuration-interaction-based-approaches">Selected-Configuration-Interaction-Based Approaches</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Molecules, references and composing calculations &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Ground states and energy corrections" href="ground.html" />
+    <link rel="prev" title="The methods API: a calculation guide" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Molecules, references and composing calculations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#geometry-integrals-and-scf">Geometry, integrals and SCF</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#frozen-core-and-working-orbitals">Frozen core and working orbitals</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#short-form-and-explicit-composition">Short form and explicit composition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options-and-restart-ownership">Options and restart ownership</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Molecules, references and composing calculations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/setup.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="molecules-references-and-composing-calculations">
+<h1>Molecules, references and composing calculations<a class="headerlink" href="#molecules-references-and-composing-calculations" title="Link to this heading"></a></h1>
+<section id="geometry-integrals-and-scf">
+<h2>Geometry, integrals and SCF<a class="headerlink" href="#geometry-integrals-and-scf" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">ROHF</span><span class="p">,</span> <span class="n">UHF</span><span class="p">,</span> <span class="n">Reference</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span>
+    <span class="s2">"O 0 0 0; H 0 0 .97"</span><span class="p">,</span> <span class="s2">"cc-pvdz"</span><span class="p">,</span>
+    <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"cc-pvdz-rifit"</span><span class="p">,</span>
+    <span class="n">charge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"angstrom"</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">ROHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-8</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">150</span><span class="p">)</span>
+<span class="n">mf</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="k">assert</span> <span class="n">mf</span><span class="o">.</span><span class="n">converged</span>
+<span class="n">ref</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">point_group</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">reference_symmetry</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">orbital_symmetries</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">Molecule</span></code> accepts semicolon/newline XYZ or Z-matrix text. <code class="docutils literal notranslate"><span class="pre">basis</span></code> and
+<code class="docutils literal notranslate"><span class="pre">auxiliary_basis</span></code> can be names, basis files, or per-atom dictionaries, e.g.
+<code class="docutils literal notranslate"><span class="pre">{&quot;O&quot;:</span> <span class="pre">&quot;cc-pvtz&quot;,</span> <span class="pre">&quot;default&quot;:</span> <span class="pre">&quot;cc-pvdz&quot;}</span></code>. With a string orbital basis,
+omitting the auxiliary basis selects <code class="docutils literal notranslate"><span class="pre">&lt;basis&gt;-autoaux</span></code>. Supply an auxiliary
+basis explicitly with a dictionary orbital basis. <code class="docutils literal notranslate"><span class="pre">cartesian=False</span></code> uses
+spherical functions. <code class="docutils literal notranslate"><span class="pre">overlap_tol</span></code> controls removal of AO linear dependencies;
+<code class="docutils literal notranslate"><span class="pre">df_metric_tol</span></code> optionally controls DF metric orthogonalization.
+<code class="docutils literal notranslate"><span class="pre">df_direct=True</span></code> makes SCF Coulomb/exchange builds and SCF gradients recompute the
+three-center integrals instead of storing the B tensor (the default switches to this
+when B would exceed 4 GB); correlated methods still build B when they need it.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cholesky_tei=True,</span> <span class="pre">cholesky_tol=1.e-6</span></code> selects pivoted AO Cholesky instead of
+auxiliary-basis fitting. The correlated interfaces still receive three-index
+factors. Auxiliary basis and Cholesky thresholds affect the Hamiltonian itself;
+they are independent of the later FNO occupation cutoff.</p>
+<p>Choose RHF for closed-shell restricted orbitals, ROHF for a common restricted
+open-shell spatial basis, or UHF for independent alpha/beta orbitals. Molecular
+<code class="docutils literal notranslate"><span class="pre">multiplicity</span></code> describes the reference determinant, not the target EOM spin.
+Native SCF accepts <code class="docutils literal notranslate"><span class="pre">guess=&quot;minao&quot;</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">&quot;hcore&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">diis_size</span></code>,
+<code class="docutils literal notranslate"><span class="pre">diis_start</span></code>, <code class="docutils literal notranslate"><span class="pre">level_shift</span></code> and <code class="docutils literal notranslate"><span class="pre">level_shift_thresh</span></code>. UHF accepts a pair of
+spin-specific level shifts. SCF uses <code class="docutils literal notranslate"><span class="pre">maxiter/e_tol/d_tol</span></code>; correlated methods
+use <code class="docutils literal notranslate"><span class="pre">maximum_iterations/energy_convergence/amp_convergence</span></code>.</p>
+<p>With symmetry enabled, SCF can accept <code class="docutils literal notranslate"><span class="pre">target_symmetry</span></code> or
+<code class="docutils literal notranslate"><span class="pre">irrep_occupations={irrep:</span> <span class="pre">electrons}</span></code> / <code class="docutils literal notranslate"><span class="pre">{irrep:</span> <span class="pre">(nalpha,</span> <span class="pre">nbeta)}</span></code>.
+Unlisted irreps in an occupation dictionary are left empty. These configure the
+reference occupations; they are not EOM root selections. Inspect the detected
+point group and orbital labels rather than assuming a particular orientation
+and irrep assignment.</p>
+<p>RHF, UHF, RKS and UKS switch from DIIS to the trust-region augmented Hessian (TRAH)
+second-order solver when DIIS stalls after <code class="docutils literal notranslate"><span class="pre">trah_after=15</span></code> iterations;
+<code class="docutils literal notranslate"><span class="pre">trah_after=0</span></code> uses TRAH from the start and <code class="docutils literal notranslate"><span class="pre">None</span></code> disables it (ROHF always uses
+DIIS). <code class="docutils literal notranslate"><span class="pre">mf.stability()</span></code> returns the lowest orbital-Hessian eigenvalues and the SCF
+object; <code class="docutils literal notranslate"><span class="pre">external=True</span></code> tests a restricted solution for RHF -&gt; UHF (RKS -&gt; UKS)
+instability, and <code class="docutils literal notranslate"><span class="pre">follow=True</span></code> rotates along a negative mode and reconverges,
+returning the new unrestricted object in the external case. Only rotations that
+preserve the point-group symmetry are tested, so run with <code class="docutils literal notranslate"><span class="pre">symmetry=False</span></code> to find
+symmetry-breaking solutions.</p>
+<p>Kohn-Sham DFT uses the same options plus the functional name (any libxc functional,
+through PySCF’s bundled libxc) and the grid:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">RKS</span><span class="p">,</span> <span class="n">UKS</span>
+
+<span class="n">mf</span> <span class="o">=</span> <span class="n">RKS</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">xc</span><span class="o">=</span><span class="s2">"wb97x"</span><span class="p">)</span>        <span class="c1"># LDA, GGA, meta-GGA, hybrid, range-separated</span>
+<span class="n">mf</span><span class="o">.</span><span class="n">kernel</span><span class="p">()</span>
+<span class="n">grad</span> <span class="o">=</span> <span class="n">mf</span><span class="o">.</span><span class="n">gradient</span><span class="p">()</span>             <span class="c1"># analytic, without grid-weight derivatives</span>
+</pre></div>
+</div>
+<p>The default grid is PySCF’s level 3 (Treutler-Ahlrichs radial, Lebedev angular,
+Becke partitioning, NWChem pruning); <code class="docutils literal notranslate"><span class="pre">grid=(nradial,</span> <span class="pre">nangular)</span></code> sets one grid for
+all atoms and <code class="docutils literal notranslate"><span class="pre">prune=False</span></code> disables pruning. VV10 nonlocal correlation and
+Laplacian-dependent meta-GGAs are not implemented.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Reference</span></code> currently accepts native <code class="docutils literal notranslate"><span class="pre">SCFBase</span></code> objects, not PySCF SCF
+objects. The older <code class="docutils literal notranslate"><span class="pre">Driver.from_pyscf</span></code> workflow is separate. Reference creation
+runs SCF when <code class="docutils literal notranslate"><span class="pre">e_tot</span></code> is absent and checks the determinant energy against the
+DF Hamiltonian. It warns if explicitly given an unconverged SCF; verify
+<code class="docutils literal notranslate"><span class="pre">mf.converged</span></code> before trusting correlated results.</p>
+</section>
+<section id="frozen-core-and-working-orbitals">
+<h2>Frozen core and working orbitals<a class="headerlink" href="#frozen-core-and-working-orbitals" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">nfrozen</span></code> counts lowest core spatial orbitals removed from correlation in
+both spins. <code class="docutils literal notranslate"><span class="pre">ndelete</span></code> deletes highest virtuals; it is a fixed orbital deletion,
+with no automatic missing-space correction. These partition settings belong
+to the reference. The determinant energy still contains the frozen electrons.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="k">assert</span> <span class="n">eom</span><span class="o">.</span><span class="n">reference</span> <span class="ow">is</span> <span class="n">cc</span><span class="o">.</span><span class="n">reference</span>
+</pre></div>
+</div>
+<p>Do not change <code class="docutils literal notranslate"><span class="pre">nfrozen</span></code> or <code class="docutils literal notranslate"><span class="pre">ndelete</span></code> downstream. An explicitly conflicting
+value raises an error. Start a new chain from SCF or another full reference for
+a different partition. FNO selection also creates a new working basis; see
+<a class="reference internal" href="spaces.html"><span class="doc">FNOs, active spaces and selected determinants</span></a> before constructing orbital-indexed inputs.</p>
+<p>The working dimensions are <code class="docutils literal notranslate"><span class="pre">system.noccupied_alpha</span></code>,
+<code class="docutils literal notranslate"><span class="pre">system.noccupied_beta</span></code>, <code class="docutils literal notranslate"><span class="pre">system.nunoccupied_alpha</span></code> and
+<code class="docutils literal notranslate"><span class="pre">system.nunoccupied_beta</span></code>. Frozen/deleted orbitals are excluded. Under FNO,
+these are already the reduced dimensions; equation kernels do not carry a
+second full-space dimension.</p>
+</section>
+<section id="short-form-and-explicit-composition">
+<h2>Short form and explicit composition<a class="headerlink" href="#short-form-and-explicit-composition" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">CRCC23</span><span class="p">,</span> <span class="n">LeftCCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span><span class="p">,</span> <span class="n">CREOMCC23</span>
+
+<span class="c1"># Out of the box: creates CCSD, the required HBar and Lambda automatically.</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"D"</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+
+<span class="c1"># Explicit reusable chain.</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">hbar</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">hbar</span>                   <span class="c1"># builds on demand</span>
+<span class="n">left</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">ensure_solved</span><span class="p">()</span>   <span class="c1"># LeftCCSD</span>
+<span class="n">correction</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"D"</span><span class="p">)</span>
+<span class="n">result_again</span> <span class="o">=</span> <span class="n">correction</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cis"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">reference_symmetry</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="n">totals</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">corrected_totals</span> <span class="o">=</span> <span class="n">CREOMCC23</span><span class="p">(</span><span class="n">eom</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"D"</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The example above uses the open-shell reference of this chapter, hence target
+multiplicity 2. Closed-shell singlet examples elsewhere use multiplicity 1.
+Excited-state corrections require an EOM or left-EOM object; they cannot infer
+target states from SCF alone. Left-EOM methods also require an EOM object.</p>
+<p>Passing an existing method with <code class="docutils literal notranslate"><span class="pre">.cc</span></code> generally reuses that CC object. It does
+not automatically replace it with the new method’s nominal default CC level.
+For example, an EOM class whose default parent is CCSDT will reuse an explicitly
+supplied CC object. This makes custom equation/HBar combinations possible, but
+the caller must choose a scientifically compatible parent and amplitudes.
+Use <a class="reference internal" href="catalog.html"><span class="doc">Complete methods API catalog</span></a> to see the standard dependencies and <a class="reference internal" href="excited.html"><span class="doc">Excitation, attachment, ionization, ADC and STEOM</span></a> for
+known standard chains.</p>
+<p><code class="docutils literal notranslate"><span class="pre">hbar_class=...</span></code> deliberately overrides the EOM similarity-transformed
+Hamiltonian. It is useful for CCSD(T)(a)* chains, not an instruction to perform
+an arbitrary missing ground-state calculation. HBars are cached by class;
+building a legacy HBar does not overwrite the cached DF HBar or bare integrals.</p>
+</section>
+<section id="options-and-restart-ownership">
+<h2>Options and restart ownership<a class="headerlink" href="#options-and-restart-ownership" title="Link to this heading"></a></h2>
+<p>Explicit solver options propagate into automatically created dependencies.
+When a method is built on another method, its explicit solver settings are
+inherited unless overridden locally. Inheriting a tolerance does not mutate
+an already existing upstream object; configure that object directly if it also
+needs tighter convergence. <code class="docutils literal notranslate"><span class="pre">RHF_symmetry</span></code> is recomputed from the reference
+rather than blindly inherited, and EOM/left wrappers adjust it for their spin
+sector.</p>
+<p>Repeated <code class="docutils literal notranslate"><span class="pre">energy()</span></code> calls use cached results. <code class="docutils literal notranslate"><span class="pre">solve()</span></code> explicitly reruns
+and increments <code class="docutils literal notranslate"><span class="pre">version</span></code>. Ground CC restarts from its current <code class="docutils literal notranslate"><span class="pre">T</span></code>. Downstream
+objects track versions of their dependencies and rebuild stale HBars, guesses,
+left states and corrections. If changing a solver option in <code class="docutils literal notranslate"><span class="pre">options</span></code> after
+convergence, explicitly call <code class="docutils literal notranslate"><span class="pre">solve()</span></code> or mark the method unconverged; changing
+a dictionary entry alone is not a new dependency version. There is no general
+persistent disk checkpoint/restart API in this layer. Out-of-core solver files
+are working storage, not durable checkpoints.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="The methods API: a calculation guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ground.html" class="btn btn-neutral float-right" title="Ground states and energy corrections" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Left states, densities, response and gradients &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Multipole moments and harmonic IR intensities" href="multipoles.html" />
+    <link rel="prev" title="Cluster-in-molecule local correlation" href="../cim.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Left states, densities, response and gradients</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#left-ground-and-excited-states">Left ground and excited states</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ccsd-densities-and-their-frame">CCSD densities and their frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#relaxed-moments-and-vibrational-intensities">Relaxed moments and vibrational intensities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#one-body-operators-and-lrccsd">One-body operators and LRCCSD</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gradients-and-finite-differences">Gradients and finite differences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#geometry-reconstruction">Geometry reconstruction</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Left states, densities, response and gradients</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/properties.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="left-states-densities-response-and-gradients">
+<h1>Left states, densities, response and gradients<a class="headerlink" href="#left-states-densities-response-and-gradients" title="Link to this heading"></a></h1>
+<section id="left-ground-and-excited-states">
+<h2>Left ground and excited states<a class="headerlink" href="#left-ground-and-excited-states" title="Link to this heading"></a></h2>
+<p>Ground-state CC and EOM similarity-transformed Hamiltonians are non-Hermitian.
+Left states are needed for many corrections and response quantities, even
+though a right-state energy can be obtained without them.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">LeftCCSD</span><span class="p">,</span> <span class="n">LeftEOMCCSD</span>
+
+<span class="n">left_ground</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">ensure_solved</span><span class="p">()</span>    <span class="c1"># or LeftCCSD(cc).solve()</span>
+<span class="n">Lambda</span> <span class="o">=</span> <span class="n">left_ground</span><span class="o">.</span><span class="n">L</span>
+<span class="n">left_excited</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">ensure_solved</span><span class="p">()</span>  <span class="c1"># or LeftEOMCCSD(eom).solve()</span>
+<span class="n">left_vectors</span> <span class="o">=</span> <span class="n">left_excited</span><span class="o">.</span><span class="n">L</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">left_excited</span><span class="o">.</span><span class="n">omega</span><span class="p">,</span> <span class="n">left_excited</span><span class="o">.</span><span class="n">LR</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">LeftCCSD</span></code> can start directly from SCF to create CCSD automatically.
+<code class="docutils literal notranslate"><span class="pre">LeftCCSDT</span></code> and <code class="docutils literal notranslate"><span class="pre">LeftCC3</span></code> use their corresponding ground-state defaults.
+<code class="docutils literal notranslate"><span class="pre">LeftCCSDT_P</span></code> requires an upstream selected-triples CC method with its lists.
+<code class="docutils literal notranslate"><span class="pre">left.energy()</span></code> returns the associated right-state energy; it is not a new
+independent variational energy.</p>
+<p>Exported excited left classes are <code class="docutils literal notranslate"><span class="pre">LeftEOMCCSD</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftEOMCCSDT</span></code>,
+<code class="docutils literal notranslate"><span class="pre">LeftEOMCCSDT_P</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftEOMCCSDTA</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftIPEOM2</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftIPEOM3</span></code>,
+<code class="docutils literal notranslate"><span class="pre">LeftIPEOM3_P</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftEAEOM2</span></code>, <code class="docutils literal notranslate"><span class="pre">LeftEAEOM3</span></code> and <code class="docutils literal notranslate"><span class="pre">LeftEAEOM3_P</span></code>.
+They require an upstream EOM object. <code class="docutils literal notranslate"><span class="pre">solver=&quot;davidson&quot;</span></code> is the default;
+<code class="docutils literal notranslate"><span class="pre">solver=&quot;jacobi&quot;</span></code> selects the left Jacobi route when the kernel supports it.
+The wrapper normalizes each left vector to its paired right vector using the
+sector’s overlap function. <code class="docutils literal notranslate"><span class="pre">LR</span></code> records the overlap before this rescaling;
+inspect the printed right/left eigenvalue difference and <code class="docutils literal notranslate"><span class="pre">converged</span></code> as well.</p>
+<p>Not every right method has a corresponding left implementation.
+<code class="docutils literal notranslate"><span class="pre">cc.left</span></code> or <code class="docutils literal notranslate"><span class="pre">eom.left</span></code> raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> where the class does
+not name a left method. Availability is listed in <a class="reference internal" href="catalog.html"><span class="doc">Complete methods API catalog</span></a>; an inherited
+base method such as <code class="docutils literal notranslate"><span class="pre">rdm1</span></code> does not guarantee a density implementation at every
+level.</p>
+</section>
+<section id="ccsd-densities-and-their-frame">
+<h2>CCSD densities and their frame<a class="headerlink" href="#ccsd-densities-and-their-frame" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rdm1</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">rdm1</span><span class="p">()</span>  <span class="c1"># solves CCSD and its Lambda state if necessary</span>
+<span class="n">rdm2</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">rdm2</span><span class="p">()</span>
+<span class="n">rdm2_slice</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">rdm2_vvvv_slice</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">spin</span><span class="o">=</span><span class="s2">"a"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These CCSD densities are <strong>unrelaxed derivative densities in the T1-transformed
+frame</strong>, conjugate to the stored Fock/two-body blocks of H(T1). They are not a
+ready-made AO total-state RDM obtained by simply sandwiching a conventional MO
+density with the SCF coefficients. The determinant contribution is separate,
+and the full <code class="docutils literal notranslate"><span class="pre">vvvv</span></code> block is supplied by slices rather than stored densely.
+Consult <code class="docutils literal notranslate"><span class="pre">ccpy.density.ccsd_rdm</span></code> before contracting these with operators or
+using them in orbital optimizations.</p>
+<p>ADC <code class="docutils literal notranslate"><span class="pre">virtual_density(root=...)</span></code> instead returns spin-resolved virtual blocks
+of its unrelaxed second-order ISR state density, normalized from the full
+reconstructed eigenvector. Those blocks are appropriate for ADC-FNO selection.
+They are not full state RDMs, transition moments or oscillator strengths.
+Ordinary STEOM returned singles likewise are not full property wavefunctions.</p>
+</section>
+<section id="relaxed-moments-and-vibrational-intensities">
+<h2>Relaxed moments and vibrational intensities<a class="headerlink" href="#relaxed-moments-and-vibrational-intensities" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">multipole_moments</span></code> and <code class="docutils literal notranslate"><span class="pre">gradient_and_dipole</span></code> now use the relaxed analytic
+gradient densities. The native Hessian helpers can differentiate dipoles and
+compute harmonic IR intensities. See <a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a> for units, nuclear signs,
+combined gradient/property returns and a finite-field energy recipe for methods
+without an analytic property path. These relaxed property helpers are distinct
+from the unrelaxed T1-frame density getters above.</p>
+</section>
+<section id="one-body-operators-and-lrccsd">
+<h2>One-body operators and LRCCSD<a class="headerlink" href="#one-body-operators-and-lrccsd" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">LRCCSD</span></code> accepts a first-order <code class="docutils literal notranslate"><span class="pre">Integral</span></code> operator in the <strong>same working
+basis</strong> as its reference. <code class="docutils literal notranslate"><span class="pre">property()</span></code> returns the correlation contribution;
+<code class="docutils literal notranslate"><span class="pre">energy()</span></code> returns the unperturbed ground CC energy.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">LRCCSD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.interfaces.scf_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_multipole_integral</span>
+
+<span class="n">dipole_operators</span><span class="p">,</span> <span class="n">reference_dipole</span> <span class="o">=</span> <span class="n">get_multipole_integral</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">reference</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">LRCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">dipole_operators</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>  <span class="c1"># z component</span>
+<span class="n">correlation_contribution</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">property</span><span class="p">()</span>
+<span class="n">total_component</span> <span class="o">=</span> <span class="n">reference_dipole</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">correlation_contribution</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">T1</span><span class="p">)</span>  <span class="c1"># first-order perturbed amplitudes, not the ground T1</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">get_multipole_integral</span></code> returns positive position operators and their
+electronic reference expectations, without nuclear moments or the electronic
+charge sign. The example total is therefore an electronic position expectation;
+for a physical dipole in atomic units use the nuclear charge-weighted positions
+minus that electronic expectation. Higher multipoles need their corresponding
+charge/sign and tensor conventions. For a custom
+scalar AO operator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">operator</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">one_body_operator_from_ao</span><span class="p">(</span><span class="n">ao_matrix</span><span class="p">)</span>
+<span class="n">correlation_contribution</span> <span class="o">=</span> <span class="n">LRCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">operator</span><span class="p">)</span><span class="o">.</span><span class="n">property</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">one_body_from_ao</span></code> returns spin-resolved working matrices and can handle
+leading component axes. <code class="docutils literal notranslate"><span class="pre">one_body_operator_from_ao</span></code> wraps a single scalar
+matrix as a reference-bound <code class="docutils literal notranslate"><span class="pre">Integral</span></code> suitable for LRCCSD. The LR wrapper
+checks spin block shapes, finiteness, reality and an operator’s reference
+binding. Full-space operators must be rebuilt after FNO preparation; identical
+dimensions alone do not prove that two MO bases are the same.</p>
+<p>LRCCSD currently uses materialized equations and a legacy CCSD HBar. It is a
+first-order one-body property interface, not a general frequency-dependent
+response/absorption API. FNO energy completion does not add the missing-space
+contribution to densities or properties.</p>
+</section>
+<section id="gradients-and-finite-differences">
+<h2>Gradients and finite differences<a class="headerlink" href="#gradients-and-finite-differences" title="Link to this heading"></a></h2>
+<p>For the complete derivative guide and availability table, see <a class="reference internal" href="gradients.html"><span class="doc">Analytic gradients and finite differences</span></a>.
+For pysisyphus minima, transition-state searches, frequencies and two-sided
+IRC validation, see <a class="reference internal" href="geometry.html"><span class="doc">Geometry optimization, transition states and IRC validation</span></a>. Harmonic frequencies and normal modes
+are covered in <a class="reference internal" href="frequencies.html"><span class="doc">Computing vibrational frequencies</span></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+<span class="n">available</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">has_analytic_gradient</span><span class="p">()</span>
+<span class="n">numerical</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">fd_gradient</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">gradient</span></code> has shape <code class="docutils literal notranslate"><span class="pre">(natoms,</span> <span class="pre">3)</span></code> and units Eh/bohr. It selects an analytic
+kernel when the method and reference pass <code class="docutils literal notranslate"><span class="pre">has_analytic_gradient</span></code>; otherwise
+it differentiates <code class="docutils literal notranslate"><span class="pre">energy()</span></code> with central finite differences. <code class="docutils literal notranslate"><span class="pre">fd_step</span></code>
+(default 1e-3 bohr) and <code class="docutils literal notranslate"><span class="pre">fd_npoints</span></code> (default 4) control the stencil. To choose
+finite differences explicitly, call <code class="docutils literal notranslate"><span class="pre">fd_gradient</span></code>; there is no general
+<code class="docutils literal notranslate"><span class="pre">gradient(analytic=False)</span></code> switch.</p>
+<p>The wrapper names analytic kernels for CCSD, EOMCCSD, CRCC23 variant A and
+CREOMCC23 variant A. CCSDT(P) additionally checks availability of its selected
+CC density module. Correction variants other than those explicitly supported,
+stochastic correction instances, ROHF references, deleted virtuals and FNO
+references use finite differences. These are dispatch conditions, not a claim
+that every installed analytic kernel works for every physical case. Inspect
+<code class="docutils literal notranslate"><span class="pre">has_analytic_gradient</span></code> on the actual object; a module import/runtime failure
+inside an advertised kernel is not automatically converted to finite differences.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">eom_total</span><span class="p">,</span> <span class="n">excited_gradient</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">fd_excited</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">fd_gradient</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">root</span></code> is the returned-state index. The left and response quantities required
+by analytic gradients are created on demand. <code class="docutils literal notranslate"><span class="pre">zvector_tol</span></code> is accepted by
+analytic routes where applicable; numerical gradients instead use the method’s
+finite-difference controls.</p>
+</section>
+<section id="geometry-reconstruction">
+<h2>Geometry reconstruction<a class="headerlink" href="#geometry-reconstruction" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">xyz_bohr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">cc</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">atoms</span><span class="p">])</span>
+<span class="n">xyz_bohr</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">0.01</span>
+<span class="n">moved_molecule</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">with_geometry</span><span class="p">(</span><span class="n">xyz_bohr</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"bohr"</span><span class="p">)</span>
+<span class="n">moved</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">moved_molecule</span><span class="p">)</span>
+<span class="n">moved_total</span> <span class="o">=</span> <span class="n">moved</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> reconstructs the recorded constructor chain, SCF type, reference
+partition and guess setup. It is a new calculation, not a transfer of converged
+orbitals/amplitudes or a persistent restart. FNO bases and low-level completion
+are rebuilt at each geometry. AdaptiveCCPQ reuses recorded selected P spaces
+for geometry copies. In general, discrete determinant spaces, symmetry changes,
+occupation cutoffs and root crossings can make the numerical energy surface
+nonsmooth; check state identity and threshold stability for derivatives.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">Molecule.with_geometry</span></code>’s explicit <code class="docutils literal notranslate"><span class="pre">unit</span></code> when supplying arrays from
+external geometry packages. The native molecule stores Cartesian coordinates
+in bohr, even if the original input was angstrom.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../cim.html" class="btn btn-neutral float-left" title="Cluster-in-molecule local correlation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="multipoles.html" class="btn btn-neutral float-right" title="Multipole moments and harmonic IR intensities" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

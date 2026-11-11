@@ -1,0 +1,427 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FNOs, active spaces and selected determinants &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Cluster-in-molecule local correlation" href="../cim.html" />
+    <link rel="prev" title="Initial guesses, symmetry and choosing roots" href="guesses.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">FNOs, active spaces and selected determinants</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#three-different-reductions">Three different reductions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#enable-df-mp2-fnos-at-the-start-of-a-chain">Enable DF-MP2 FNOs at the start of a chain</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#automatic-composite-energy-completion">Automatic composite energy completion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state-specific-adc-fnos">State-specific ADC-FNOs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-targets-and-root-identities">Multiple targets and root identities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#protected-orbitals-and-reference-inspection">Protected orbitals and reference inspection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#active-and-selected-spaces-after-fno-preparation">Active and selected spaces after FNO preparation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#custom-fno-providers">Custom FNO providers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#external-determinant-space-readers">External determinant-space readers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">FNOs, active spaces and selected determinants</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/spaces.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fnos-active-spaces-and-selected-determinants">
+<h1>FNOs, active spaces and selected determinants<a class="headerlink" href="#fnos-active-spaces-and-selected-determinants" title="Link to this heading"></a></h1>
+<p>Experimental CIM domains are a separate local-correlation model; see
+<a class="reference internal" href="../cim.html"><span class="doc">Cluster-in-molecule local correlation</span></a>. Current CIM wrappers cannot be composed with FNOs.</p>
+<section id="three-different-reductions">
+<h2>Three different reductions<a class="headerlink" href="#three-different-reductions" title="Link to this heading"></a></h2>
+<p>A frozen core removes occupied orbitals from correlation. FNOs rotate and
+truncate virtual orbitals for the whole correlated calculation. A P space
+selects individual high-rank excitations within those working orbitals.
+An initial guess active space restricts only its preliminary CI problem.
+These choices are independent; specify which one you intend to change.</p>
+</section>
+<section id="enable-df-mp2-fnos-at-the-start-of-a-chain">
+<h2>Enable DF-MP2 FNOs at the start of a chain<a class="headerlink" href="#enable-df-mp2-fnos-at-the-start-of-a-chain" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span><span class="p">,</span> <span class="n">FNOOptions</span>
+
+<span class="n">options</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"mp2"</span><span class="p">,</span> <span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">options</span><span class="p">)</span>
+<span class="n">completed_ground</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="n">completed_states</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">raw_energy</span><span class="p">(),</span> <span class="n">cc</span><span class="o">.</span><span class="n">fno_result</span><span class="o">.</span><span class="n">delta_ground</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">completed_omega</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Preparation computes full-space DF-MP2 energy and virtual density, diagonalizes
+the density, selects virtual natural orbitals, semicanonicalizes the retained
+virtual Fock block, transforms DF factors and recomputes DF-MP2 in the reduced
+space. Occupied orbitals and the SCF determinant are unchanged. CC/EOM kernels
+then treat the reduced virtual dimension as the ordinary working dimension.
+The ground MP2 provider uses three-index occupied-pair contractions rather
+than storing a full MP2 doubles tensor. ROHF uses the specified spin-Fock
+partition, including first-order singles when Fov is nonzero.</p>
+<p>Use exactly one selection criterion:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">by_occupation</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">)</span>
+<span class="n">by_population</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">retained_population</span><span class="o">=</span><span class="mf">0.999</span><span class="p">)</span>
+<span class="n">by_count</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">nvirtuals</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">full_retention</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The default is occupation cutoff 1e-6. Restricted occupations use spatial 0–2
+normalization; UHF uses spin 0–1. <code class="docutils literal notranslate"><span class="pre">nvirtuals</span></code> counts external spatial
+virtuals for restricted references. For UHF it specifies a minimum per-spin
+count with equal removals enforced. Symmetry, degeneracy and protected-space
+closure can increase the final count. Removing all external virtuals is rejected.
+FNO thresholds are occupation criteria, not guaranteed energy-error bounds;
+check energy/gap convergence as the retained space grows.</p>
+</section>
+<section id="automatic-composite-energy-completion">
+<h2>Automatic composite energy completion<a class="headerlink" href="#automatic-composite-energy-completion" title="Link to this heading"></a></h2>
+<p>The default <code class="docutils literal notranslate"><span class="pre">energy_completion=&quot;ground&quot;</span></code> returns</p>
+<div class="math notranslate nohighlight">
+\[E_{\mathrm{reported}}=E_{\mathrm{high,trunc}}
+  +E_{\mathrm{low,full}}-E_{\mathrm{low,trunc}}.\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">energy()</span></code> includes this shift automatically. <code class="docutils literal notranslate"><span class="pre">raw_energy()</span></code>,
+<code class="docutils literal notranslate"><span class="pre">correlation_energy</span></code> and raw <code class="docutils literal notranslate"><span class="pre">omega</span></code> do not. Ground corrections and final
+STEOM/EOM totals apply the completion once; auxiliary eigenvalues are not
+independently shifted. For MP2 selection the same ground correction shifts
+all target totals and the parent, so target-minus-parent gaps are unchanged.
+A corrected total is still an approximation to the full-space high-level
+energy; the composite formula does not recover missing high-level amplitudes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">energy_completion=&quot;none&quot;</span></code> reports uncompleted truncated totals.
+<code class="docutils literal notranslate"><span class="pre">&quot;state_specific&quot;</span></code> requires ADC target energies and applies a distinct
+low-level full-minus-reduced shift to each target. <code class="docutils literal notranslate"><span class="pre">completed_omega</span></code> is the
+completed target-minus-completed-parent difference on EOM/ADC/STEOM objects.
+There is no correction for manually deleted virtuals with <code class="docutils literal notranslate"><span class="pre">ndelete</span></code>.</p>
+</section>
+<section id="state-specific-adc-fnos">
+<h2>State-specific ADC-FNOs<a class="headerlink" href="#state-specific-adc-fnos" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EAEOM2</span><span class="p">,</span> <span class="n">FNOOptions</span><span class="p">,</span> <span class="n">FNOTarget</span>
+
+<span class="n">targets</span> <span class="o">=</span> <span class="p">(</span><span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EA"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">formulation</span><span class="o">=</span><span class="s2">"folded"</span><span class="p">),)</span>
+<span class="n">policy</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">"adc2"</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">space_policy</span><span class="o">=</span><span class="s2">"root_specific"</span><span class="p">,</span>
+    <span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">,</span> <span class="n">energy_completion</span><span class="o">=</span><span class="s2">"state_specific"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+<span class="n">ea</span> <span class="o">=</span> <span class="n">EAEOM2</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">fno_targets</span><span class="o">=</span><span class="n">targets</span><span class="p">)</span>
+<span class="n">ea</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"eacis"</span><span class="p">,</span> <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="n">completed_target_total</span> <span class="o">=</span> <span class="n">ea</span><span class="o">.</span><span class="n">energy</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The native provider supports EE/IP/EA on RHF/ROHF/UHF, including noncanonical
+references. <code class="docutils literal notranslate"><span class="pre">FNOTarget</span></code> fields are sector, zero-based root within the
+provider’s irrep, optional irrep, optional positive multiplicity, and
+<code class="docutils literal notranslate"><span class="pre">formulation=&quot;folded&quot;|&quot;full&quot;</span></code>. Omit charged multiplicity to use the
+provider’s unadapted default; <code class="docutils literal notranslate"><span class="pre">-1</span></code> is a guess setting, not an allowed
+<code class="docutils literal notranslate"><span class="pre">FNOTarget.multiplicity</span></code>. On a symmetry reference, provide the irrep.</p>
+<p>Folded selection uses bare CIS/IP-CIS/EA-CIS guesses and is intended for
+primary-dominated states. Full selection uses bare CISd/IP-CISd/EA-CISd,
+including active doubles, and supports satellite/doubles targeting:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">satellite</span> <span class="o">=</span> <span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"IP"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">formulation</span><span class="o">=</span><span class="s2">"full"</span><span class="p">)</span>
+<span class="n">double_excitation</span> <span class="o">=</span> <span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EE"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                             <span class="n">formulation</span><span class="o">=</span><span class="s2">"full"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The built-in full-space CISd provider uses up to two active occupied/virtual
+orbitals; requesting a higher root does not enlarge that active model. For
+other active-space choices or more elaborate root identification, register a
+custom provider. Its density must be a state virtual block with the documented
+ISR order, not a transition density or an arbitrary particle population.
+Native DEA/DIP/SF ADC-FNO selection is not implemented; DF-MP2 FNOs still apply
+to those high-level methods.</p>
+</section>
+<section id="multiple-targets-and-root-identities">
+<h2>Multiple targets and root identities<a class="headerlink" href="#multiple-targets-and-root-identities" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">space_policy=&quot;average&quot;</span></code> diagonalizes a weighted average target density;
+<code class="docutils literal notranslate"><span class="pre">weights</span></code> supplies positive weights, normalized by preparation.
+<code class="docutils literal notranslate"><span class="pre">&quot;union&quot;</span></code> selects each target subspace separately and retains their span.
+<code class="docutils literal notranslate"><span class="pre">&quot;root_specific&quot;</span></code> requires exactly one target and a separate chain per target.
+The default shared policy is average. Union/average can combine supported
+sectors or ADC formulations; all high-level calculations must use the resulting
+same reference to share amplitudes.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">targets</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EE"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EE"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">policy</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"adc2"</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span> <span class="n">weights</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">),</span>
+                    <span class="n">space_policy</span><span class="o">=</span><span class="s2">"average"</span><span class="p">,</span> <span class="n">nvirtuals</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                    <span class="n">energy_completion</span><span class="o">=</span><span class="s2">"state_specific"</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">fno_targets</span><span class="o">=</span><span class="n">targets</span><span class="p">)</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="n">totals</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">fno_targets</span></code> maps low-level state identities into <strong>returned high-level root
+order</strong>. Its length, sectors, irreps and specified spins must match that output.
+The API cannot prove that a high-level root has the intended low-level physical
+character: check the states yourself. Mixed-sector references with state-specific
+completion need each EOM object’s corresponding subset of targets.</p>
+<p>The provider projects full-space physical vectors through the actual orbital
+transformation to seed reduced calculations. It follows overlaps and rejects a
+normalized projected overlap below 0.5. Degeneracies can require a larger space
+or a provider with subspace tracking. A root label is not a guarantee of an
+unchanged energy ordering.</p>
+</section>
+<section id="protected-orbitals-and-reference-inspection">
+<h2>Protected orbitals and reference inspection<a class="headerlink" href="#protected-orbitals-and-reference-inspection" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">protected_virtuals=(0,</span> <span class="pre">2)</span></code> adds specified input virtual directions to the
+retained span. These are zero-based external virtual labels (excluding ROHF
+singly occupied spatial orbitals); for UHF they are local spin-virtual labels.
+This protects directions, not final individual natural orbitals. Dense protected
+subspaces can also be supplied by custom providers.</p>
+<p>All singly occupied ROHF spatial orbitals are preserved. Only the common
+external virtual space is rotated/truncated, preserving the restricted
+open-shell determinant. Symmetry and occupation degeneracies are preserved;
+<code class="docutils literal notranslate"><span class="pre">degeneracy_tolerance</span></code> and <code class="docutils literal notranslate"><span class="pre">density_tolerance</span></code> control associated checks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">fno_result</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">discarded</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">retained_population</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">occupations</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">full</span><span class="o">.</span><span class="n">ground_energy</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">truncated</span><span class="o">.</span><span class="n">ground_energy</span><span class="p">)</span>
+<span class="n">full_reference</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">fno_parent</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">fno_result</span></code> is shared through the reduced reference. Occupations are reported
+before virtual semicanonicalization. A new threshold requires a new chain from
+SCF or the full reference. You cannot add FNOs after allocating an upstream CC
+calculation, disable inherited FNOs downstream, combine them with <code class="docutils literal notranslate"><span class="pre">ndelete</span></code>,
+or reuse full-space amplitudes after a dense virtual rotation.</p>
+</section>
+<section id="active-and-selected-spaces-after-fno-preparation">
+<h2>Active and selected spaces after FNO preparation<a class="headerlink" href="#active-and-selected-spaces-after-fno-preparation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">Reference</span><span class="p">,</span> <span class="n">prepare_fno</span><span class="p">,</span> <span class="n">CCSDT_P</span><span class="p">,</span> <span class="n">EOMCCSDT_P</span><span class="p">,</span>
+                  <span class="n">get_active_triples_pspace</span><span class="p">)</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">prepare_fno</span><span class="p">(</span><span class="n">Reference</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">nvirtuals</span><span class="o">=</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">set_active_space</span><span class="p">(</span><span class="n">nact_occupied</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">t3</span> <span class="o">=</span> <span class="n">get_active_triples_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">r3</span> <span class="o">=</span> <span class="n">get_active_triples_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ccp</span> <span class="o">=</span> <span class="n">CCSDT_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">t3</span><span class="p">)</span>
+<span class="n">eom_p</span> <span class="o">=</span> <span class="n">EOMCCSDT_P</span><span class="p">(</span><span class="n">ccp</span><span class="p">,</span> <span class="n">r3_excitations</span><span class="o">=</span><span class="n">r3</span><span class="p">)</span>
+<span class="n">eom_p</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cis"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">1</span><span class="p">})</span>
+<span class="n">selected_total</span> <span class="o">=</span> <span class="n">eom_p</span><span class="o">.</span><span class="n">energy</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Active occupied labels are frontier occupied orbitals and active virtual labels
+are the lowest working virtuals; <code class="docutils literal notranslate"><span class="pre">set_active_space</span></code> derives spin-specific
+counts for open-shell references. Setting active counts alone does not constrain
+an ordinary CCSDT/EOMCCSDT solve. Generate P lists and choose a selected-space
+method to restrict high-rank excitations.</p>
+<p>P lists are integer, one-based orbital labels in the <strong>working correlated MO
+basis</strong>, with particles first and holes second. Use Fortran-contiguous arrays
+and the spin cases/order expected by the kernel:</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Selected high-rank spaces</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model / helper</p></th>
+<th class="head"><p>Dictionary keys</p></th>
+<th class="head"><p>Rows</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Ground/EE triples, <code class="docutils literal notranslate"><span class="pre">get_active_triples_pspace</span></code></p></td>
+<td><p>aaa, aab, abb, bbb</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[a,b,c,i,j,k]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>IP 3h2p, <code class="docutils literal notranslate"><span class="pre">get_active_3h2p_pspace</span></code></p></td>
+<td><p>aaa, aab, abb</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[b,c,i,j,k]</span></code> with particle/holes spin strings derived from the sector.</p></td>
+</tr>
+<tr class="row-even"><td><p>EA 3p2h, <code class="docutils literal notranslate"><span class="pre">get_active_3p2h_pspace</span></code></p></td>
+<td><p>aaa, aab, abb</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[a,b,c,j,k]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>DEA 4p2h, <code class="docutils literal notranslate"><span class="pre">get_active_4p2h_pspace</span></code></p></td>
+<td><p>abaa, abab, abbb</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">[a,b,c,d,k,l]</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>For IP the particle/hole spin strings are <code class="docutils literal notranslate"><span class="pre">aa/aaa</span></code>, <code class="docutils literal notranslate"><span class="pre">ab/aab</span></code>,
+<code class="docutils literal notranslate"><span class="pre">bb/abb</span></code>; for EA they are <code class="docutils literal notranslate"><span class="pre">aaa/aa</span></code>, <code class="docutils literal notranslate"><span class="pre">aab/ab</span></code>, <code class="docutils literal notranslate"><span class="pre">abb/bb</span></code>. For DEA
+they are <code class="docutils literal notranslate"><span class="pre">abaa/aa</span></code>, <code class="docutils literal notranslate"><span class="pre">abab/ab</span></code>, <code class="docutils literal notranslate"><span class="pre">abbb/bb</span></code>. Each side gives the spin of
+each particle/hole column in order. The triples helper requires at least
+<code class="docutils literal notranslate"><span class="pre">num_active</span></code> active holes <strong>and</strong> active particles; IP counts active holes,
+EA/DEA active particles. <code class="docutils literal notranslate"><span class="pre">target_irrep</span></code> can filter generated lists.</p>
+<p>Empty spin blocks conventionally use a single all-ones row with zero amplitude,
+not a zero-row array. Same-spin indices have canonical ordering/antisymmetry;
+helpers enforce the kernel’s convention. For restricted closed-shell CC(P),
+wrappers derive beta-related lists from their alpha partners. Fortran kernels
+may sort lists in place together with amplitudes; do not rely on caller order
+remaining unchanged.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CCSDT_P.set_pspace</span></code> retains amplitudes by extending its selected operator.
+New excitations must be appended consistently to the current list/order; it
+is not a general arbitrary-list remapper. <code class="docutils literal notranslate"><span class="pre">EOM..._P.set_pspace</span></code> resets right
+states and recomputes from guesses. Ground <code class="docutils literal notranslate"><span class="pre">t3_excitations</span></code> and excited
+<code class="docutils literal notranslate"><span class="pre">r3_excitations</span></code> are separate data even if generated by the same helper.</p>
+<p>Build charged selected models similarly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">IPEOM3_P</span><span class="p">,</span> <span class="n">EAEOM3_P</span><span class="p">,</span> <span class="n">DEAEOM4_P</span><span class="p">,</span>
+                  <span class="n">get_active_3h2p_pspace</span><span class="p">,</span> <span class="n">get_active_3p2h_pspace</span><span class="p">,</span>
+                  <span class="n">get_active_4p2h_pspace</span><span class="p">)</span>
+
+<span class="n">ip_space</span> <span class="o">=</span> <span class="n">get_active_3h2p_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ea_space</span> <span class="o">=</span> <span class="n">get_active_3p2h_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">dea_space</span> <span class="o">=</span> <span class="n">get_active_4p2h_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ip</span> <span class="o">=</span> <span class="n">IPEOM3_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">r3_excitations</span><span class="o">=</span><span class="n">ip_space</span><span class="p">)</span>
+<span class="n">ea</span> <span class="o">=</span> <span class="n">EAEOM3_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">r3_excitations</span><span class="o">=</span><span class="n">ea_space</span><span class="p">)</span>
+<span class="n">dea</span> <span class="o">=</span> <span class="n">DEAEOM4_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">r3_excitations</span><span class="o">=</span><span class="n">dea_space</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These constructors create their standard CCSD parents unless a compatible
+parent is supplied. Configure guesses before calling <code class="docutils literal notranslate"><span class="pre">energy()</span></code>. The name
+<code class="docutils literal notranslate"><span class="pre">r3_excitations</span></code> is also used by the DEA wrapper for its selected 4p2h sector;
+it is an API parameter name, not a claim of three-particle rank.</p>
+</section>
+<section id="custom-fno-providers">
+<h2>Custom FNO providers<a class="headerlink" href="#custom-fno-providers" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">register_fno_provider(name,</span> <span class="pre">callable)</span></code> installs a provider accepting
+<code class="docutils literal notranslate"><span class="pre">(reference,</span> <span class="pre">targets=(),</span> <span class="pre">need_density=True,</span> <span class="pre">full_result=None)</span></code> and returning
+<code class="docutils literal notranslate"><span class="pre">FNOEvaluation</span></code>. Ground/target energies are absolute totals, including the
+parent determinant energy, with signed charged conventions. Density dictionaries
+are keyed by targets (or <code class="docutils literal notranslate"><span class="pre">None</span></code> for ground selection), then <code class="docutils literal notranslate"><span class="pre">a/b</span></code> spin blocks
+in the supplied reference’s virtual basis. The reduced call receives the full
+result for physical-root matching. Honor <code class="docutils literal notranslate"><span class="pre">need_density=False</span></code> without changing
+the energy convention. Providers may return metadata and protected subspaces.
+See <a class="reference internal" href="../fno.html"><span class="doc">Frozen natural orbitals</span></a> for the complete extension contract and an example.</p>
+</section>
+<section id="external-determinant-space-readers">
+<h2>External determinant-space readers<a class="headerlink" href="#external-determinant-space-readers" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">get_triples_pspace_from_cipsi(path,</span> <span class="pre">system)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">get_quadruples_pspace_from_cipsi(path,</span> <span class="pre">system)</span></code> extract the respective ranks
+from headerless determinant records with identifier/coefficient followed by
+occupied spin-orbital labels. They use correlated-space numbering (alpha odd,
+beta even), not AO labels or all-electron frozen-core numbering. Check the
+function’s returned tuple before passing its excitation dictionary to a method;
+the triples reader also reports excitation counts by symmetry.
+<code class="docutils literal notranslate"><span class="pre">get_pspace_from_qmc</span></code> reads integer signed walker populations and filters
+by <code class="docutils literal notranslate"><span class="pre">threshold_walkers</span></code>; the present implementation selects triples. These
+readers do not transform determinants between orbital bases. Inspect the source
+and a small known determinant before using a new external generator’s output.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="guesses.html" class="btn btn-neutral float-left" title="Initial guesses, symmetry and choosing roots" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../cim.html" class="btn btn-neutral float-right" title="Cluster-in-molecule local correlation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
