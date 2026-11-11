@@ -17,6 +17,8 @@ class PspaceOperator:
 class ActiveOperator:
 
     def __init__(self, system, order, spincase, num_active, matrix=None, data_type=np.float64):
+        from ccpy.utilities.active_space import require_contiguous_active_space
+        require_contiguous_active_space(system, "ActiveOperator")
         self.order = order
         self.spincase = spincase
         self.num_active = num_active

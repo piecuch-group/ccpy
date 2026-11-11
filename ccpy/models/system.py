@@ -82,15 +82,8 @@ class System:
         # once we've found the reference irrep, we don't need the frozen orbital irreps anymore.
         self.orbital_symmetries = self.orbital_symmetries_all[self.nfrozen:]
 
-    def set_active_space(self, nact_occupied, nact_unoccupied):
-        self.num_act_occupied_alpha = min(self.noccupied_alpha, (self.multiplicity - 1) + nact_occupied)
-        self.num_core_alpha = max(0, self.noccupied_alpha - self.num_act_occupied_alpha)
-        self.num_act_occupied_beta = min(self.noccupied_beta, nact_occupied)
-        self.num_core_beta = max(0, self.noccupied_beta - self.num_act_occupied_beta)
-        self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, nact_unoccupied)
-        self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
-        self.num_act_unoccupied_beta = min(self.nunoccupied_beta, (self.multiplicity - 1) + nact_unoccupied)
-        self.num_virt_beta = max(0, self.nunoccupied_beta - self.num_act_unoccupied_beta)
+    def set_active_space(self, nact_occupied=0, nact_unoccupied=0, active_occupied=None, active_unoccupied=None):
+        set_active_space(self, nact_occupied, nact_unoccupied, active_occupied, active_unoccupied)
 
     def set_full_active_space(self):
         self.set_active_space(nact_occupied=self.noccupied_alpha, nact_unoccupied=self.nunoccupied_beta)
@@ -173,15 +166,58 @@ class UHFSystem:
         #                           "b": self.orbital_symmetries_all["b"][self.nfrozen:]}
         self.orbital_symmetries = self.orbital_symmetries_all["a"][self.nfrozen:]
 
-    def set_active_space(self, nact_occupied, nact_unoccupied):
-        self.num_act_occupied_alpha = min(self.noccupied_alpha, (self.multiplicity - 1) + nact_occupied)
-        self.num_core_alpha = max(0, self.noccupied_alpha - self.num_act_occupied_alpha)
-        self.num_act_occupied_beta = min(self.noccupied_beta, nact_occupied)
-        self.num_core_beta = max(0, self.noccupied_beta - self.num_act_occupied_beta)
-        self.num_act_unoccupied_alpha = min(self.nunoccupied_alpha, nact_unoccupied)
-        self.num_virt_alpha = max(0, self.nunoccupied_alpha - self.num_act_unoccupied_alpha)
-        self.num_act_unoccupied_beta = min(self.nunoccupied_beta, (self.multiplicity - 1) + nact_unoccupied)
-        self.num_virt_beta = max(0, self.nunoccupied_beta - self.num_act_unoccupied_beta)
+    def set_active_space(self, nact_occupied=0, nact_unoccupied=0, active_occupied=None, active_unoccupied=None):
+        set_active_space(self, nact_occupied, nact_unoccupied, active_occupied, active_unoccupied)
 
     def print_info(self):
         UHFSystemPrinter(self).header()
+
+
+def set_active_space(system, nact_occupied, nact_unoccupied, active_occupied=None, active_unoccupied=None):
+    """Set the active orbitals used by CCSDt-type P spaces (get_active_*_pspace) and active-space methods.
+
+    By default the active orbitals are the nact_occupied highest occupied and nact_unoccupied lowest unoccupied
+    orbitals (plus the singly occupied ones for open shells). active_occupied / active_unoccupied instead give
+    the active orbitals as 1-based MO numbers, counted from the first MO including frozen ones (as printed
+    by the SCF), e.g. active_occupied=[3, 5], active_unoccupied=[6, 7]; the counts are then taken from them.
+
+    The results are system.active_occupied_alpha/beta and system.active_unoccupied_alpha/beta: 0-based
+    indices into the correlated occupied and unoccupied orbitals of each spin. system.active_space_contiguous
+    is False when they are not the default block; slice-based active-space code refuses such a space.
+    """
+    noa, nob, nua, nub = system.noccupied_alpha, system.noccupied_beta, system.nunoccupied_alpha, system.nunoccupied_beta
+    nf = system.nfrozen
+    somo = list(range(nob, noa))  # singly occupied orbitals, 0-based in the correlated space; always active
+    if active_occupied is None and active_unoccupied is None:
+        nacto_a = min(noa, (system.multiplicity - 1) + nact_occupied)
+        nacto_b = min(nob, nact_occupied)
+        nactu_a = min(nua, nact_unoccupied)
+        nactu_b = min(nub, (system.multiplicity - 1) + nact_unoccupied)
+        system.active_occupied_alpha = list(range(noa - nacto_a, noa))
+        system.active_occupied_beta = list(range(nob - nacto_b, nob))
+        system.active_unoccupied_alpha = list(range(nactu_a))
+        system.active_unoccupied_beta = list(range(nactu_b))
+    else:
+        occ = sorted({p - 1 - nf for p in (active_occupied or [])})
+        unocc = sorted({p - 1 - nf for p in (active_unoccupied or [])})
+        if any(p < 0 or p >= nob for p in occ):
+            raise ValueError(f"active_occupied must be doubly occupied, correlated MOs {nf + 1}..{nf + nob}; got {active_occupied}")
+        if any(p < noa or p >= noa + nua for p in unocc):
+            raise ValueError(f"active_unoccupied must be unoccupied MOs {nf + noa + 1}..{nf + noa + nua}; got {active_unoccupied}")
+        system.active_occupied_alpha = sorted(occ + somo)
+        system.active_occupied_beta = occ
+        system.active_unoccupied_alpha = [p - noa for p in unocc]
+        system.active_unoccupied_beta = sorted(p - nob for p in somo + unocc)
+    system.num_act_occupied_alpha = len(system.active_occupied_alpha)
+    system.num_act_occupied_beta = len(system.active_occupied_beta)
+    system.num_act_unoccupied_alpha = len(system.active_unoccupied_alpha)
+    system.num_act_unoccupied_beta = len(system.active_unoccupied_beta)
+    system.num_core_alpha = noa - system.num_act_occupied_alpha
+    system.num_core_beta = nob - system.num_act_occupied_beta
+    system.num_virt_alpha = nua - system.num_act_unoccupied_alpha
+    system.num_virt_beta = nub - system.num_act_unoccupied_beta
+    system.active_space_contiguous = (
+        system.active_occupied_alpha == list(range(system.num_core_alpha, noa))
+        and system.active_occupied_beta == list(range(system.num_core_beta, nob))
+        and system.active_unoccupied_alpha == list(range(system.num_act_unoccupied_alpha))
+        and system.active_unoccupied_beta == list(range(system.num_act_unoccupied_beta)))

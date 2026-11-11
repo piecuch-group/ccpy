@@ -154,12 +154,7 @@ def get_triples_qspace(system, t3_excitations, target_irrep=None):
     return excitations
 
 def get_active_triples_qspace(system, num_active=1, target_irrep=None):
-    from ccpy.utilities.active_space import active_hole, active_particle
 
-    nacto_alpha = system.num_act_occupied_alpha
-    nactu_alpha = system.num_act_unoccupied_alpha
-    nacto_beta = system.num_act_occupied_beta
-    nactu_beta = system.num_act_unoccupied_beta
 
     if target_irrep is None:
         sym_target = -1
@@ -167,16 +162,16 @@ def get_active_triples_qspace(system, num_active=1, target_irrep=None):
         sym_target = system.point_group_irrep_to_number[target_irrep]
 
     def count_active_occ_alpha(occ):
-        return sum([active_hole(i, system.noccupied_alpha, nacto_alpha) for i in occ])
+        return sum([(i in system.active_occupied_alpha) for i in occ])
 
     def count_active_occ_beta(occ):
-        return sum([active_hole(i, system.noccupied_beta, nacto_beta) for i in occ])
+        return sum([(i in system.active_occupied_beta) for i in occ])
 
     def count_active_unocc_alpha(unocc):
-        return sum([active_particle(a, nactu_alpha) for a in unocc])
+        return sum([(a in system.active_unoccupied_alpha) for a in unocc])
 
     def count_active_unocc_beta(unocc):
-        return sum([active_particle(a, nactu_beta) for a in unocc])
+        return sum([(a in system.active_unoccupied_beta) for a in unocc])
 
     def checksym_aaa(i, j, k, a, b, c):
         if sym_target == -1: return True

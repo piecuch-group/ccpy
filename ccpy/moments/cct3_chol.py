@@ -5,11 +5,13 @@ import numpy as np
 from ccpy.constants.constants import hartreetoeV
 from ccpy.hbar.diagonal import aaa_H3_aaa_diagonal, abb_H3_abb_diagonal, aab_H3_aab_diagonal, bbb_H3_bbb_diagonal
 from ccpy.lib.core import cct3_loops
+from ccpy.utilities.active_space import require_contiguous_active_space
 
 def calc_cct3(T, L, corr_energy, H, H0, system, use_RHF=False, num_active=1):
     """
     Calculate the ground-state CC(t;3) correction to the CCSDt energy.
     """
+    require_contiguous_active_space(system, "CC(t;3) (cct3)")
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
@@ -155,6 +157,7 @@ def calc_eomcct3(T, R, L, r0, omega, corr_energy, H, H0, system, use_RHF=False, 
     """
     Calculate the excited-state CC(t;3) correction to the EOMCCSDt energy.
     """
+    require_contiguous_active_space(system, "CC(t;3) (cct3)")
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 

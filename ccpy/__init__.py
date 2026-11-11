@@ -9,6 +9,7 @@ from ccpy.optimize import IRCBranch, IRCResult, run_irc
 from ccpy.drivers.driver import Driver
 from ccpy.drivers.adaptive import AdaptDriver, AdaptEOMDriver, AdaptEOMDriverSS
 from ccpy.utilities.pspace import (get_active_triples_pspace,
+                                   get_active_triples_quadruples_pspace,
                                    get_active_3h2p_pspace,
                                    get_active_3p2h_pspace,
                                    get_active_4p2h_pspace,

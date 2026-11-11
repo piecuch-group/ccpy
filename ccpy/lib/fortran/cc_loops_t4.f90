@@ -3961,4 +3961,21 @@ subroutine update_t4e(t4e, resid, X4E, &
 end subroutine update_t4e
 
 
+subroutine apply_pspace_mask(t, resid, pspace, n)
+      ! zero amplitudes and residuals outside the P space (pspace == 0); flat views of any T3/T4 block
+      integer, intent(in) :: n
+      integer(1), intent(in) :: pspace(n)
+      real(8), intent(inout) :: t(n), resid(n)
+      !f2py intent(in, out) :: t, resid
+      integer :: idx
+
+      do idx = 1, n
+         if (pspace(idx) == 0) then
+            t(idx) = 0.0d0
+            resid(idx) = 0.0d0
+         end if
+      end do
+
+end subroutine apply_pspace_mask
+
 end module cc_loops_t4

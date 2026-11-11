@@ -1,5 +1,15 @@
 
+def require_contiguous_active_space(system, what):
+    """Raise for an orbital-list active space that is not the default HOMO/LUMO-adjacent block."""
+    if not system.active_space_contiguous:
+        raise NotImplementedError(
+            f"{what} assumes the active orbitals are the highest occupied and lowest unoccupied ones; "
+            "this active space was set with explicit orbital lists. Use the CC(P)/CC(P;Q) routines with "
+            "get_active_*_pspace (e.g. run_ccp3(method=\"ccp3\", t3_excitations=...)) instead.")
+
+
 def get_active_slices(system):
+    require_contiguous_active_space(system, "slice-based active-space code")
 
     oa = slice(0, system.noccupied_alpha - system.num_act_occupied_alpha)
     Oa = slice(system.noccupied_alpha - system.num_act_occupied_alpha, system.noccupied_alpha)
@@ -12,18 +22,6 @@ def get_active_slices(system):
     Vb = slice(0, system.num_act_unoccupied_beta)
 
     return oa, Oa, va, Va, ob, Ob, vb, Vb
-
-def active_hole(x, nocc, nact):
-    if x < nocc - nact:
-        return 0
-    else:
-        return 1
-
-def active_particle(x, nact):
-    if x < nact:
-        return 1
-    else:
-        return 0
 
 def fill_t3aaa(T, T0, system):
 
@@ -138,12 +136,12 @@ def zero_t3aaa_outside_active_space(T, system, num_act):
                     for j in range(i + 1, system.noccupied_alpha):
                         for k in range(j + 1, system.noccupied_alpha):
 
-                            x1 = active_hole(i, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x2 = active_hole(j, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x3 = active_hole(k, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x4 = active_particle(a, system.num_act_unoccupied_alpha)
-                            x5 = active_particle(b, system.num_act_unoccupied_alpha)
-                            x6 = active_particle(c, system.num_act_unoccupied_alpha)
+                            x1 = (i in system.active_occupied_alpha)
+                            x2 = (j in system.active_occupied_alpha)
+                            x3 = (k in system.active_occupied_alpha)
+                            x4 = (a in system.active_unoccupied_alpha)
+                            x5 = (b in system.active_unoccupied_alpha)
+                            x6 = (c in system.active_unoccupied_alpha)
 
                             active_h = x1 + x2 + x3
                             active_p = x4 + x5 + x6
@@ -200,12 +198,12 @@ def zero_t3aab_outside_active_space(T, system, num_act):
                     for j in range(i + 1, system.noccupied_alpha):
                         for k in range(system.noccupied_beta):
 
-                            x1 = active_hole(i, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x2 = active_hole(j, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x3 = active_hole(k, system.noccupied_beta, system.num_act_occupied_beta)
-                            x4 = active_particle(a, system.num_act_unoccupied_alpha)
-                            x5 = active_particle(b, system.num_act_unoccupied_alpha)
-                            x6 = active_particle(c, system.num_act_unoccupied_beta)
+                            x1 = (i in system.active_occupied_alpha)
+                            x2 = (j in system.active_occupied_alpha)
+                            x3 = (k in system.active_occupied_beta)
+                            x4 = (a in system.active_unoccupied_alpha)
+                            x5 = (b in system.active_unoccupied_alpha)
+                            x6 = (c in system.active_unoccupied_beta)
 
                             active_h = x1 + x2 + x3
                             active_p = x4 + x5 + x6
@@ -225,12 +223,12 @@ def zero_t3abb_outside_active_space(T, system, num_act):
                     for j in range(system.noccupied_beta):
                         for k in range(j + 1, system.noccupied_beta):
 
-                            x1 = active_hole(i, system.noccupied_alpha, system.num_act_occupied_alpha)
-                            x2 = active_hole(j, system.noccupied_beta, system.num_act_occupied_beta)
-                            x3 = active_hole(k, system.noccupied_beta, system.num_act_occupied_beta)
-                            x4 = active_particle(a, system.num_act_unoccupied_alpha)
-                            x5 = active_particle(b, system.num_act_unoccupied_beta)
-                            x6 = active_particle(c, system.num_act_unoccupied_beta)
+                            x1 = (i in system.active_occupied_alpha)
+                            x2 = (j in system.active_occupied_beta)
+                            x3 = (k in system.active_occupied_beta)
+                            x4 = (a in system.active_unoccupied_alpha)
+                            x5 = (b in system.active_unoccupied_beta)
+                            x6 = (c in system.active_unoccupied_beta)
 
                             active_h = x1 + x2 + x3
                             active_p = x4 + x5 + x6
@@ -251,12 +249,12 @@ def zero_t3bbb_outside_active_space(T, system, num_act):
                     for j in range(i + 1, system.noccupied_beta):
                         for k in range(j + 1, system.noccupied_beta):
 
-                            x1 = active_hole(i, system.noccupied_beta, system.num_act_occupied_beta)
-                            x2 = active_hole(j, system.noccupied_beta, system.num_act_occupied_beta)
-                            x3 = active_hole(k, system.noccupied_beta, system.num_act_occupied_beta)
-                            x4 = active_particle(a, system.num_act_unoccupied_beta)
-                            x5 = active_particle(b, system.num_act_unoccupied_beta)
-                            x6 = active_particle(c, system.num_act_unoccupied_beta)
+                            x1 = (i in system.active_occupied_beta)
+                            x2 = (j in system.active_occupied_beta)
+                            x3 = (k in system.active_occupied_beta)
+                            x4 = (a in system.active_unoccupied_beta)
+                            x5 = (b in system.active_unoccupied_beta)
+                            x6 = (c in system.active_unoccupied_beta)
 
                             active_h = x1 + x2 + x3
                             active_p = x4 + x5 + x6

@@ -109,6 +109,9 @@ class TriplesCorrectionKernel:
 
     def __init__(self, T, L, H, H0, system, use_RHF=False, t3_excitations=None, num_active=0):
         self.use_RHF = use_RHF
+        if num_active > 0:
+            from ccpy.utilities.active_space import require_contiguous_active_space
+            require_contiguous_active_space(system, "Stochastic CC(t;3)")
         noa, nob = system.noccupied_alpha, system.noccupied_beta
         nua, nub = system.nunoccupied_alpha, system.nunoccupied_beta
         self.act = np.array([num_active, system.num_act_occupied_alpha, system.num_act_unoccupied_alpha,
