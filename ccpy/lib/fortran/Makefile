@@ -11,7 +11,6 @@ MODULES := cc_loops \
 		   cripcc_loops \
 		   creacc_loops \
 		   ccsdpt_loops \
-		   crcc24_loops \
 		   crcc24_opt_loops \
 		   cc3_loops \
 		   hbar_cc3 \

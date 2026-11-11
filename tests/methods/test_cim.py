@@ -121,10 +121,11 @@ def test_mixed_index_partition_matches_dense_oracle(water_rhf):
 
 
 def test_adaptive_ccpq_canonical_limit_and_partition(water_rhf):
-    """Adaptive CC(P;Q): one subsystem with every orbital selects the canonical P spaces, and two
+    """Adaptive CC(P;Q): one subsystem with every orbital selects the canonical P spaces. Two
     subsystems with every orbital and central LMOs (0, 1) and (2, 3) add up to the canonical
-    energy, so the central CC(P;3) parts (triples sum skipping the P space) partition it."""
-    from ccpy.methods.corrections import AdaptiveCCPQ
+    energy on the canonical P spaces, so the central CC(P;3) parts (triples sum skipping the P
+    space) partition it; selecting by their central energies, they choose P spaces of their own."""
+    from ccpy.methods.ccpq import AdaptiveCCPQ
 
     options = dict(nfrozen=1, percentage=[0.0, 2.0, 5.0], energy_tolerance=1.0e-10, **OPTS)
     canonical = AdaptiveCCPQ(water_rhf, **options)
@@ -136,9 +137,107 @@ def test_adaptive_ccpq_canonical_limit_and_partition(water_rhf):
     U = boys_localize(C, water_rhf.mol)
     subsystems = tuple(CIMSubsystem(central, central + tuple(i for i in range(4) if i not in central),
                                     (0, 1, 2), AdaptiveCCPQ) for central in ((0, 1), (2, 3)))
-    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=CIMDomains(subsystems, lmo_populations(C @ U, water_rhf.mol))),
-                         **options)
+    domains = CIMDomains(subsystems, lmo_populations(C @ U, water_rhf.mol))
+    fixed = {k: v for k, v in options.items() if k != "percentage"}
+    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=domains), pspaces=canonical.pspaces, **fixed)
     assert quiet(split.energy) == pytest.approx(expected, abs=1.0e-9)
+    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=domains), **options)
+    assert quiet(split.energy) == pytest.approx(expected, abs=1.0e-4)
+
+
+def test_central_triples_selection(water_rhf, monkeypatch):
+    """The central selection kernels: with P = 1 they select exactly like the canonical ones,
+    and their ranking quantities add up to the central CC(P;3)_D correction."""
+    from types import SimpleNamespace
+
+    import ccpy.moments.ccp3_chol as ccp3_chol
+    from ccpy.methods.ccpq import AdaptiveCCPQ
+    from ccpy.methods.cim import crcc23_central_correction
+    from ccpy.methods.hbar import HBarCCSD
+
+    calc = AdaptiveCCPQ(water_rhf, nfrozen=1, percentage=[0.0, 2.0], **OPTS)
+    quiet(calc.energy)
+    cc, L, H0 = calc.cc, calc.left.L, calc.reference.H
+    hbar = cc.get_hbar(HBarCCSD)
+
+    def select(central, num_add=100):
+        return quiet(ccp3_chol.calc_ccp3_2ba_with_selection, hbar.T, L, cc.t3_excitations, cc.correlation_energy,
+                     hbar.H, H0, cc.system, num_add, use_RHF=True, buffer_factor=10**4, central=central)
+
+    no = cc.system.noccupied_alpha
+    e, selected = select(None)
+    e_central, selected_central = select(np.eye(no))
+    assert e_central == e and np.array_equal(selected_central, selected)
+
+    # every Q-space triple fits in the buffer, which the aaa and aab kernels share
+    loops = ccp3_chol.ccp3_adaptive_loops
+    buffers = []
+
+    def keep(f):
+        def run(*args):
+            out = f(*args)
+            buffers.append(out[4][:out[6] - 1].copy())
+            return out
+        return run
+
+    monkeypatch.setattr(ccp3_chol, "ccp3_adaptive_loops", SimpleNamespace(
+        ccp3a_2ba_with_central_selection_opt=keep(loops.ccp3a_2ba_with_central_selection_opt),
+        ccp3b_2ba_with_central_selection_opt=keep(loops.ccp3b_2ba_with_central_selection_opt)))
+    W = np.linalg.qr(np.random.default_rng(1).standard_normal((no, no)))[0]
+    P = W[:2].T @ W[:2]
+    select(P, num_add=1)
+    expected = crcc23_central_correction(hbar.T, L, hbar.H, H0, cc.system, P, t3_excitations=cc.t3_excitations)["D"]
+    assert 2.0 * buffers[-1].sum() == pytest.approx(expected, abs=1.0e-14)
+
+
+def test_adaptive_ccpq_ccsdtq_canonical_limit_and_partition(water_rhf):
+    """As above with target="ccsdtq": the central CC(P;3) and CC(P;4) parts partition the
+    canonical energy on the canonical P spaces of triples and quadruples."""
+    from ccpy.methods.ccpq import AdaptiveCCPQ
+
+    options = dict(target="ccsdtq", nfrozen=1, percentage=[0.0, 1.0, 2.0], energy_tolerance=1.0e-10, **OPTS)
+    canonical = AdaptiveCCPQ(water_rhf, **options)
+    expected = quiet(canonical.energy)
+    single = AdaptiveCCPQ(water_rhf, cim=CIMOptions(zeta=0.0), **options)
+    assert quiet(single.energy) == pytest.approx(expected, abs=1.0e-9)
+    C = water_rhf.mo_coeff[:, 1:5]
+    U = boys_localize(C, water_rhf.mol)
+    subsystems = tuple(CIMSubsystem(central, central + tuple(i for i in range(4) if i not in central),
+                                    (0, 1, 2), AdaptiveCCPQ) for central in ((0, 1), (2, 3)))
+    domains = CIMDomains(subsystems, lmo_populations(C @ U, water_rhf.mol))
+    fixed = {k: v for k, v in options.items() if k != "percentage"}
+    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=domains), pspaces=canonical.pspaces, **fixed)
+    assert quiet(split.energy) == pytest.approx(expected, abs=1.0e-9)
+    split = AdaptiveCCPQ(water_rhf, cim=CIMOptions(domains=domains), **options)
+    assert quiet(split.energy) == pytest.approx(expected, abs=1.0e-4)
+
+
+def test_central_quadruples_selection(water_rhf):
+    """The central quadruples kernels: with P = 1 they select exactly like the canonical ones and
+    their central sum is the CC(P;4)_D correction; complementary projectors split it."""
+    from ccpy.methods.ccpq import AdaptiveCCPQ
+    from ccpy.methods.hbar import HBarCCSDLegacy
+    from ccpy.moments.ccp34 import calc_ccp4_with_selection
+
+    calc = AdaptiveCCPQ(water_rhf, target="ccsdtq", nfrozen=1, percentage=[0.0, 1.0], **OPTS)
+    quiet(calc.energy)
+    cc, L = calc.cc, calc.left.L
+    hbar4 = cc.get_hbar(HBarCCSDLegacy)
+
+    def select(central, num_add=100):
+        return quiet(calc_ccp4_with_selection, hbar4.T, L, cc.t4_excitations, calc.reference.H, hbar4.H, cc.system,
+                     num_add, use_RHF=True, buffer_factor=10**4, central=central)
+
+    no = cc.system.noccupied_alpha
+    delta, _, selected, _ = select(None)
+    delta_central, central_d, selected_central, _ = select(np.eye(no))
+    assert np.array_equal(delta_central, delta) and np.array_equal(selected_central, selected)
+    assert central_d == pytest.approx(delta[3], abs=1.0e-14)
+
+    W = np.linalg.qr(np.random.default_rng(1).standard_normal((no, no)))[0]
+    P = W[:2].T @ W[:2]
+    parts = select(P, num_add=1)[1] + select(np.eye(no) - P, num_add=1)[1]
+    assert parts == pytest.approx(delta[3], abs=1.0e-14)
 
 
 def test_secim_water_trimer(trimer_rhf):

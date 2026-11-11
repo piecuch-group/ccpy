@@ -4,15 +4,23 @@ from importlib import import_module
 import numpy as np
 
 from ccpy.methods.base import MethodBase
-from ccpy.methods.cc import CCPBase, CCSD, CCSDT, CCSDT_P
+from ccpy.methods.cc import CCPBase, CCSD, CCSDT, CCSDT_P, CCSDTQ_P
 from ccpy.methods.eomcc import EOMCCBase
 from ccpy.methods.hbar import HBarCCSD, HBarCCSDLegacy, HBarCCSDT, HBarCCSDT_P
 from ccpy.methods.left import LeftCCSD, LeftCCSDT, LeftCCSDT_P, LeftEOMCCBase
 from ccpy.methods.corrections import CCP3
 
+T3_SPINCASES = ("aaa", "aab", "abb", "bbb")
+T4_SPINCASES = ("aaaa", "aaab", "aabb", "abbb", "bbbb")
+
 class AdaptiveCCPQ(MethodBase):
     """Adaptive CC(P;Q) (DF/Cholesky): CCSDT(P) on a P space of triples grown, macroiteration
     by macroiteration, with the triples of largest CC(P;3) moment contributions.
+
+    With ``target="ccsdtq"`` (ground states, legacy four-index CCSDTQ(P)), the P space holds
+    triples and quadruples, grown with the excitations of largest moment contributions among
+    the triples and quadruples outside it, ranked together; the correction is CC(P;3) plus the
+    CR-CC(2,4)-like quadruples correction of ccpy.moments.ccp34 (two-body approximation).
 
     Each macroiteration solves CCSDT(P), HBar and left-CCSD (two-body approximation), and
     computes the CC(P;3)_D correction while selecting the triples to add. The last
@@ -37,13 +45,16 @@ class AdaptiveCCPQ(MethodBase):
 
     Parameters
     ----------
+    target : str
+        "ccsdt" (CCSDT(P) with CC(P;3)) or "ccsdtq" (CCSDTQ(P) with CC(P;3,4)).
     percentage : list of float, optional
-        P space sizes as percentages of all triples (of the reference symmetry); one
+        P space sizes as percentages of all triples (and quadruples for "ccsdtq") of the
+        reference symmetry; one
         macroiteration each. Without it, each macroiteration adds as many triples as there
         are singles (and doubles, base_growth="ccsd") times selection_factor, for at most
         maximum_macroiterations + 1 macroiterations.
     pspaces : list of dict, optional
-        P spaces to use instead of selecting them (e.g. ``pspaces`` of an earlier run); one
+        P spaces (excitations of every spincase, e.g. "aaa" and "aaaa" keys) to use instead of selecting them (e.g. ``pspaces`` of an earlier run); one
         macroiteration each. Copies made by at_geometry() reuse the P spaces of this run, so
         finite-difference energies are smooth functions of the geometry.
     energy_tolerance : float
@@ -71,14 +82,19 @@ class AdaptiveCCPQ(MethodBase):
     extrapolated : dict of lists, Goodson extrapolations ("ccq", "ccr", "cccf")
     pspaces : list of dict, P space of each macroiteration
     timings : list of dict, wall times (s) of the CC(P) and CC(P;Q)/selection steps
-    cc : CCSDT_P, left : LeftCCSD
+    cc : CCSDT_P or CCSDTQ_P, left : LeftCCSD
     """
 
-    def __init__(self, upstream, percentage=None, pspaces=None, energy_tolerance=1.0e-04,
+    def __init__(self, upstream, target="ccsdt", percentage=None, pspaces=None, energy_tolerance=1.0e-04,
                  maximum_macroiterations=10, n_det_max=100000000, selection_factor=1.0, base_growth="ccsd",
                  buffer_factor=2, minimum_threshold=0.0, reset_amplitudes=False, nfrozen=None, ndelete=None,
                  stochastic=None, convergence_z=1.96, **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
+        self.target = target.lower()
+        if self.target not in ("ccsdt", "ccsdtq"):
+            raise ValueError(f"AdaptiveCCPQ: target must be 'ccsdt' or 'ccsdtq', not {target!r}.")
+        if self.target == "ccsdtq" and stochastic:
+            raise ValueError("AdaptiveCCPQ: semi-stochastic corrections are not available for target='ccsdtq'.")
         self.convergence_z = convergence_z
         self.stochastic = self._stochastic_options(stochastic, energy_tolerance, convergence_z)
         self.percentage = percentage
@@ -89,14 +105,19 @@ class AdaptiveCCPQ(MethodBase):
         self.nmacro = maximum_macroiterations + 1 if percentage is None else len(percentage)
         self.fixed_pspaces = None
         self._set_fixed_pspaces(pspaces)
-        empty = {s: np.ones((1, 6), dtype=np.int32) for s in ("aaa", "aab", "abb", "bbb")}
-        self.cc = CCSDT_P(self.reference, empty, **self.user_options)
+        empty = {s: np.ones((1, 6), dtype=np.int32) for s in T3_SPINCASES}
+        if self.target == "ccsdt":
+            self.cc = CCSDT_P(self.reference, empty, **self.user_options)
+        else:
+            empty4 = {s: np.ones((1, 8), dtype=np.int32) for s in T4_SPINCASES}
+            self.cc = CCSDTQ_P(self.reference, empty, empty4, **self.user_options)
         self.left = LeftCCSD(self.cc, **self.user_options)
         self.ccp3 = None
         self.ccp_energies, self.ccpq_energies, self.ccpq_errors = [], [], []
         self.extrapolated = {"ccq": [], "ccr": [], "cccf": []}
         self.pspaces, self.timings = [], []
         self.adaptive_converged = False
+        self.central_projector = None  # set by CIM: rank triples by their central energy
 
     @staticmethod
     def _stochastic_options(stochastic, tolerance, z):
@@ -141,7 +162,7 @@ class AdaptiveCCPQ(MethodBase):
 
     def _growth_plan(self):
         """Number of triples added after each macroiteration and the size of the base P space."""
-        from ccpy.utilities.symmetry import count_doubles, count_singles, count_triples
+        from ccpy.utilities.symmetry import count_doubles, count_quadruples, count_singles, count_triples
 
         system = self.system
         irrep = system.point_group_irrep_to_number[system.reference_symmetry]
@@ -156,6 +177,8 @@ class AdaptiveCCPQ(MethodBase):
         else:
             counts, _ = count_triples(system)
             total = counts[irrep]
+            if self.target == "ccsdtq":
+                total += count_quadruples(system)[0][irrep]
             increment = int(0.01 * total)
             num_add = np.zeros(len(self.percentage))
             for i in range(len(self.percentage) - 1):
@@ -169,32 +192,45 @@ class AdaptiveCCPQ(MethodBase):
             num_add = [int(x / 2) for x in num_add]
         return list(num_add), base_size
 
-    def _pspace_size(self, base_size):
-        t3 = self.cc.t3_excitations
-        return base_size + sum(t3[s].shape[0] for s in t3 if not np.all(t3[s][0, :] == 1))
+    def _pspace(self):
+        """Excitations of the current P space, keyed by spincase (triples and quadruples)."""
+        if self.target == "ccsdt":
+            return self.cc.t3_excitations
+        return {**self.cc.t3_excitations, **self.cc.t4_excitations}
 
-    def _load_pspace(self, t3_excitations):
+    def _set_pspace(self, excitations):
+        if self.target == "ccsdt":
+            self.cc.set_pspace({s: excitations[s] for s in T3_SPINCASES})
+        else:
+            self.cc.set_pspace({s: excitations[s] for s in T3_SPINCASES}, {s: excitations[s] for s in T4_SPINCASES})
+
+    def _pspace_size(self, base_size):
+        p = self._pspace()
+        return base_size + sum(p[s].shape[0] for s in p if not np.all(p[s][0, :] == 1))
+
+    def _load_pspace(self, excitations):
         """Use a given P space, restarting CC(P) from scratch unless it extends the current one."""
-        current = self.cc.t3_excitations
-        extends = all(t3_excitations[s].shape[0] >= current[s].shape[0]
-                      and np.array_equal(np.asarray(t3_excitations[s])[:current[s].shape[0]], current[s])
+        current = self._pspace()
+        extends = all(excitations[s].shape[0] >= current[s].shape[0]
+                      and np.array_equal(np.asarray(excitations[s])[:current[s].shape[0]], current[s])
                       for s in current)
         if not extends:
             self.cc.T = None
-        self.cc.set_pspace(copy.deepcopy(t3_excitations))
+        self._set_pspace(copy.deepcopy(excitations))
 
     def solve(self):
         import time
 
         from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
         from ccpy.moments.ccp3_chol import calc_ccp3_2ba_with_selection
-        from ccpy.utilities.selection import add_spinorbital_triples_to_pspace
+        from ccpy.moments.ccp34 import calc_ccp34_2ba_with_selection
+        from ccpy.utilities.selection import add_spinorbital_excitations_to_pspace
 
         self._print_header()
         for key, value in self.adaptive_options.items():
             print("  ", key, "=", value)
         num_add, base_size = self._growth_plan()
-        counts = [{"aaa": 0, "aab": 0, "abb": 0, "bbb": 0} for _ in self.system.point_group_irrep_to_number]
+        counts = [{s: 0 for s in self._pspace()} for _ in self.system.point_group_irrep_to_number]
         self.ccp_energies, self.ccpq_energies, self.ccpq_errors = [], [], []
         self.extrapolated = {"ccq": [], "ccr": [], "cccf": []}
         self.pspaces, self.timings = [], []
@@ -204,7 +240,7 @@ class AdaptiveCCPQ(MethodBase):
         for imacro in range(nmacro):
             if self.fixed_pspaces is not None:
                 self._load_pspace(self.fixed_pspaces[imacro])
-            self.pspaces.append(copy.deepcopy(self.cc.t3_excitations))
+            self.pspaces.append(copy.deepcopy(self._pspace()))
             n_det = self._pspace_size(base_size)
             print(f"\n   Adaptive CC(P;Q) macroiteration {imacro}: {n_det} determinants in the P space")
 
@@ -212,6 +248,7 @@ class AdaptiveCCPQ(MethodBase):
             e_ccp = self.cc.energy()
             left = self.left.ensure_solved()
             hbar = self.cc.get_hbar(HBarCCSD)
+            hbar4 = self.cc.get_hbar(HBarCCSDLegacy) if self.target == "ccsdtq" else None
             t1 = time.perf_counter()
             # macroiterations after the first may end the calculation (stopping test, n_det_max)
             check = imacro > 0 and self.fixed_pspaces is None
@@ -228,15 +265,24 @@ class AdaptiveCCPQ(MethodBase):
             t2 = time.perf_counter()
             if converged:
                 pass  # the stochastic energy of the stopping test is final
-            elif last:
+            elif last and self.target == "ccsdt":
                 self.ccp3 = CCP3(self.left, stochastic=self.stochastic)
                 e_ccpq, error = self.ccp3.energy(), (self.ccp3.errors or {"D": 0.0})["D"]
+            elif self.target == "ccsdtq":
+                # the last macroiteration only needs the correction (minimal selection buffer)
+                e_ccpq, *selected = calc_ccp34_2ba_with_selection(
+                    hbar.T, left.L, self.cc.t3_excitations, self.cc.t4_excitations, self.cc.correlation_energy,
+                    hbar.H, self.reference.H, hbar4.H, self.system, 1 if last else num_add[imacro],
+                    use_RHF=self.options["RHF_symmetry"], min_thresh=self.adaptive_options["minimum_threshold"],
+                    buffer_factor=self.adaptive_options["buffer_factor"], central=self.central_projector)
+                e_ccpq = self._complete_ground_energy(e_ccpq)
+                error = 0.0
             else:
-                e_ccpq, selected = calc_ccp3_2ba_with_selection(
+                e_ccpq, *selected = calc_ccp3_2ba_with_selection(
                     hbar.T, left.L, self.cc.t3_excitations, self.cc.correlation_energy, hbar.H, self.reference.H,
                     self.system, num_add[imacro], use_RHF=self.options["RHF_symmetry"],
                     min_thresh=self.adaptive_options["minimum_threshold"],
-                    buffer_factor=self.adaptive_options["buffer_factor"])
+                    buffer_factor=self.adaptive_options["buffer_factor"], central=self.central_projector)
                 e_ccpq = self._complete_ground_energy(e_ccpq)
                 error = 0.0
             if check and not converged:
@@ -261,12 +307,15 @@ class AdaptiveCCPQ(MethodBase):
                     print(f"   Adaptive CC(P;Q) reached n_det_max = {self.adaptive_options['n_det_max']}.")
                 break
             if self.fixed_pspaces is None:
-                t3, counts = add_spinorbital_triples_to_pspace(selected, self.cc.t3_excitations, counts, self.system,
-                                                               self.options["RHF_symmetry"])
+                pspace = dict(self._pspace())
+                for excitation_list in selected:
+                    new, counts = add_spinorbital_excitations_to_pspace(excitation_list, pspace, counts, self.system,
+                                                                        self.options["RHF_symmetry"])
+                    pspace.update(new)
                 if self.adaptive_options["reset_amplitudes"]:
                     self.cc.T = None
                     self.left.L = None
-                self.cc.set_pspace(t3)
+                self._set_pspace(pspace)
             elif self.adaptive_options["reset_amplitudes"]:
                 self.cc.T = None
                 self.left.L = None

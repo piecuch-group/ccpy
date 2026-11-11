@@ -524,19 +524,19 @@ module crcc24_opt_loops
 
                                         deltaC = deltaC + temp/denom
 
-                                        ! [TODO]: Transform D denominator from aaab to abbb here
-                                        !denom = denom &
-                                        !+D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)+D3A_O(b,i,j)&
-                                        !+D3A_O(b,i,k)+D3A_O(b,j,k)+D3A_O(c,i,j)+D3A_O(c,i,k)&
-                                        !+D3A_O(c,j,k)-D3A_V(a,i,b)-D3A_V(a,j,b)-D3A_V(a,k,b)&
-                                        !-D3A_V(a,i,c)-D3A_V(a,j,c)-D3A_V(a,k,c)-D3A_V(b,i,c)&
-                                        !-D3A_V(b,j,c)-D3A_V(b,k,c)+D3B_O(a,i,l)+D3B_O(a,j,l)&
-                                        !+D3B_O(a,k,l)+D3B_O(b,i,l)+D3B_O(b,j,l)+D3B_O(b,k,l)&
-                                        !+D3B_O(c,i,l)+D3B_O(c,j,l)+D3B_O(c,k,l)-D3B_V(a,i,d)&
-                                        !-D3B_V(a,j,d)-D3B_V(a,k,d)-D3B_V(b,i,d)-D3B_V(b,j,d)&
-                                        !-D3B_V(b,k,d)-D3B_V(c,i,d)-D3B_V(c,j,d)-D3B_V(c,k,d)&
-                                        !+D3C_O(d,i,l)+D3C_O(d,j,l)+D3C_O(d,k,l)-D3C_V(a,l,d)&
-                                        !-D3C_V(b,l,d)-D3C_V(c,l,d)
+                                        ! spin flip of the aaab (crcc24B_ijkl) denominator: d alpha, a<b<c beta; l alpha, i<j<k beta
+                                        denom = denom &
+                                        +D3D_O(a,i,j)+D3D_O(a,i,k)+D3D_O(a,j,k)+D3D_O(b,i,j)&
+                                        +D3D_O(b,i,k)+D3D_O(b,j,k)+D3D_O(c,i,j)+D3D_O(c,i,k)&
+                                        +D3D_O(c,j,k)-D3D_V(a,i,b)-D3D_V(a,j,b)-D3D_V(a,k,b)&
+                                        -D3D_V(a,i,c)-D3D_V(a,j,c)-D3D_V(a,k,c)-D3D_V(b,i,c)&
+                                        -D3D_V(b,j,c)-D3D_V(b,k,c)+D3C_O(a,l,i)+D3C_O(a,l,j)&
+                                        +D3C_O(a,l,k)+D3C_O(b,l,i)+D3C_O(b,l,j)+D3C_O(b,l,k)&
+                                        +D3C_O(c,l,i)+D3C_O(c,l,j)+D3C_O(c,l,k)-D3C_V(d,i,a)&
+                                        -D3C_V(d,j,a)-D3C_V(d,k,a)-D3C_V(d,i,b)-D3C_V(d,j,b)&
+                                        -D3C_V(d,k,b)-D3C_V(d,i,c)-D3C_V(d,j,c)-D3C_V(d,k,c)&
+                                        +D3B_O(d,l,i)+D3B_O(d,l,j)+D3B_O(d,l,k)-D3B_V(d,l,a)&
+                                        -D3B_V(d,l,b)-D3B_V(d,l,c)
 
                                         deltaD = deltaD + temp/denom
 

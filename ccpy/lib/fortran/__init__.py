@@ -5,7 +5,6 @@ from .crcc23_gradient_loops import *
 from .cripcc_loops import *
 from .creacc_loops import *
 from .ccsdpt_loops import *
-from .crcc24_loops import *
 from .crcc24_opt_loops import *
 from .cc3_loops import *
 from .hbar_cc3 import *
@@ -34,6 +33,7 @@ from .cc_loops_t4 import *
 from .ccp3_loops import *
 from .ccp3_opt_loops import *
 from .ccp3_adaptive_loops import *
+from .ccp34_adaptive_loops import *
 from .eaccp3_loops import *
 from .ipccp3_loops import *
 from .clusteranalysis import *

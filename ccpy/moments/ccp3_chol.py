@@ -148,10 +148,21 @@ def calc_ccp3_2ba(T, L, t3_excitations, corr_energy, H, H0, system, use_RHF=Fals
 
     return Eccp3, deltap3
 
-def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2, target_irrep=None):
+def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, system, num_add, use_RHF=False, min_thresh=0.0, buffer_factor=2, target_irrep=None, central=None, return_moments=False):
     """
     Calculate the ground-state CC(P;3) correction to the CC(P) energy.
+
+    With ``central`` (a CIM central projector P in the occupied basis; RHF only), the triples
+    are ranked by their contributions to the central energy, l (P_1 + P_2 + P_3) M / (3 D),
+    instead of l M / D; the returned corrections are unchanged.
+
+    With ``return_moments``, the moment contributions of the selected triples are returned as well
+    (third value), in the order of the triples.
     """
+    if central is not None:
+        if not use_RHF:
+            raise NotImplementedError("Central-projected triples selection needs an RHF reference.")
+        from ccpy.methods.cim import occupied_derivative
     t_start = time.perf_counter()
     t_cpu_start = time.process_time()
 
@@ -173,7 +184,7 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     I2A_vvov = H.aa.vvov + np.einsum("me,abim->abie", H.a.ov, T.aa, optimize=True)
     # perform correction in-loop
     nfill = 1
-    dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
+    args_aaa = (
         moments,
         triples_list,
         nfill,
@@ -184,15 +195,25 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         H.a.oo, H.a.vv, H.aa.voov, H.aa.oooo,
         h_aa_vvvv,
         d3aaa_o, d3aaa_v,
-        num_add, min_thresh, buffer_factor,
-        )
+    )
+    if central is None:
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_2ba_with_selection_opt(
+            *args_aaa, num_add, min_thresh, buffer_factor)
+    else:
+        # occupied derivatives of the moment inputs, as in cim.crcc23_central_correction
+        dA_aaa, dB_aaa, dC_aaa, dD_aaa, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3a_2ba_with_central_selection_opt(
+            *args_aaa,
+            occupied_derivative(H.aa.vooo, central, lower=(2, 3), upper=(1,)),
+            occupied_derivative(I2A_vvov, central, lower=(2,)),
+            occupied_derivative(T.aa, central, lower=(2, 3)),
+            num_add, min_thresh, buffer_factor)
 
     #### aab correction ####
     # calculate intermediates
     I2B_ovoo = H.ab.ovoo - np.einsum("me,ecjk->mcjk", H.a.ov, T.ab, optimize=True)
     I2B_vooo = H.ab.vooo - np.einsum("me,aeik->amik", H.b.ov, T.ab, optimize=True)
     I2A_vooo = H.aa.vooo - np.einsum("me,aeij->amij", H.a.ov, T.aa, optimize=True)
-    dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
+    args_aab = (
         moments,
         triples_list,
         nfill,
@@ -208,8 +229,22 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         H.aa.voov, H.aa.oooo, h_aa_vvvv, H.ab.ovov,
         H.ab.vovo, H.ab.oooo, h_ab_vvvv, H.bb.voov,
         d3aaa_o, d3aaa_v, d3aab_o, d3aab_v, d3abb_o, d3abb_v,
-        num_add, min_thresh, buffer_factor,
     )
+    if central is None:
+        dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_2ba_with_selection_opt(
+            *args_aab, num_add, min_thresh, buffer_factor)
+    else:
+        dA_aab, dB_aab, dC_aab, dD_aab, moments, triples_list, nfill = ccp3_adaptive_loops.ccp3b_2ba_with_central_selection_opt(
+            *args_aab,
+            occupied_derivative(I2B_ovoo, central, lower=(2, 3), upper=(0,)),
+            occupied_derivative(I2B_vooo, central, lower=(2, 3), upper=(1,)),
+            occupied_derivative(I2A_vooo, central, lower=(2, 3), upper=(1,)),
+            occupied_derivative(H.ab.vvvo, central, lower=(3,)),
+            occupied_derivative(H.ab.vvov, central, lower=(2,)),
+            occupied_derivative(H.aa.vvov, central, lower=(2,)),
+            occupied_derivative(T.aa, central, lower=(2, 3)),
+            occupied_derivative(T.ab, central, lower=(2, 3)),
+            num_add, min_thresh, buffer_factor)
 
     if use_RHF:
         correction_A = 2.0 * dA_aaa + 2.0 * dA_aab
@@ -261,9 +296,8 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
         correction_D = dD_aaa + dD_aab + dD_abb + dD_bbb
 
     # Important: perform a final sort of the excitations and moments, returning the first num_add elements only
-    idx = np.argsort(np.abs(moments))
-    triples_list = triples_list[idx[::-1], :]
-    triples_list = triples_list[:num_add, :]
+    idx = np.argsort(np.abs(moments))[::-1][:num_add]
+    triples_list = triples_list[idx, :]
 
     t_end = time.perf_counter()
     t_cpu_end = time.process_time()
@@ -314,6 +348,8 @@ def calc_ccp3_2ba_with_selection(T, L, t3_excitations, corr_energy, H, H0, syste
     Eccp3 = {"A": total_energy_A, "B": total_energy_B, "C": total_energy_C, "D": total_energy_D}
     deltap3 = {"A": correction_A, "B": correction_B, "C": correction_C, "D": correction_D}
 
+    if return_moments:
+        return Eccp3["D"], triples_list, moments[idx]
     return Eccp3["D"], triples_list
 
 def get_vvvv_diagonal(H, T):

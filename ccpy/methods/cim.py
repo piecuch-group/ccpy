@@ -524,7 +524,8 @@ class CIM(MethodBase):
 
     def solve(self):
         from ccpy.methods.cc import CCBase
-        from ccpy.methods.corrections import CRCC23, AdaptiveCCPQ
+        from ccpy.methods.ccpq import AdaptiveCCPQ
+        from ccpy.methods.corrections import CRCC23
         from ccpy.methods.hbar import HBarCCSD
         from ccpy.methods.mbpt import MP2
         from ccpy.scf.rhf import RHF
@@ -634,15 +635,25 @@ class CIM(MethodBase):
                         energy = cc_central_energy(cc.T, child.H, P) + crcc23_central_correction(
                             hbar.T, left.L, hbar.H, child.H, child.system, P)[calc.variant]
                     elif s.method is AdaptiveCCPQ:
-                        # each subsystem selects its own P space (in its QCMO basis); its CC(P;Q)
-                        # energy is CC(P) plus CC(P;3)_D on the P space of the last macroiteration
+                        # each subsystem selects its own P space (in its QCMO basis), ranking the
+                        # triples (and quadruples) by their contributions to its central energy; its
+                        # CC(P;Q) energy is CC(P) plus CC(P;3)_D (and the CC(P;4)_D quadruples part
+                        # for target="ccsdtq") on the P space of the last macroiteration
                         if calc.stochastic is not None:
                             raise NotImplementedError("CIM with semi-stochastic adaptive CC(P;Q) is not supported.")
+                        calc.central_projector = P
                         calc.ensure_solved()
                         hbar = calc.cc.get_hbar(HBarCCSD)
                         energy = cc_central_energy(calc.cc.T, child.H, P) + crcc23_central_correction(
                             hbar.T, calc.left.L, hbar.H, child.H, child.system, P,
                             t3_excitations=calc.cc.t3_excitations)["D"]
+                        if calc.target == "ccsdtq":
+                            from ccpy.methods.hbar import HBarCCSDLegacy
+                            from ccpy.moments.ccp34 import calc_ccp4_with_selection
+
+                            hbar4 = calc.cc.get_hbar(HBarCCSDLegacy)
+                            energy += calc_ccp4_with_selection(hbar4.T, calc.left.L, calc.cc.t4_excitations, child.H,
+                                                               hbar4.H, child.system, use_RHF=True, central=P)[1]
                     else:
                         calc.ensure_solved()
                         energy = cc_central_energy(calc.T, child.H, P)

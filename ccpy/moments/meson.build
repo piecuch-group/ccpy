@@ -2,6 +2,7 @@ python_sources = [
 '__init__.py',
 'ccp3.py',
 'ccp3_chol.py',
+'ccp34.py',
 'ccp4.py',
 'cct3.py',
 'cct3_chol.py',

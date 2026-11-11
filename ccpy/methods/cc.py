@@ -234,6 +234,53 @@ class CCSDT_P(CCPBase):
         return super().has_analytic_gradient(**kwargs) and find_spec("ccpy.density.ccsdt_p_rdm") is not None
 
 
+class CCSDTQ_P(CCPBase):
+    """CCSDTQ(P) (CCSD plus the triples and quadruples of the P space), e.g.
+    ``CCSDTQ_P(mf, t3_excitations, t4_excitations)`` with ``t4_excitations = {"aaaa": ...,
+    "aaab": ..., "aabb": ..., "abbb": ..., "bbbb": ...}`` of rows [a, b, c, d, i, j, k, l].
+    Four-index equations; HBar and left-CC are those of CCSD (two-body approximation)."""
+    module = "ccpy.cc.ccsdtq_p"
+    order = 4
+    pspace_orders = [3, 4]
+    requires_df_port = True
+    hbar_class = HBarCCSD
+    left_class = "LeftCCSD"
+
+    def __init__(self, upstream, t3_excitations, t4_excitations, nfrozen=None, ndelete=None, **options):
+        super().__init__(upstream, t3_excitations, nfrozen, ndelete, **options)
+        self.t4_excitations = self._prepare_quadruples(t4_excitations)
+
+    def _prepare_quadruples(self, excitations):
+        excitations = {k: np.asfortranarray(np.array(v)) for k, v in excitations.items()}
+        spins = {s: s for s in ("aaaa", "aaab", "aabb", "abbb", "bbbb")}
+        self._validate_working_excitations(excitations, spins, spins)
+        if self.options["RHF_symmetry"]:
+            assert excitations["aaaa"].shape[0] == excitations["bbbb"].shape[0]
+            assert excitations["aaab"].shape[0] == excitations["abbb"].shape[0]
+            excitations["bbbb"] = excitations["aaaa"].copy()
+            # abbb excitations must be ordered as a b~<c~<d~ i j~<k~<l~
+            excitations["abbb"] = np.asfortranarray(excitations["aaab"][:, [3, 0, 1, 2, 7, 4, 5, 6]])
+        return excitations
+
+    def _pspace_sizes(self):
+        return super()._pspace_sizes() + [[self.t4_excitations[s].shape[0]
+                                           for s in ("aaaa", "aaab", "aabb", "abbb", "bbbb")]]
+
+    def set_pspace(self, t3_excitations, t4_excitations):
+        """Enlarge the P space (new excitations appended to the previous ones, as in CCPBase)."""
+        self.t4_excitations = self._prepare_quadruples(t4_excitations)
+        super().set_pspace(t3_excitations)
+        if self.T is not None:
+            self.T.extend_pspace_t4_operator(self._pspace_sizes()[1])
+
+    def _run(self, update, dT, X):
+        from ccpy.drivers.solvers import cc_jacobi
+
+        # t3_excitations and t4_excitations are reordered in place along with T
+        return cc_jacobi(update, self.T, dT, self.hamiltonian, X, self.options, self.t3_excitations,
+                         t4_excitations=self.t4_excitations)
+
+
 # ---------------------------------------------------------------------- legacy levels
 # The following methods still use four-index integrals and need DF ports.
 class CCD(CCBase):

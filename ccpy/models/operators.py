@@ -143,13 +143,19 @@ class ClusterOperator:
         self.ndim = ndim
 
     def extend_pspace_t3_operator(self, excitation_count_spincase):
-        assert len(excitation_count_spincase) == 4
-        for i, spincase in enumerate(["aaa", "aab", "abb", "bbb"]):
+        self._extend_pspace(["aaa", "aab", "abb", "bbb"], excitation_count_spincase)
+
+    def extend_pspace_t4_operator(self, excitation_count_spincase):
+        self._extend_pspace(["aaaa", "aaab", "aabb", "abbb", "bbbb"], excitation_count_spincase)
+
+    def _extend_pspace(self, spincases, excitation_count_spincase):
+        assert len(excitation_count_spincase) == len(spincases)
+        for spincase, count in zip(spincases, excitation_count_spincase):
             num_old = len(getattr(self, spincase))
-            num_extend = excitation_count_spincase[i] - num_old
+            num_extend = count - num_old
             if num_extend > 0:
                 setattr(self, spincase, np.hstack((getattr(self, spincase), np.zeros(num_extend, dtype=np.float64, order="F"))))
-                self.dimensions[i + 5] = (num_old + num_extend,)
+                self.dimensions[self.spin_cases.index(spincase)] = (num_old + num_extend,)
                 self.ndim += num_extend
 
     def flatten(self):

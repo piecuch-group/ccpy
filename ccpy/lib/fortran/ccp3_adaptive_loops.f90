@@ -1507,4 +1507,556 @@ module ccp3_adaptive_loops
                         end do; end do; end do;
               end subroutine ccp3d_ijk_with_selection_opt
 
+
+              ! CIM: copies of the two RHF selection kernels above that rank each Q-space triple by
+              ! its contribution to the central (CIM-projected) energy, l (P_1 + P_2 + P_3) M / (3 D),
+              ! with the moment inputs' occupied derivatives (*_P) supplied by the caller; the
+              ! returned corrections are the subsystem's full ones, as in the originals.
+              subroutine ccp3a_2ba_with_central_selection_opt(deltaA,deltaB,deltaC,deltaD,&
+                              moments,&
+                              triples_list,&
+                              nfill,&
+                              t3a_excits,&
+                              t2a,l1a,l2a,&
+                              H2A_vooo,I2A_vvov,vA_oovv,H1A_ov,H2A_vovv,H2A_ooov,fA_oo,fA_vv,&
+                              H1A_oo,H1A_vv,&
+                              H2A_voov,H2A_oooo,H2A_vvvv,&
+                              D3A_O,D3A_v,&
+                              H2A_vooo_P,I2A_vvov_P,t2a_P,&
+                              num_add,min_thresh,buf_fact,&
+                              n3aaa,noa,nua)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: noa, nua, n3aaa, buf_fact, num_add
+                        integer, intent(in) :: t3a_excits(6,n3aaa)
+                        real(kind=8), intent(in) :: fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                        H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
+                        H2A_vvvv(1:nua,1:nua),&
+                        D3A_O(1:nua,1:noa,1:noa),&
+                        D3A_V(1:nua,1:noa,1:nua),&
+                        H2A_vooo(nua,noa,noa,noa),I2A_vvov(nua,nua,noa,nua),t2a(nua,nua,noa,noa),&
+                        l1a(nua,noa),l2a(nua,nua,noa,noa),vA_oovv(noa,noa,nua,nua),&
+                        H1A_ov(noa,nua),H2A_vovv(nua,noa,nua,nua),H2A_ooov(noa,noa,noa,nua)
+                        real(kind=8), intent(in) :: H2A_vooo_P(nua,noa,noa,noa),I2A_vvov_P(nua,nua,noa,nua),t2a_P(nua,nua,noa,noa)
+                        real(kind=8), intent(in) :: min_thresh
+
+                        real(kind=8), intent(inout) :: moments(buf_fact*num_add)
+                        !f2py intent(in,out) :: moments(0:buf_fact*num_add-1)
+                        integer, intent(inout) :: triples_list(buf_fact*num_add,6)
+                        !f2py intent(in,out) :: triples_list(0:buf_fact*num_add-1,0:5)
+                        integer, intent(inout) :: nfill
+                        !f2py intent(in,out) :: nfill
+
+                        integer :: i, j, k, a, b, c, nua2
+                        real(kind=8) :: D, temp1, temp2, temp3, LM, minval, thresh
+                        real(kind=8), allocatable :: X3A(:,:,:), L3A(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
+                        ! Low-memory looping variables
+                        logical(kind=1), allocatable :: qspace(:,:,:)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3aaa)
+                        ! reordered arrays for DGEMMs
+                        real(kind=8) :: I2A_vvov_1243(nua,nua,nua,noa), H2A_vovv_4312(nua,nua,nua,noa), H2A_ooov_4312(nua,noa,noa,noa)
+
+                        real(kind=8) :: I2A_vvov_P_1243(nua,nua,nua,noa), tempP, rank
+                        real(kind=8), allocatable :: X3P(:,:,:)
+
+                        ! reorder t3a into (i,j,k) order
+                        excits_buff(:,:) = t3a_excits(:,:)
+                        nloc = noa*(noa-1)*(noa-2)/6
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(noa,noa,noa))
+                        call get_index_table(idx_table, (/1,noa-2/), (/-1,noa-1/), (/-1,noa/), noa, noa, noa)
+                        call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, noa, nloc, n3aaa)
+                        ! reorder arrays for DGEMMs
+                        call reorder_stripe(4, shape(I2A_vvov), size(I2A_vvov), '1243', I2A_vvov, I2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+
+                        call reorder_stripe(4, shape(I2A_vvov_P), size(I2A_vvov_P), '1243', I2A_vvov_P, I2A_vvov_P_1243)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+
+                        minval = 0.0d0
+                        nua2 = nua*nua
+                        nblock = noa*(noa-1)*(noa-2)/6
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, noa
+                            do j = i+1, noa
+                                do k = j+1, noa
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nua*(nua-1)*(nua-2)/6
+                        ! (i,j,k) blocks in parallel; the selected triples of each block are merged
+                        ! into the shared buffer in a critical section
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3P,tempP,rank,X3A,L3A,qspace,cand_m,cand_t)
+                        allocate(X3A(nua,nua,nua), X3P(nua,nua,nua), L3A(nua,nua,nua), qspace(nua,nua,nua))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                   i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                   !$omp atomic read
+                                   thresh = minval
+                                   ncand = 0
+
+                                   ! Construct Q space for block (i,j,k)
+                                   qspace = .true.
+                                   idx = idx_table(i,j,k)
+                                   if (idx/=0) then
+                                      do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                         a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                         qspace(a,b,c) = .false.
+                                      end do
+                                   end if
+
+                                   X3A = 0.0d0
+                                   L3A = 0.0d0
+                                   !!!!! MM(2,3)A !!!!!
+                                   ! Diagram 1: -A(k/ij)A(a/bc) I2A_vooo(a,m,i,j)*t2a(b,c,m,k)
+                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_vooo(:,:,i,j),nua,t2a(:,:,:,k),nua2,1.0d0,X3A,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo(:,:,k,j),nua,t2a(:,:,:,i),nua2,1.0d0,X3A,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo(:,:,i,k),nua,t2a(:,:,:,j),nua2,1.0d0,X3A,nua)
+                                   ! Diagram 2: A(i/jk)A(c/ab) I2A_vvov(a,b,i,e)*t2a(e,c,j,k)
+                                   call dgemm('n','n',nua2,nua,nua,0.5d0,I2A_vvov_1243(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,X3A,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,X3A,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3A,nua2)
+                                                                      ! central moment (P_1 + P_2 + P_3) M: occupied derivatives of the H and T2 factors
+                                   X3P = 0.0d0
+!!!!! MM(2,3)A !!!!!
+                                   ! Diagram 1: -A(k/ij)A(a/bc) I2A_vooo(a,m,i,j)*t2a(b,c,m,k)
+                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_vooo_P(:,:,i,j),nua,t2a(:,:,:,k),nua2,1.0d0,X3P,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo_P(:,:,k,j),nua,t2a(:,:,:,i),nua2,1.0d0,X3P,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo_P(:,:,i,k),nua,t2a(:,:,:,j),nua2,1.0d0,X3P,nua)
+                                   ! Diagram 2: A(i/jk)A(c/ab) I2A_vvov(a,b,i,e)*t2a(e,c,j,k)
+                                   call dgemm('n','n',nua2,nua,nua,0.5d0,I2A_vvov_P_1243(:,:,:,i),nua2,t2a(:,:,j,k),nua,1.0d0,X3P,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_P_1243(:,:,:,j),nua2,t2a(:,:,i,k),nua,1.0d0,X3P,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_P_1243(:,:,:,k),nua2,t2a(:,:,j,i),nua,1.0d0,X3P,nua2)
+                                   !!!!! MM(2,3)A !!!!!
+                                   ! Diagram 1: -A(k/ij)A(a/bc) I2A_vooo(a,m,i,j)*t2a_P(b,c,m,k)
+                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_vooo(:,:,i,j),nua,t2a_P(:,:,:,k),nua2,1.0d0,X3P,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo(:,:,k,j),nua,t2a_P(:,:,:,i),nua2,1.0d0,X3P,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_vooo(:,:,i,k),nua,t2a_P(:,:,:,j),nua2,1.0d0,X3P,nua)
+                                   ! Diagram 2: A(i/jk)A(c/ab) I2A_vvov(a,b,i,e)*t2a_P(e,c,j,k)
+                                   call dgemm('n','n',nua2,nua,nua,0.5d0,I2A_vvov_1243(:,:,:,i),nua2,t2a_P(:,:,j,k),nua,1.0d0,X3P,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,j),nua2,t2a_P(:,:,i,k),nua,1.0d0,X3P,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,I2A_vvov_1243(:,:,:,k),nua2,t2a_P(:,:,j,i),nua,1.0d0,X3P,nua2)
+                                   !!!!! L3A !!!!!
+                                   ! Diagram 1: A(i/jk)A(c/ab) H2A_vovv(e,i,b,a)*l2a(e,c,j,k)
+                                   call dgemm('n','n',nua2,nua,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2a(:,:,j,k),nua,1.0d0,L3A,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2a(:,:,i,k),nua,1.0d0,L3A,nua2)
+                                   call dgemm('n','n',nua2,nua,nua,-0.5d0,H2A_vovv_4312(:,:,:,k),nua2,l2a(:,:,j,i),nua,1.0d0,L3A,nua2)
+                                   ! Diagram 2: -A(k/ij)A(a/bc) H2A_ooov(j,i,m,a)*l2a(b,c,m,k)-> a,m,j,i * (b,c,m,k)'
+                                   call dgemm('n','t',nua,nua2,noa,-0.5d0,H2A_ooov_4312(:,:,j,i),nua,l2a(:,:,:,k),nua2,1.0d0,L3A,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_ooov_4312(:,:,k,i),nua,l2a(:,:,:,j),nua2,1.0d0,L3A,nua)
+                                   call dgemm('n','t',nua,nua2,noa,0.5d0,H2A_ooov_4312(:,:,j,k),nua,l2a(:,:,:,i),nua2,1.0d0,L3A,nua)
+
+
+                                    do a = 1, nua
+                                        do b = a+1, nua
+                                            do c = b+1, nua
+
+                                                if (.not. qspace(a,b,c)) cycle
+
+                                                temp1 = X3A(a,b,c) + X3A(b,c,a) + X3A(c,a,b)&
+                                                      - X3A(a,c,b) - X3A(b,a,c) - X3A(c,b,a)
+
+                                                temp2 = L3A(a,b,c) + L3A(b,c,a) + L3A(c,a,b)&
+                                                      - L3A(a,c,b) - L3A(b,a,c) - L3A(c,b,a)
+
+                                                temp3 =&
+                                                l1a(c,k)*vA_oovv(i,j,a,b)&
+                                                -l1a(a,k)*vA_oovv(i,j,c,b)&
+                                                -l1a(b,k)*vA_oovv(i,j,a,c)&
+                                                -l1a(c,i)*vA_oovv(k,j,a,b)&
+                                                -l1a(c,j)*vA_oovv(i,k,a,b)&
+                                                +l1a(a,i)*vA_oovv(k,j,c,b)&
+                                                +l1a(b,i)*vA_oovv(k,j,a,c)&
+                                                +l1a(a,j)*vA_oovv(i,k,c,b)&
+                                                +l1a(b,j)*vA_oovv(i,k,a,c)&
+                                                +H1A_ov(k,c)*l2a(a,b,i,j)&
+                                                -H1A_ov(k,a)*l2a(c,b,i,j)&
+                                                -H1A_ov(k,b)*l2a(a,c,i,j)&
+                                                -H1A_ov(i,c)*l2a(a,b,k,j)&
+                                                -H1A_ov(j,c)*l2a(a,b,i,k)&
+                                                +H1A_ov(i,a)*l2a(c,b,k,j)&
+                                                +H1A_ov(i,b)*l2a(a,c,k,j)&
+                                                +H1A_ov(j,a)*l2a(c,b,i,k)&
+                                                +H1A_ov(j,b)*l2a(a,c,i,k)
+
+                                                LM = temp1*(temp2+temp3)
+
+                                                D = fA_oo(i,i) + fA_oo(j,j) + fA_oo(k,k)&
+                                                  - fA_vv(a,a) - fA_vv(b,b) - fA_vv(c,c)
+
+                                                deltaA = deltaA + LM/D
+
+                                                D = H1A_oo(i,i) + H1A_oo(j,j) + H1A_oo(k,k)&
+                                                  - H1A_vv(a,a) - H1A_vv(b,b) - H1A_vv(c,c)
+
+                                                deltaB = deltaB + LM/D
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a) - H2A_voov(b,i,i,b) - H2A_voov(c,i,i,c)&
+                                                -H2A_voov(a,j,j,a) - H2A_voov(b,j,j,b) - H2A_voov(c,j,j,c)&
+                                                -H2A_voov(a,k,k,a) - H2A_voov(b,k,k,b) - H2A_voov(c,k,k,c)&
+                                                -H2A_oooo(j,i,j,i) - H2A_oooo(k,i,k,i) - H2A_oooo(k,j,k,j)&
+                                                -H2A_vvvv(b,a) - H2A_vvvv(c,a) - H2A_vvvv(c,b)
+
+                                                deltaC = deltaC + LM/D
+
+                                                D = D &
+                                                +D3A_O(a,i,j)+D3A_O(a,i,k)+D3A_O(a,j,k)&
+                                                +D3A_O(b,i,j)+D3A_O(b,i,k)+D3A_O(b,j,k)&
+                                                +D3A_O(c,i,j)+D3A_O(c,i,k)+D3A_O(c,j,k)&
+                                                -D3A_V(a,i,b)-D3A_V(a,i,c)-D3A_V(b,i,c)&
+                                                -D3A_V(a,j,b)-D3A_V(a,j,c)-D3A_V(b,j,c)&
+                                                -D3A_V(a,k,b)-D3A_V(a,k,c)-D3A_V(b,k,c)
+
+                                                deltaD = deltaD + LM/D
+
+                                                ! central part of the contribution, the CIM ranking quantity
+                                                tempP = X3P(a,b,c) + X3P(b,c,a) + X3P(c,a,b) - X3P(a,c,b) - X3P(b,a,c) - X3P(c,b,a)
+                                                rank = tempP*(temp2+temp3)/(3.0d0*D)
+                                                if (abs(rank) <= min_thresh) cycle
+
+                                                if (abs(rank) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = rank
+                                                    cand_t(:,ncand) = (/2*a-1, 2*b-1, 2*c-1, 2*i-1, 2*j-1, 2*k-1/)
+                                                end if
+                                            end do
+                                        end do
+                                    end do
+                                   !$omp critical (ccp3_selection_buffer)
+                                   thresh = minval
+                                   call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                       cand_m, cand_t, ncand, ncand_max)
+                                   !$omp atomic write
+                                   minval = thresh
+                                   !$omp end critical (ccp3_selection_buffer)
+                        end do
+                        !$omp end do
+                        deallocate(X3A, X3P, L3A, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
+
+              end subroutine ccp3a_2ba_with_central_selection_opt
+
+              subroutine ccp3b_2ba_with_central_selection_opt(deltaA,deltaB,deltaC,deltaD,&
+                              moments,&
+                              triples_list,&
+                              nfill,&
+                              t3b_excits,&
+                              t2a,t2b,l1a,l1b,l2a,l2b,&
+                              I2B_ovoo,I2B_vooo,I2A_vooo,&
+                              H2B_vvvo,H2B_vvov,H2A_vvov,&
+                              H2B_vovv,H2B_ovvv,H2A_vovv,&
+                              H2B_ooov,H2B_oovo,H2A_ooov,&
+                              H1A_ov,H1B_ov,&
+                              vA_oovv,vB_oovv,&
+                              fA_oo,fA_vv,fB_oo,fB_vv,&
+                              H1A_oo,H1A_vv,H1B_oo,H1B_vv,&
+                              H2A_voov,H2A_oooo,H2A_vvvv,&
+                              H2B_ovov,H2B_vovo,&
+                              H2B_oooo,H2B_vvvv,&
+                              H2C_voov,&
+                              D3A_O,D3A_V,D3B_O,D3B_V,D3C_O,D3C_V,&
+                              I2B_ovoo_P,I2B_vooo_P,I2A_vooo_P,H2B_vvvo_P,H2B_vvov_P,H2A_vvov_P,t2a_P,t2b_P,&
+                              num_add,min_thresh,buf_fact,&
+                              n3aab,noa,nua,nob,nub)
+
+                        real(kind=8), intent(out) :: deltaA, deltaB, deltaC, deltaD
+                        integer, intent(in) :: noa, nua, nob, nub, n3aab, num_add, buf_fact
+                        integer, intent(in) :: t3b_excits(6,n3aab)
+                        real(kind=8), intent(in) :: t2a(nua,nua,noa,noa),t2b(nua,nub,noa,nob),&
+                        l1a(nua,noa),l1b(nub,nob),&
+                        l2a(nua,nua,noa,noa),l2b(nua,nub,noa,nob),&
+                        I2B_ovoo(noa,nub,noa,nob),I2B_vooo(nua,nob,noa,nob),&
+                        I2A_vooo(nua,noa,noa,noa),H2B_vvvo(nua,nub,nua,nob),&
+                        H2B_vvov(nua,nub,noa,nub),H2A_vvov(nua,nua,noa,nua),&
+                        H2B_vovv(nua,nob,nua,nub),H2B_ovvv(noa,nub,nua,nub),&
+                        H2A_vovv(nua,noa,nua,nua),H2B_ooov(noa,nob,noa,nub),&
+                        H2B_oovo(noa,nob,nua,nob),H2A_ooov(noa,noa,noa,nua),&
+                        H1A_ov(noa,nua),H1B_ov(nob,nub),&
+                        vA_oovv(noa,noa,nua,nua),vB_oovv(noa,nob,nua,nub),&
+                        fA_oo(1:noa,1:noa),fA_vv(1:nua,1:nua),&
+                        fB_oo(1:nob,1:nob),fB_vv(1:nub,1:nub),&
+                        H1A_oo(1:noa,1:noa),H1A_vv(1:nua,1:nua),&
+                        H1B_oo(1:nob,1:nob),H1B_vv(1:nub,1:nub),&
+                        H2A_voov(1:nua,1:noa,1:noa,1:nua),&
+                        H2A_oooo(1:noa,1:noa,1:noa,1:noa),&
+                        H2A_vvvv(1:nua,1:nua),&
+                        H2B_ovov(1:noa,1:nub,1:noa,1:nub),&
+                        H2B_vovo(1:nua,1:nob,1:nua,1:nob),&
+                        H2B_oooo(1:noa,1:nob,1:noa,1:nob),&
+                        H2B_vvvv(1:nua,1:nub),&
+                        H2C_voov(1:nub,1:nob,1:nob,1:nub),&
+                        D3A_O(1:nua,1:noa,1:noa),&
+                        D3A_V(1:nua,1:noa,1:nua),&
+                        D3B_O(1:nua,1:noa,1:nob),&
+                        D3B_V(1:nua,1:noa,1:nub),&
+                        D3C_O(1:nub,1:noa,1:nob),&
+                        D3C_V(1:nua,1:nob,1:nub)
+                        real(kind=8), intent(in) :: I2B_ovoo_P(noa,nub,noa,nob),I2B_vooo_P(nua,nob,noa,nob),I2A_vooo_P(nua,noa,noa,noa),&
+                        H2B_vvvo_P(nua,nub,nua,nob),H2B_vvov_P(nua,nub,noa,nub),H2A_vvov_P(nua,nua,noa,nua),&
+                        t2a_P(nua,nua,noa,noa),t2b_P(nua,nub,noa,nob)
+                        real(kind=8), intent(in) :: min_thresh
+
+                        real(kind=8), intent(inout) :: moments(buf_fact*num_add)
+                        !f2py intent(in,out) :: moments(0:buf_fact*num_add-1)
+                        integer, intent(inout) :: triples_list(buf_fact*num_add,6)
+                        !f2py intent(in,out) :: triples_list(0:buf_fact*num_add-1,0:5)
+                        integer, intent(inout) :: nfill
+                        !f2py intent(in,out) :: nfill
+
+                        integer :: i, j, k, a, b, c, nuanub, nua2
+                        real(kind=8) :: D, temp1, temp2, temp3, LM, minval, thresh
+                        real(kind=8), allocatable :: X3B(:,:,:), L3B(:,:,:), cand_m(:)
+                        integer, allocatable :: ijk(:,:), cand_t(:,:)
+                        integer :: nblock, iblk, ncand, ncand_max
+                        ! Low-memory looping variables
+                        logical(kind=1), allocatable :: qspace(:,:,:)
+                        integer :: nloc, idet, idx
+                        integer, allocatable :: loc_arr(:,:), idx_table(:,:,:)
+                        integer :: excits_buff(6,n3aab)
+                        ! arrays for reordering
+                        real(kind=8) :: t2a_1243(nua,nua,noa,noa), H2B_vvov_1243(nua,nub,nub,noa),&
+                            t2b_1243(nua,nub,nob,noa), H2A_vvov_1243(nua,nua,nua,noa),&
+                            H2B_vovv_1342(nua,nua,nub,nob), H2A_vovv_4312(nua,nua,nua,noa),&
+                            H2B_ovvv_2341(nub,nua,nub,noa), H2B_ooov_3412(noa,nub,noa,nob),&
+                            H2A_ooov_4312(nua,noa,noa,noa), H2B_oovo_3412(nua,nob,noa,nob),&
+                            l2b_1243(nua,nub,nob,noa)
+
+                        real(kind=8) :: H2B_vvov_P_1243(nua,nub,nub,noa), t2b_P_1243(nua,nub,nob,noa), H2A_vvov_P_1243(nua,nua,nua,noa), tempP, rank
+                        real(kind=8), allocatable :: X3P(:,:,:)
+
+                        ! reorder t3b into (i,j,k) order
+                        excits_buff(:,:) = t3b_excits(:,:)
+                        nloc = noa*(noa-1)/2*nob
+                        allocate(loc_arr(2,nloc))
+                        allocate(idx_table(noa,noa,nob))
+                        call get_index_table(idx_table, (/1,noa-1/), (/-1,noa/), (/1,nob/), noa, noa, nob)
+                        call sort3(excits_buff, loc_arr, idx_table, (/4,5,6/), noa, noa, nob, nloc, n3aab)
+                        ! reorder arrays for DGEMMs
+                        call reorder_stripe(4, shape(t2a), size(t2a), '1243', t2a, t2a_1243)
+                        call reorder_stripe(4, shape(H2B_vvov), size(H2B_vvov), '1243', H2B_vvov, H2B_vvov_1243)
+                        call reorder_stripe(4, shape(t2b), size(t2b), '1243', t2b, t2b_1243)
+                        call reorder_stripe(4, shape(H2A_vvov), size(H2A_vvov), '1243', H2A_vvov, H2A_vvov_1243)
+                        call reorder_stripe(4, shape(H2B_vovv), size(H2B_vovv), '1342', H2B_vovv, H2B_vovv_1342)
+                        call reorder_stripe(4, shape(H2A_vovv), size(H2A_vovv), '4312', H2A_vovv, H2A_vovv_4312)
+                        call reorder_stripe(4, shape(H2B_ovvv), size(H2B_ovvv), '2341', H2B_ovvv, H2B_ovvv_2341)
+                        call reorder_stripe(4, shape(H2B_ooov), size(H2B_ooov), '3412', H2B_ooov, H2B_ooov_3412)
+                        call reorder_stripe(4, shape(H2A_ooov), size(H2A_ooov), '4312', H2A_ooov, H2A_ooov_4312)
+                        call reorder_stripe(4, shape(H2B_oovo), size(H2B_oovo), '3412', H2B_oovo, H2B_oovo_3412)
+                        call reorder_stripe(4, shape(l2b), size(l2b), '1243', l2b, l2b_1243)
+
+                        call reorder_stripe(4, shape(H2B_vvov_P), size(H2B_vvov_P), '1243', H2B_vvov_P, H2B_vvov_P_1243)
+                        call reorder_stripe(4, shape(t2b_P), size(t2b_P), '1243', t2b_P, t2b_P_1243)
+                        call reorder_stripe(4, shape(H2A_vvov_P), size(H2A_vvov_P), '1243', H2A_vvov_P, H2A_vvov_P_1243)
+
+                        deltaA = 0.0d0
+                        deltaB = 0.0d0
+                        deltaC = 0.0d0
+                        deltaD = 0.0d0
+
+                        minval = 0.0d0
+                        nuanub = nua*nub
+                        nua2 = nua*nua
+                        nblock = noa*(noa-1)/2*nob
+                        allocate(ijk(3,nblock))
+                        nblock = 0
+                        do i = 1, noa
+                            do j = i+1, noa
+                                do k = 1, nob
+                                    nblock = nblock + 1
+                                    ijk(:,nblock) = (/i,j,k/)
+                                end do
+                            end do
+                        end do
+                        ncand_max = nua*(nua-1)/2*nub
+                        !$omp parallel default(shared) private(iblk,i,j,k,a,b,c,idet,idx,D,temp1,temp2,temp3,LM,&
+                        !$omp thresh,ncand,X3P,tempP,rank,X3B,L3B,qspace,cand_m,cand_t)
+                        allocate(X3B(nua,nua,nub), X3P(nua,nua,nub), L3B(nua,nua,nub), qspace(nua,nua,nub))
+                        allocate(cand_m(ncand_max), cand_t(6,ncand_max))
+                        !$omp do schedule(dynamic) reduction(+:deltaA,deltaB,deltaC,deltaD)
+                        do iblk = 1, nblock
+                                    i = ijk(1,iblk); j = ijk(2,iblk); k = ijk(3,iblk);
+                                    !$omp atomic read
+                                    thresh = minval
+                                    ncand = 0
+
+                                    ! Construct Q space for block (i,j,k)
+                                    qspace = .true.
+                                    idx = idx_table(i,j,k)
+                                    if (idx/=0) then
+                                       do idet = loc_arr(1,idx), loc_arr(2,idx)
+                                          a = excits_buff(1,idet); b = excits_buff(2,idet); c = excits_buff(3,idet);
+                                          qspace(a,b,c) = .false.
+                                       end do
+                                    end if
+
+                                    X3B = 0.0d0
+                                    L3B = 0.0d0
+                                    !!!!! MM(2,3)B !!!!!
+                                    ! Diagram 1: A(ab) H2B(bcek)*t2a(aeij)
+                                    call dgemm('n','t',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,H2B_vvvo(:,:,:,k),nuanub,1.0d0,X3B,nua)
+                                    ! Diagram 2: -A(ij) I2B(mcjk)*t2a(abim)
+                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,I2B_ovoo(:,:,j,k),noa,1.0d0,X3B,nua2)
+                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,I2B_ovoo(:,:,i,k),noa,1.0d0,X3B,nua2)
+                                    ! Diagram 3: A(ab)A(ij) H2B(acie)*t2b(bejk) -> A(ab)A(ij) t2b(aeik)*H2B(bcje)
+                                    call dgemm('n','t',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,H2B_vvov_1243(:,:,:,j),nuanub,1.0d0,X3B,nua)
+                                    call dgemm('n','t',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,H2B_vvov_1243(:,:,:,i),nuanub,1.0d0,X3B,nua)
+                                    ! Diagram 4: -A(ab)A(ij) I2B(amik)*t2b(bcjm)
+                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,I2B_vooo(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,X3B,nua)
+                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,I2B_vooo(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,X3B,nua)
+                                    ! Diagram 5: A(ij) H2A(abie)*t2b(ecjk)
+                                    call dgemm('n','n',nua2,nub,nua,0.5d0,H2A_vvov_1243(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,X3B,nua2)
+                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,X3B,nua2)
+                                    ! Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
+                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3B,nua)
+                                                                       ! central moment (P_1 + P_2 + P_3) M: occupied derivatives of the H and T2 factors
+                                   X3P = 0.0d0
+!!!!! MM(2,3)B !!!!!
+                                    ! Diagram 1: A(ab) H2B(bcek)*t2a(aeij)
+                                    call dgemm('n','t',nua,nuanub,nua,1.0d0,t2a(:,:,i,j),nua,H2B_vvvo_P(:,:,:,k),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 2: -A(ij) I2B(mcjk)*t2a(abim)
+                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a(:,:,:,i),nua2,I2B_ovoo_P(:,:,j,k),noa,1.0d0,X3P,nua2)
+                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a(:,:,:,j),nua2,I2B_ovoo_P(:,:,i,k),noa,1.0d0,X3P,nua2)
+                                    ! Diagram 3: A(ab)A(ij) H2B(acie)*t2b(bejk) -> A(ab)A(ij) t2b(aeik)*H2B(bcje)
+                                    call dgemm('n','t',nua,nuanub,nub,1.0d0,t2b(:,:,i,k),nua,H2B_vvov_P_1243(:,:,:,j),nuanub,1.0d0,X3P,nua)
+                                    call dgemm('n','t',nua,nuanub,nub,-1.0d0,t2b(:,:,j,k),nua,H2B_vvov_P_1243(:,:,:,i),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 4: -A(ab)A(ij) I2B(amik)*t2b(bcjm)
+                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,I2B_vooo_P(:,:,i,k),nua,t2b_1243(:,:,:,j),nuanub,1.0d0,X3P,nua)
+                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,I2B_vooo_P(:,:,j,k),nua,t2b_1243(:,:,:,i),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 5: A(ij) H2A(abie)*t2b(ecjk)
+                                    call dgemm('n','n',nua2,nub,nua,0.5d0,H2A_vvov_P_1243(:,:,:,i),nua2,t2b(:,:,j,k),nua,1.0d0,X3P,nua2)
+                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,H2A_vvov_P_1243(:,:,:,j),nua2,t2b(:,:,i,k),nua,1.0d0,X3P,nua2)
+                                    ! Diagram 6: -A(ab) I2A(amij)*t2b(bcmk)
+                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo_P(:,:,i,j),nua,t2b(:,:,:,k),nuanub,1.0d0,X3P,nua)
+                                    !!!!! MM(2,3)B !!!!!
+                                    ! Diagram 1: A(ab) H2B(bcek)*t2a_P(aeij)
+                                    call dgemm('n','t',nua,nuanub,nua,1.0d0,t2a_P(:,:,i,j),nua,H2B_vvvo(:,:,:,k),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 2: -A(ij) I2B(mcjk)*t2a_P(abim)
+                                    call dgemm('n','n',nua2,nub,noa,0.5d0,t2a_P(:,:,:,i),nua2,I2B_ovoo(:,:,j,k),noa,1.0d0,X3P,nua2)
+                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,t2a_P(:,:,:,j),nua2,I2B_ovoo(:,:,i,k),noa,1.0d0,X3P,nua2)
+                                    ! Diagram 3: A(ab)A(ij) H2B(acie)*t2b_P(bejk) -> A(ab)A(ij) t2b_P(aeik)*H2B(bcje)
+                                    call dgemm('n','t',nua,nuanub,nub,1.0d0,t2b_P(:,:,i,k),nua,H2B_vvov_1243(:,:,:,j),nuanub,1.0d0,X3P,nua)
+                                    call dgemm('n','t',nua,nuanub,nub,-1.0d0,t2b_P(:,:,j,k),nua,H2B_vvov_1243(:,:,:,i),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 4: -A(ab)A(ij) I2B(amik)*t2b_P(bcjm)
+                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,I2B_vooo(:,:,i,k),nua,t2b_P_1243(:,:,:,j),nuanub,1.0d0,X3P,nua)
+                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,I2B_vooo(:,:,j,k),nua,t2b_P_1243(:,:,:,i),nuanub,1.0d0,X3P,nua)
+                                    ! Diagram 5: A(ij) H2A(abie)*t2b_P(ecjk)
+                                    call dgemm('n','n',nua2,nub,nua,0.5d0,H2A_vvov_1243(:,:,:,i),nua2,t2b_P(:,:,j,k),nua,1.0d0,X3P,nua2)
+                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,H2A_vvov_1243(:,:,:,j),nua2,t2b_P(:,:,i,k),nua,1.0d0,X3P,nua2)
+                                    ! Diagram 6: -A(ab) I2A(amij)*t2b_P(bcmk)
+                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,I2A_vooo(:,:,i,j),nua,t2b_P(:,:,:,k),nuanub,1.0d0,X3P,nua)
+                                    !!!!! L3B !!!!!
+                                    ! Diagram 1: A(ab) H2B(ekbc)*l2a(aeij)
+                                    call dgemm('n','n',nua,nuanub,nua,1.0d0,l2a(:,:,i,j),nua,H2B_vovv_1342(:,:,:,k),nua,1.0d0,L3B,nua)
+                                    ! Diagram 2: A(ij) H2A(eiba)*l2b(ecjk)
+                                    call dgemm('n','n',nua2,nub,nua,0.5d0,H2A_vovv_4312(:,:,:,i),nua2,l2b(:,:,j,k),nua,1.0d0,L3B,nua2)
+                                    call dgemm('n','n',nua2,nub,nua,-0.5d0,H2A_vovv_4312(:,:,:,j),nua2,l2b(:,:,i,k),nua,1.0d0,L3B,nua2)
+                                    ! Diagram 3: A(ij)A(ab) H2B(ieac)*l2b(bejk) -> l2b(aeik)*H2B(jebc)
+                                    call dgemm('n','n',nua,nuanub,nub,1.0d0,l2b(:,:,i,k),nua,H2B_ovvv_2341(:,:,:,j),nub,1.0d0,L3B,nua)
+                                    call dgemm('n','n',nua,nuanub,nub,-1.0d0,l2b(:,:,j,k),nua,H2B_ovvv_2341(:,:,:,i),nub,1.0d0,L3B,nua)
+                                    ! Diagram 4: -A(ij) H2B(jkmc)*l2a(abim) -> +A(ij) H2B(jkmc)*l2a(abmi)
+                                    call dgemm('n','n',nua2,nub,noa,0.5d0,l2a(:,:,:,i),nua2,H2B_ooov_3412(:,:,j,k),noa,1.0d0,L3B,nua2)
+                                    call dgemm('n','n',nua2,nub,noa,-0.5d0,l2a(:,:,:,j),nua2,H2B_ooov_3412(:,:,i,k),noa,1.0d0,L3B,nua2)
+                                    ! Diagram 5: -A(ab) H2A(jima)*l2b(bcmk)
+                                    call dgemm('n','t',nua,nuanub,noa,-1.0d0,H2A_ooov_4312(:,:,j,i),nua,l2b(:,:,:,k),nuanub,1.0d0,L3B,nua)
+                                    ! Diagram 6: -A(ij)A(ab) H2B(ikam)*l2b(bcjm)
+                                    call dgemm('n','t',nua,nuanub,nob,-1.0d0,H2B_oovo_3412(:,:,i,k),nua,l2b_1243(:,:,:,j),nuanub,1.0d0,L3B,nua)
+                                    call dgemm('n','t',nua,nuanub,nob,1.0d0,H2B_oovo_3412(:,:,j,k),nua,l2b_1243(:,:,:,i),nuanub,1.0d0,L3B,nua)
+
+                                    do a = 1, nua
+                                        do b = a+1, nua
+                                            do c = 1, nub
+
+                                                if (.not. qspace(a,b,c)) cycle
+
+                                                temp1 = X3B(a,b,c) - X3B(b,a,c)
+                                                temp2 = L3B(a,b,c) - L3B(b,a,c)
+                                                temp3 = l1a(a,i)*vB_oovv(j,k,b,c)&
+                                                       -l1a(a,j)*vB_oovv(i,k,b,c)&
+                                                       -l1a(b,i)*vB_oovv(j,k,a,c)&
+                                                       +l1a(b,j)*vB_oovv(i,k,a,c)&
+                                                       +l1b(c,k)*vA_oovv(i,j,a,b)&
+                                                       +l2b(b,c,j,k)*H1A_ov(i,a)&
+                                                       -l2b(b,c,i,k)*H1A_ov(j,a)&
+                                                       -l2b(a,c,j,k)*H1A_ov(i,b)&
+                                                       +l2b(a,c,i,k)*H1A_ov(j,b)&
+                                                       +l2a(a,b,i,j)*H1B_ov(k,c)
+
+                                                LM = temp1*(temp2+temp3)
+
+                                                D = fA_oo(i,i) + fA_oo(j,j) + fB_oo(k,k)&
+                                                - fA_vv(a,a) - fA_vv(b,b) - fB_vv(c,c)
+
+                                                deltaA = deltaA + LM/D
+
+                                                D = H1A_oo(i,i) + H1A_oo(j,j) + H1B_oo(k,k)&
+                                                - H1A_vv(a,a) - H1A_vv(b,b) - H1B_vv(c,c)
+
+                                                deltaB = deltaB + LM/D
+
+                                                D = D &
+                                                -H2A_voov(a,i,i,a)-H2A_voov(b,i,i,b)+H2B_ovov(i,c,i,c)&
+                                                -H2A_voov(a,j,j,a)-H2A_voov(b,j,j,b)+H2B_ovov(j,c,j,c)&
+                                                +H2B_vovo(a,k,a,k)+H2B_vovo(b,k,b,k)-H2C_voov(c,k,k,c)&
+                                                -H2A_oooo(j,i,j,i)-H2B_oooo(i,k,i,k)-H2B_oooo(j,k,j,k)&
+                                                -H2A_vvvv(b,a)-H2B_vvvv(a,c)-H2B_vvvv(b,c)
+
+                                                deltaC = deltaC + LM/D
+
+                                                D = D &
+                                                +D3A_O(a,i,j)+D3B_O(a,i,k)+D3B_O(a,j,k)&
+                                                +D3A_O(b,i,j)+D3B_O(b,i,k)+D3B_O(b,j,k)&
+                                                +D3C_O(c,i,k)+D3C_O(c,j,k)&
+                                                -D3A_V(a,i,b)-D3B_V(a,i,c)-D3B_V(b,i,c)&
+                                                -D3A_V(a,j,b)-D3B_V(a,j,c)-D3B_V(b,j,c)&
+                                                -D3C_V(a,k,c)-D3C_V(b,k,c)
+
+                                                deltaD = deltaD + LM/D
+
+                                                ! central part of the contribution, the CIM ranking quantity
+                                                tempP = X3P(a,b,c) - X3P(b,a,c)
+                                                rank = tempP*(temp2+temp3)/(3.0d0*D)
+                                                if (abs(rank) <= min_thresh) cycle
+
+                                                if (abs(rank) >= thresh) then
+                                                    ncand = ncand + 1
+                                                    cand_m(ncand) = rank
+                                                    cand_t(:,ncand) = (/2*a-1, 2*b-1, 2*c, 2*i-1, 2*j-1, 2*k/)
+                                                end if
+
+                                            end do
+                                        end do
+                                    end do
+                                    !$omp critical (ccp3_selection_buffer)
+                                    thresh = minval
+                                    call add_candidates(moments, triples_list, nfill, thresh, num_add, buf_fact,&
+                                                        cand_m, cand_t, ncand, ncand_max)
+                                    !$omp atomic write
+                                    minval = thresh
+                                    !$omp end critical (ccp3_selection_buffer)
+                        end do
+                        !$omp end do
+                        deallocate(X3B, X3P, L3B, qspace, cand_m, cand_t)
+                        !$omp end parallel
+                        deallocate(loc_arr,idx_table,ijk)
+
+              end subroutine ccp3b_2ba_with_central_selection_opt
+
 end module ccp3_adaptive_loops

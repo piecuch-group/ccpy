@@ -195,6 +195,20 @@ def count_triples(system):
 
     return countsym, total
 
+def count_quadruples(system):
+    """Number of quadruply excited determinants (aaaa, aaab, aabb, abbb, bbbb) of each symmetry."""
+    noa, nob, norb = system.noccupied_alpha, system.noccupied_beta, system.norbitals
+    n_refsym = system.point_group_irrep_to_number[system.reference_symmetry]
+    countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
+    for nb in range(5):
+        hist = _irrep_product_histogram(_subset_irrep_histogram(system, 0, noa, 4 - nb),
+                                        _subset_irrep_histogram(system, 0, nob, nb),
+                                        _subset_irrep_histogram(system, noa, norb, 4 - nb),
+                                        _subset_irrep_histogram(system, nob, norb, nb))
+        for s, n in enumerate(hist):
+            countsym[n_refsym ^ s] += n
+    return countsym, sum(countsym)
+
 def count_1p(system):
 
     countsym = [0 for i in range(len(system.point_group_irrep_to_number))]
