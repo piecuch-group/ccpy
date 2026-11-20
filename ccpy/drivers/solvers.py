@@ -132,6 +132,9 @@ def eomcc_davidson(HR, update_r, B0, R, dR, omega, T, H, system, options, t3_exc
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
     else:
         sigma[0, :] = HR(dR, R, T, H, options["RHF_symmetry"], system)
+    # CC(P) HR kernels sort R3 and r3_excitations together in place; store B0 in that order so B matches sigma
+    if r3_excitations:
+        B[0, :] = R.flatten()
     if noffset == 1:
         restart_block[:, 0] = B0[:, 0]
 
@@ -383,14 +386,19 @@ def eomcc_block_davidson(HR, update_r, B0, R, dR, omega, T, H, system, state_ind
     # Initial values
     num_add = 0
     curr_size = 0
+    # CC(P) HR kernels sort R3 and r3_excitations together in place. Start every guess from the
+    # input order (B0 is in it) and store B in the sorted order, so B matches sigma for all roots.
+    r3_input_order = {k: v.copy(order="F") for k, v in r3_excitations.items()} if r3_excitations else {}
     for j, istate in enumerate(state_index):
-        B[:, j] = B0[:, j]
-        R[istate].unflatten(B[:, j])
+        for k, v in r3_input_order.items():
+            r3_excitations[k] = v.copy(order="F")
+        R[istate].unflatten(B0[:, j])
         dR.unflatten(dR.flatten() * 0.0)
         if t3_excitations or r3_excitations:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system, t3_excitations, r3_excitations)
         else:
             sigma[:, j] = HR(dR, R[istate], T, H, options["RHF_symmetry"], system)
+        B[:, j] = R[istate].flatten() if r3_excitations else B0[:, j]
         num_add += 1
         curr_size += 1
 

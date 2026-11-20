@@ -97,6 +97,8 @@ def scatter_routine(func, name, terms=None, target=None):
     w(IND + "integer :: idet, r1, r2, r3, r4, r5, r6, r7, r8")
     w(IND + "integer :: a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, s, u, v, w, y, z")
     w(IND + "real(kind=8) :: t_amp")
+    # per-thread sums on the heap: reduction(+:array) puts a full private copy on every thread's stack
+    w(IND + "real(kind=8), allocatable :: x_priv(:,:,:,:)")
     for tg, t in terms:
         sp = t.ops[1].split(".")[1]
         n = 2 * len(sp)
@@ -105,8 +107,22 @@ def scatter_routine(func, name, terms=None, target=None):
         x = fname[tg]
         w(IND + f"!!!! {tg} += {t.coef:+.6g} * {t.ops[0]}({oi}) * {t.ops[1]}({ai}) -> {tgt}")
         free = [y for y in oi if y not in ai]   # letters of H not on the amplitude: loop over them
-        priv = "".join("," + y for y in free)
-        w(IND + f"!$omp parallel do schedule(static) default(shared) private(idet,r1,r2,r3,r4,r5,r6,r7,r8,t_amp{priv}) reduction(+:{x})")
+        dims = {y: DIM[(dict(zip(oi, t.ops[0].split(".")[2]))[y], dict(zip(oi, SPINS[t.ops[0].split(".")[1]]))[y])]
+                for y in free}
+        # A free virtual index of H is a target index no two threads share: parallelize over it (no copies).
+        # Otherwise per-thread sums go on the heap (reduction(+:array) puts a private copy on each thread's stack).
+        split = next((y for y in free if dims[y] in ("nua", "nub")), None)
+        inner = [y for y in free if y != split]
+        priv = "".join("," + y for y in inner)
+        dst = x if split else "x_priv"
+        if split:
+            w(IND + f"!$omp parallel do schedule(static) default(shared) private(idet,r1,r2,r3,r4,r5,r6,r7,r8,t_amp{priv})")
+            w(IND + f"do {split} = 1, {dims[split]}")
+        else:
+            w(IND + f"!$omp parallel default(shared) private(idet,r1,r2,r3,r4,r5,r6,r7,r8,t_amp{priv},x_priv)")
+            w(IND + f"allocate(x_priv, mold={x})")
+            w(IND + "x_priv = 0.0d0")
+            w(IND + "!$omp do schedule(static)")
         w(IND + f"do idet = 1, n{len(sp)}{sp}")
         w(IND + "   " + " ".join(f"r{c + 1} = {AMP[sp]}_excits(idet,{c + 1});" for c in range(n)))
         w(IND + f"   t_amp = {AMP[sp]}_amps(idet)")
@@ -122,17 +138,24 @@ def scatter_routine(func, name, terms=None, target=None):
             val = {ai[axis]: f"r{pos[axis] + 1}" for axis in range(n)}
             key = (",".join(val.get(y, y) for y in tgt), ",".join(val.get(y, y) for y in oi))
             acc[key] = acc.get(key, 0) + sign
-        for y in free:
-            k_ = dict(zip(oi, t.ops[0].split(".")[2]))[y]
-            s_ = dict(zip(oi, SPINS[t.ops[0].split(".")[1]]))[y]
-            w(IND + f"   do {y} = 1, {DIM[(k_, s_)]}")
+        for y in inner:
+            w(IND + f"   do {y} = 1, {dims[y]}")
         for (xi, vi), cnt in acc.items():
             if cnt:
                 c = t.coef * cnt
-                w(IND + f"   {x}({xi}) = {x}({xi}) + ({c:.16g}d0 * t_amp) * {v}({vi})")
-        for y in free:
+                w(IND + f"   {dst}({xi}) = {dst}({xi}) + ({c:.16g}d0 * t_amp) * {v}({vi})")
+        for y in inner:
             w(IND + "   end do")
         w(IND + "end do")
-        w(IND + "!$omp end parallel do")
+        if split:
+            w(IND + "end do")
+            w(IND + "!$omp end parallel do")
+        else:
+            w(IND + "!$omp end do")
+            w(IND + "!$omp critical")
+            w(IND + f"{x} = {x} + x_priv")
+            w(IND + "!$omp end critical")
+            w(IND + "deallocate(x_priv)")
+            w(IND + "!$omp end parallel")
     w(" " * 14 + f"end subroutine {name}")
     return "\n".join(L) + "\n", args, counts

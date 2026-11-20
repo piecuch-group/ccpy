@@ -234,6 +234,27 @@ def reorder_triples_amplitudes(L, l3_excitations, t3_excitations):
     L.bbb, _ = reorder.reorder_amplitudes(L.bbb, l3_excitations["bbb"].T, t3_excitations["bbb"].T)
     return L
 
+def remap_triples_amplitudes(op, old_excitations, new_excitations):
+    """Move the P-space triples amplitudes of op, stored in the row order of old_excitations
+    (op may hold fewer rows, i.e., not yet extended to an appended P space), to the row order
+    of new_excitations. Excitations absent from old_excitations get zero amplitudes."""
+    def _keys(x):
+        x = np.ascontiguousarray(x, dtype=np.int64)
+        return x.view(np.dtype((np.void, x.dtype.itemsize * x.shape[1]))).ravel()
+
+    for s in ("aaa", "aab", "abb", "bbb"):
+        amps = getattr(op, s)
+        old, new = _keys(old_excitations[s][:len(amps)]), _keys(new_excitations[s])
+        order = np.argsort(old)
+        src = order[np.minimum(np.searchsorted(old, new, sorter=order), len(old) - 1)]
+        hit = old[src] == new
+        new_amps = np.zeros(len(new))
+        new_amps[hit] = amps[src[hit]]
+        setattr(op, s, new_amps)
+        op.ndim += len(new) - len(amps)
+        op.dimensions[op.spin_cases.index(s)] = (len(new),)
+    return op
+
 def zero_small_values(x, threshold):
     low_values_flags = np.abs(x) < threshold  # Where values are low
     x[low_values_flags] = 0.0  # All low values set to 0

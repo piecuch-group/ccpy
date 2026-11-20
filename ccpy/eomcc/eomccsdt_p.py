@@ -75,7 +75,7 @@ def HR(dR, R, T, H, flag_RHF, system, t3_excitations, r3_excitations):
         dR.abb = dR.aab.copy()
         r3_excitations["abb"] = r3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
 
-        R.bbb = R.bbb.copy()
+        R.bbb = R.aaa.copy()
         dR.bbb = dR.aaa.copy()
         r3_excitations["bbb"] = r3_excitations["aaa"].copy()
     else:
