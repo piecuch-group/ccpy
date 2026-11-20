@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
 from ccpy.utilities.printing import get_timestamp
+from ccpy.utilities.utilities import remap_triples_amplitudes
 from ccpy.constants.constants import hartreetoeV
 
 class FixedPSpaceMixin:
@@ -511,10 +512,16 @@ class AdaptEOMDriverSS(FixedPSpaceMixin):
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
 
+        # Restarted amplitudes are stored in the order of these lists, which the CC(P) kernels sort in place
+        t3_in = deepcopy(self.t3_excitations)
+        r3_in = deepcopy(self.r3_excitations)
+
         ### Run the ground-state calculation
         self.driver.options["RHF_symmetry"] = self.RHF_ground
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
+        if self.driver.L[0] is not None:
+            remap_triples_amplitudes(self.driver.L[0], t3_in, self.t3_excitations)
         self.driver.run_leftccp(method="left_ccsdt_p", state_index=[0], t3_excitations=self.t3_excitations)
 
         ### Run the excited-state calculations
@@ -523,6 +530,8 @@ class AdaptEOMDriverSS(FixedPSpaceMixin):
         if imacro == 0:
             self.driver.run_guess(method="cisd", multiplicity=self.multiplicity, roots_per_irrep=self.roots_per_irrep, nact_occupied=self.nacto, nact_unoccupied=self.nactu)
         self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
+        if self.driver.L[self.state_index] is not None:
+            remap_triples_amplitudes(self.driver.L[self.state_index], r3_in, self.r3_excitations)
         self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
 
         # reset the driver symmetry option
@@ -718,16 +727,13 @@ class AdaptEOMDriverSS(FixedPSpaceMixin):
             x2 = time.perf_counter()
             t_pspace_expand = x2 - x1
 
-            # [TODO]: FIX P SPACE REORDERING BUG WHEN PREVIOUS R VECTOR IS USED
-            # Step 6: Reset variables in driver. Right now, R is messed up if it is extended.
+            # Step 6: Reset variables in driver. Otherwise T, L, R, and L of the excited state restart from
+            # the previous macroiteration, which keeps the excited state on the same root.
             if self.options["reset_amplitudes"]:
                 self.driver.R[self.state_index] = None
                 self.driver.T = None
                 self.driver.L[0] = None
-
-            # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
-            # which generally ensures that R and L converge the same root.
-            self.driver.L[self.state_index] = None
+                self.driver.L[self.state_index] = None
 
             #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
             # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,
@@ -872,10 +878,16 @@ class AdaptEOMDriver(FixedPSpaceMixin):
     def run_ccp(self, imacro):
         """Runs iterative CC(P), and if needed, HBar and iterative left-CC calculations."""
 
+        # Restarted amplitudes are stored in the order of these lists, which the CC(P) kernels sort in place
+        t3_in = deepcopy(self.t3_excitations)
+        r3_in = deepcopy(self.r3_excitations)
+
         ### Run the ground-state calculation
         self.driver.options["RHF_symmetry"] = self.RHF_ground
         self.driver.run_ccp(method="ccsdt_p", t3_excitations=self.t3_excitations)
         self.driver.run_hbar(method="ccsdt_p", t3_excitations=self.t3_excitations)
+        if self.driver.L[0] is not None:
+            remap_triples_amplitudes(self.driver.L[0], t3_in, self.t3_excitations)
         self.driver.run_leftccp(method="left_ccsdt_p", state_index=[0], t3_excitations=self.t3_excitations)
         # record energies
         self.ccp_energy[0, imacro] = self.driver.system.reference_energy + self.driver.correlation_energy
@@ -890,9 +902,13 @@ class AdaptEOMDriver(FixedPSpaceMixin):
             self.driver.run_eomccp(method="eomccsdt_p", state_index=self.state_index, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
         else:
             for i, istate in enumerate(self.state_index):
+                if self.driver.R[istate] is not None:
+                    remap_triples_amplitudes(self.driver.R[istate], r3_in, self.r3_excitations)
                 self.driver.run_eomccp(method="eomccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
 
         for i, istate in enumerate(self.state_index):
+            if self.driver.L[istate] is not None:
+                remap_triples_amplitudes(self.driver.L[istate], r3_in, self.r3_excitations)
             self.driver.run_lefteomccp(method="left_ccsdt_p", state_index=istate, t3_excitations=self.t3_excitations, r3_excitations=self.r3_excitations)
             # record energies
             self.ccp_energy[i + 1, imacro] = self.driver.system.reference_energy + self.driver.correlation_energy + self.driver.vertical_excitation_energy[istate]
@@ -1159,17 +1175,14 @@ class AdaptEOMDriver(FixedPSpaceMixin):
             x2 = time.perf_counter()
             t_pspace_expand = x2 - x1
 
-            # [TODO]: FIX P SPACE REORDERING BUG WHEN PREVIOUS R VECTOR IS USED
-            # Step 6: Reset variables in driver. Right now, R is messed up if it is extended.
+            # Step 6: Reset variables in driver. Otherwise T, L, R, and L of the excited states restart from
+            # the previous macroiteration, which keeps the excited states on the same roots.
             if self.options["reset_amplitudes"]:
                 for istate in self.state_index:
                     self.driver.R[istate] = None
+                    self.driver.L[istate] = None
                 self.driver.T = None
                 self.driver.L[0] = None
-            # ALWAYS reset the excited-state left amplitude. This forces L to begin with converged R as a guess,
-            # which generally ensures that R and L converge the same root.
-            for istate in self.state_index:
-                self.driver.L[istate] = None
 
             #setattr(self.driver, "hamiltonian", self.bare_hamiltonian)
             # Since the HBar routines are now using H = H0, so there is no deepcopy of the hamiltonian there,

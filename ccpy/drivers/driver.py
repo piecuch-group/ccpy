@@ -588,11 +588,6 @@ class Driver:
             #                                       p_orders=self.operator_params["pspace_orders"],
             #                                       pspace_sizes=excitation_count)
             # self.R[state_index].unflatten(r_old.flatten())
-            # r3 is getting scrambled somehow... do this to avoid issues
-            self.R[state_index].aaa *= 0.0
-            self.R[state_index].aab *= 0.0
-            self.R[state_index].abb *= 0.0
-            self.R[state_index].bbb *= 0.0
 
         # regardless of restart status, initialize residual anew
         dR = ClusterOperator(self.system,
@@ -683,11 +678,6 @@ class Driver:
                 #                                       p_orders=self.operator_params["pspace_orders"],
                 #                                       pspace_sizes=excitation_count)
                 # self.R[state_index].unflatten(r_old.flatten())
-                # r3 is getting scrambled somehow... do this to avoid issues
-                self.R[i].aaa *= 0.0
-                self.R[i].aab *= 0.0
-                self.R[i].abb *= 0.0
-                self.R[i].bbb *= 0.0
 
         # Print the options as a header
         self.print_options()
@@ -2131,9 +2121,24 @@ class Driver:
         cc_calculation_summary(self.T, self.system.reference_energy, self.correlation_energy, self.system, self.options["amp_print_threshold"])
         print("   ec-CC calculation ended on", get_timestamp())
 
-    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, target_irrep=None, high_memory=False):
+    def run_ccp3(self, method, state_index=[0], two_body_approx=True, num_active=1, t3_excitations=None, r3_excitations=None, target_irrep=None, high_memory=False, laplace_points=10):
 
-        if method.lower() == "crcc23":
+        if method.lower() in ("crcc23_laplace", "ccp3_laplace"):
+            from ccpy.moments.crcc_laplace import calc_crcc23_laplace
+            from ccpy.hbar.hbar_ccsdt_p import remove_VT3_intermediates
+            # Ensure that HBar is set upon entry
+            assert self.flag_hbar
+            # Laplace-transformed A correction: ground state, two-body approximation only
+            if method.lower() == "ccp3_laplace":
+                assert t3_excitations is not None
+                if self.L[0].order > 2:
+                    self.hamiltonian = remove_VT3_intermediates(self.T, t3_excitations, self.hamiltonian)
+            else:
+                t3_excitations = None
+            _, self.deltap3[0] = calc_crcc23_laplace(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                     self.options["RHF_symmetry"], npts=laplace_points, t3_excitations=t3_excitations)
+
+        elif method.lower() == "crcc23":
             from ccpy.moments.crcc23 import calc_crcc23
             from ccpy.moments.creomcc23 import calc_creomcc23
             # Ensure that HBar is set upon entry
@@ -2370,7 +2375,19 @@ class Driver:
                                                             self.hamiltonian, self.fock, self.system,
                                                             self.options["RHF_symmetry"])
 
-    def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None):
+    def run_ccp4(self, method, state_index=[0], two_body_approx=True, t4_excitations=None, laplace_points=10):
+
+        if method.lower() in ("crcc24_laplace", "ccp4_laplace"):
+            from ccpy.moments.crcc_laplace import calc_crcc24_laplace
+            # Ensure that HBar is set
+            assert self.flag_hbar
+            # Laplace-transformed A correction: ground state, two-body approximation only
+            if method.lower() == "ccp4_laplace":
+                assert t4_excitations is not None
+            else:
+                t4_excitations = None
+            _, self.deltap4[0] = calc_crcc24_laplace(self.T, self.L[0], self.correlation_energy, self.hamiltonian, self.fock, self.system,
+                                                     self.options["RHF_symmetry"], npts=laplace_points, t4_excitations=t4_excitations)
 
         if method.lower() == "crcc24":
             from ccpy.moments.crcc24 import calc_crcc24

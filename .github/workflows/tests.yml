@@ -42,7 +42,9 @@ jobs:
 
       - name: Install libint2
         run: |
-          conda install --yes --override-channels -c conda-forge libint eigen boost-cpp
+          conda install --yes --prefix "$CONDA_PREFIX" --override-channels -c conda-forge libint=2.13.1 eigen libboost-headers
+          conda list --prefix "$CONDA_PREFIX" '^libint$'
+          python devtools/find_libint2.py "$CONDA_PREFIX"
 
       - name: Install python dependencies
         run: |
