@@ -8,6 +8,20 @@ import numpy as np
 from ccpy.lib.core import vvvv_contraction
 
 
+def _dense_rank(keys):
+    """np.unique(keys, return_inverse=True)[1] for small non-negative integer keys."""
+    present = np.zeros(int(keys.max()) + 1, dtype=np.int64)
+    present[keys] = 1
+    return (np.cumsum(present) - 1)[keys]
+
+
+def _stable_order(keys, nkeys):
+    """np.argsort(keys, kind='stable') for keys in [0, nkeys); 16-bit keys take NumPy's radix sort."""
+    if nkeys <= 1 << 16:
+        keys = keys.astype(np.uint16)
+    return np.argsort(keys, kind='stable')
+
+
 def _records(T, excitations, sectors, pairs, nua, nub):
     """Group sources by occupied triple/spectator, targets by output pair.
 
@@ -24,7 +38,9 @@ def _records(T, excitations, sectors, pairs, nua, nub):
         sizes.append(n)
         if len(exc) and not np.all(exc[0] == 1):
             # Compress occupied triples independently of orbital dimensions.
-            _, occupied = np.unique(exc[:, 3:], axis=0, return_inverse=True)
+            base = int(exc[:, 3:].max()) + 1
+            occ = exc[:, 3:].astype(np.int64)
+            occupied = _dense_rank((occ[:, 0] * base + occ[:, 1]) * base + occ[:, 2])
             vmax = int(exc[:, :3].max()) + 1
             for e, f, spectator, sign in specs:
                 sources.append(exc[:, [e, f]])
@@ -38,14 +54,15 @@ def _records(T, excitations, sectors, pairs, nua, nub):
         return None
     source = np.concatenate(sources)
     amps = np.concatenate(values)
-    _, group = np.unique(np.concatenate(groups), return_inverse=True)
+    group = _dense_rank(np.concatenate(groups))
     target = np.concatenate(targets)
     pair = np.concatenate(pair_ids)
-    order = np.argsort(group, kind='stable')
-    goff = np.r_[0, np.cumsum(np.bincount(group))] + 1
+    counts = np.bincount(group)
+    order = _stable_order(group, len(counts))
+    goff = np.r_[0, np.cumsum(counts)] + 1
     source = np.asfortranarray(source[order].T, dtype=np.int32)
     amps = amps[order]
-    order = np.argsort(pair, kind='stable')
+    order = _stable_order(pair, nua * nub)
     poff = np.r_[0, np.cumsum(np.bincount(pair, minlength=nua * nub))] + 1
     # Check before narrowing the addressing integers used by the native kernels.
     if max(len(amps), offset, len(goff)) >= np.iinfo(np.int32).max:
