@@ -84,9 +84,16 @@ def t2_with_t4(src, x):
 
 
 # ------------------------------------------------------------------ T3
-def t3_ccsdtq(name):
-    """update_t3?_p of CCSDTQ(P): the CCSDT routine plus its T4 -> T3 blocks (natural integrals)."""
+def t3_ccsdtq(name, chol=False):
+    """update_t3?_p of CCSDTQ(P): the CCSDT routine plus its T4 -> T3 blocks (natural integrals).
+    chol: update_t3?_p_chol without the h2(vvvv) ladders and their h1(vv) terms, accumulating
+    onto the residual passed in (ccpy.cc.chol_ppl.vvvv_t34)."""
     r = copy.deepcopy(CCSDT_ROUTINES[name])
+    if chol:
+        r.name = f"{name}_chol"
+        r.blocks = [b for b in r.blocks if not getattr(b, "op", None) or not b.op.name.endswith("_vvvv")]
+        r.args = [a for a in r.args if not a.endswith("_vvvv")]
+        r.accumulate = True
     x = name[9]
     blocks = linear_diagrams(f"update_t3{x}", {}, source_rank=4, natural=True)
     extra, seen = [], set()
@@ -108,18 +115,21 @@ def t3_ccsdtq(name):
 
 
 # ------------------------------------------------------------------ T4
-def t4_entry(sp):
-    """update_t4?_p: natural integrals in; layouts built here; lin + b3 + b2 + update."""
+def t4_entry(sp, chol=False):
+    """update_t4?_p: natural integrals in; layouts built here; lin + b3 + b2 + update.
+    chol: update_t4?_p_chol, whose lin/b2 kernels have no h2(vvvv) (or h1(vv)) terms and
+    accumulate onto the residual passed in; b3 is shared with the 4-index entry."""
     x = T4NAME[sp][2]
     f = f"update_t4{x}"
-    lin_txt, lin_args, lin_counts = linear_routine(f, f"t4{x}_p_lin")
+    sfx = "_chol" if chol else ""
+    lin_txt, lin_args, lin_counts = linear_routine(f, f"t4{x}_p_lin{sfx}", chol=chol)
     b3_txt, b3_args, b3_counts = block_routine(f, f"t4{x}_p_b3", kinds=("t3",))
-    b2_txt, b2_args, b2_counts = block_routine(f, f"t4{x}_p_b2", kinds=("t2", "t2t2"))
+    b2_txt, b2_args, b2_counts = block_routine(f, f"t4{x}_p_b2{sfx}", kinds=("t2", "t2t2"), skip_vvvv=chol)
     t = amp_of(sp)
     # normalized argument specs of the three parts: (name, kind, info)
     parts = []
-    for nm, args, counts in ((f"t4{x}_p_lin", lin_args, lin_counts), (f"t4{x}_p_b3", b3_args, b3_counts),
-                             (f"t4{x}_p_b2", b2_args, b2_counts)):
+    for nm, args, counts in ((f"t4{x}_p_lin{sfx}", lin_args, lin_counts), (f"t4{x}_p_b3", b3_args, b3_counts),
+                             (f"t4{x}_p_b2{sfx}", b2_args, b2_counts)):
         spec = []
         for a in args:
             if hasattr(a, "name"):   # linear routines
@@ -158,7 +168,7 @@ def t4_entry(sp):
         ["fA_oo", "fA_vv", "fB_oo", "fB_vv", "shift"] + counts + ["noa", "nua", "nob", "nub"]
     L = []
     w = L.append
-    nm = f"update_t4{x}_p"
+    nm = f"update_t4{x}_p{sfx}"
     w(" " * 14 + f"subroutine {nm}({sig[0]},&")
     for n_ in range(1, len(sig), 4):
         w(" " * 38 + ", ".join(sig[n_:n_ + 4]) + (")" if n_ + 4 >= len(sig) else ",&"))
@@ -178,7 +188,11 @@ def t4_entry(sp):
     w(IND + f"!f2py intent(in,out) :: {t.excits}(0:{t.n}-1,0:7)")
     w(IND + f"real(kind=8), intent(inout) :: {t.amps}({t.n})")
     w(IND + f"!f2py intent(in,out) :: {t.amps}(0:{t.n}-1)")
-    w(IND + f"real(kind=8), intent(out) :: resid({t.n})")
+    if chol:
+        w(IND + f"real(kind=8), intent(inout) :: resid({t.n})")
+        w(IND + f"!f2py intent(in,out) :: resid(0:{t.n}-1)")
+    else:
+        w(IND + f"real(kind=8), intent(out) :: resid({t.n})")
     w("")
     # internal layouts
     local = {}
@@ -241,7 +255,9 @@ def t4_entry(sp):
     w(" " * 14 + f"end subroutine {nm}")
     text = "\n".join(L) + "\n"
     py = dict(t4o=t4o, t3o=t3o, t2s=t2s, ops=ops)
-    kernels = {f"t4{x}_p_lin": lin_txt, f"t4{x}_p_b3": b3_txt, f"t4{x}_p_b2": b2_txt}
+    kernels = {f"t4{x}_p_lin{sfx}": lin_txt, f"t4{x}_p_b3": b3_txt, f"t4{x}_p_b2{sfx}": b2_txt}
+    if chol:
+        del kernels[f"t4{x}_p_b3"]
     return text, py, kernels
 
 
@@ -256,8 +272,6 @@ def assemble():
     its own module}). The T4 kernels t4?_p_lin/_b3/_b2 live in their own modules so they compile in
     parallel and stay out of the f2py wrapper."""
     src = HAND.read_text().replace("module ccsdt_p_loops", "module ccsdtq_p_loops")
-    src = src.replace("use pspace_sort, only: get_index_table, sort4\n",
-                      "use pspace_sort, only: get_index_table, sort4, sort_pspace, pspace_find, pspace_key, release_sort_workspace\n")
     calls = {}
     extra_routines = []
     for x in "abc":
@@ -271,15 +285,19 @@ def assemble():
         j = next(n for n in range(i, len(lines)) if lines[n].strip() == f"end subroutine {name}")
         src = "".join(lines[:i]) + r.emit() + "".join(lines[j + 1:])
         calls[name] = r.extra_args
+        rc = t3_ccsdtq(name, chol=True)
+        extra_routines.append(rc.emit())
+        calls[rc.name] = rc.extra_args
     txt, args, counts = scatter_routine(None, "add_vt3_p", terms=vt3_terms())
     extra_routines.append(txt)
     calls["add_vt3_p"] = args
     kernels = {}
     for sp in T4SPINS:
-        text, py, kern = t4_entry(sp)
-        extra_routines.append(text)
-        kernels.update({k: kernel_module(k, v) for k, v in kern.items()})
-        calls[f"update_t4{T4NAME[sp][2]}_p"] = py
+        for chol in (False, True):
+            text, py, kern = t4_entry(sp, chol)
+            extra_routines.append(text)
+            kernels.update({k: kernel_module(k, v) for k, v in kern.items()})
+            calls[f"update_t4{T4NAME[sp][2]}_p{'_chol' if chol else ''}"] = py
     i = src.rindex("end module ccsdtq_p_loops")
     src = src[:i] + "\n".join(extra_routines) + "\n" + src[i:]
     j = src.index("      implicit none\n")

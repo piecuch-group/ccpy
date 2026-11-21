@@ -40,6 +40,86 @@ def update(T: ClusterOperator,
     # Jacobi denominators other than MP (see ccpy.cc.denominators), from T2 of this iteration
     D = None if denominator == "mp" else Denominators(T, H, denominator)
 
+    T, dT = update_t1_and_t2_residual(T, dT, H, X, shift, flag_RHF, t3_excitations, D)
+    T, dT = update_t2_amplitudes(T, dT, X, H, shift, t3_excitations, flag_RHF)
+    for spin in (("aa", "ab") if flag_RHF else ("aa", "ab", "bb")):
+        if D is not None:
+            T, dT = D.correct(T, dT, spin, shift)
+    if flag_RHF:
+        T.bb = T.aa.copy()
+        dT.bb = dT.aa.copy()
+
+    # CCSD intermediates
+    #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
+    if build_hbar:
+        X = get_ccsd_intermediates(T, X, H, flag_RHF)
+        # Transpose integrals appropriately
+        X.a.vv = X.a.vv.T
+        X.b.vv = X.b.vv.T
+        #
+        X.aa.vvov = X.aa.vvov.transpose(3, 0, 1, 2)
+        X.ab.vvov = X.ab.vvov.transpose(3, 0, 1, 2)
+        X.ab.vvvo = X.ab.vvvo.transpose(2, 0, 1, 3)
+        X.bb.vvov = X.bb.vvov.transpose(3, 0, 1, 2)
+        #
+        X.aa.voov = X.aa.voov.transpose(1, 3, 0, 2)
+        X.ab.voov = X.ab.voov.transpose(1, 3, 0, 2)
+        X.ab.ovvo = X.ab.ovvo.transpose(0, 2, 1, 3)
+        X.ab.vovo = X.ab.vovo.transpose(1, 2, 0, 3)
+        X.ab.ovov = X.ab.ovov.transpose(0, 3, 1, 2)
+        X.bb.voov = X.bb.voov.transpose(1, 3, 0, 2)
+
+        for block, names in ((X.aa, ("vvov", "voov", "oooo")),
+                             (X.ab, ("vvov", "vvvo", "voov", "ovvo", "vovo", "ovov", "oooo"))):
+            for name in names:
+                setattr(block, name, np.asfortranarray(getattr(block, name)))
+        if flag_RHF:
+            X.bb.vvov = X.aa.vvov
+            X.bb.voov = X.aa.voov
+            X.bb.oooo = X.aa.oooo
+        else:
+            for name in ("vvov", "voov", "oooo"):
+                setattr(X.bb, name, np.asfortranarray(getattr(X.bb, name)))
+
+    # Build all T3 residuals at the updated T2 and unchanged T3. Native
+    # routines may reorder a P list, but must not change its amplitudes yet.
+    if do_t3["aaa"]:
+        T, dT, t3_excitations = update_t3a(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    if do_t3["aab"]:
+        T, dT, t3_excitations = update_t3b(T, dT, X, H, shift, t3_excitations, residual_only=True)
+    if not flag_RHF:
+        if do_t3["abb"]:
+            T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations, residual_only=True)
+        if do_t3["bbb"]:
+            T, dT, t3_excitations = update_t3d(T, dT, X, H, shift, t3_excitations, residual_only=True)
+
+    if build_hbar:
+        add_vvvv_t3(T, dT, X, H, t3_excitations, flag_RHF)
+    for spin in (("aaa", "aab") if flag_RHF else ("aaa", "aab", "abb", "bbb")):
+        if do_t3[spin]:
+            exc = t3_excitations[spin] - 1
+            denom = np.zeros(len(exc))
+            for p, s in enumerate(spin):
+                denom += np.diagonal(getattr(H, s).oo)[exc[:, p + 3]]
+                denom -= np.diagonal(getattr(H, s).vv)[exc[:, p]]
+            step = getattr(dT, spin) / (denom - shift)
+            setattr(dT, spin, step)
+            setattr(T, spin, getattr(T, spin) + step)
+            if D is not None:
+                T, dT = D.correct(T, dT, spin, shift, t3_excitations[spin])
+    if flag_RHF:
+       T.abb = T.aab.copy()
+       dT.abb = dT.aab.copy()
+       t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
+       T.bbb = T.aaa.copy()
+       dT.bbb = dT.aaa.copy()
+       t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+
+    return T, dT
+
+def update_t1_and_t2_residual(T, dT, H, X, shift, flag_RHF, t3_excitations, D=None):
+    """Update T1 and build the raw T2 residual (vvvv included, T3/T4 terms and denominators not),
+    leaving the T1-transformed Cholesky vectors and CCS intermediates in X."""
     # pre-CCS intermediates
     X.a.ov = H.a.ov + (
             np.einsum("mnef,fn->me", H.aa.oovv, T.a, optimize=True)
@@ -147,81 +227,8 @@ def update(T: ClusterOperator,
     if not flag_RHF:
         T, dT = update_t2c(T, dT, X, H, shift, t3_excitations, residual_only=True)
     add_vvvv_t2(T, dT, X, flag_RHF)
-    T, dT = update_t2_amplitudes(T, dT, X, H, shift, t3_excitations, flag_RHF)
-    for spin in (("aa", "ab") if flag_RHF else ("aa", "ab", "bb")):
-        if D is not None:
-            T, dT = D.correct(T, dT, spin, shift)
-    if flag_RHF:
-        T.bb = T.aa.copy()
-        dT.bb = dT.aa.copy()
-
-    # CCSD intermediates
-    #[TODO]: Should accept CCS HBar as input and build only terms with T2 in it
-    if build_hbar:
-        X = get_ccsd_intermediates(T, X, H, flag_RHF)
-        # Transpose integrals appropriately
-        X.a.vv = X.a.vv.T
-        X.b.vv = X.b.vv.T
-        #
-        X.aa.vvov = X.aa.vvov.transpose(3, 0, 1, 2)
-        X.ab.vvov = X.ab.vvov.transpose(3, 0, 1, 2)
-        X.ab.vvvo = X.ab.vvvo.transpose(2, 0, 1, 3)
-        X.bb.vvov = X.bb.vvov.transpose(3, 0, 1, 2)
-        #
-        X.aa.voov = X.aa.voov.transpose(1, 3, 0, 2)
-        X.ab.voov = X.ab.voov.transpose(1, 3, 0, 2)
-        X.ab.ovvo = X.ab.ovvo.transpose(0, 2, 1, 3)
-        X.ab.vovo = X.ab.vovo.transpose(1, 2, 0, 3)
-        X.ab.ovov = X.ab.ovov.transpose(0, 3, 1, 2)
-        X.bb.voov = X.bb.voov.transpose(1, 3, 0, 2)
-
-        for block, names in ((X.aa, ("vvov", "voov", "oooo")),
-                             (X.ab, ("vvov", "vvvo", "voov", "ovvo", "vovo", "ovov", "oooo"))):
-            for name in names:
-                setattr(block, name, np.asfortranarray(getattr(block, name)))
-        if flag_RHF:
-            X.bb.vvov = X.aa.vvov
-            X.bb.voov = X.aa.voov
-            X.bb.oooo = X.aa.oooo
-        else:
-            for name in ("vvov", "voov", "oooo"):
-                setattr(X.bb, name, np.asfortranarray(getattr(X.bb, name)))
-
-    # Build all T3 residuals at the updated T2 and unchanged T3. Native
-    # routines may reorder a P list, but must not change its amplitudes yet.
-    if do_t3["aaa"]:
-        T, dT, t3_excitations = update_t3a(T, dT, X, H, shift, t3_excitations, residual_only=True)
-    if do_t3["aab"]:
-        T, dT, t3_excitations = update_t3b(T, dT, X, H, shift, t3_excitations, residual_only=True)
-    if not flag_RHF:
-        if do_t3["abb"]:
-            T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations, residual_only=True)
-        if do_t3["bbb"]:
-            T, dT, t3_excitations = update_t3d(T, dT, X, H, shift, t3_excitations, residual_only=True)
-
-    if build_hbar:
-        add_vvvv_t3(T, dT, X, H, t3_excitations, flag_RHF)
-    for spin in (("aaa", "aab") if flag_RHF else ("aaa", "aab", "abb", "bbb")):
-        if do_t3[spin]:
-            exc = t3_excitations[spin] - 1
-            denom = np.zeros(len(exc))
-            for p, s in enumerate(spin):
-                denom += np.diagonal(getattr(H, s).oo)[exc[:, p + 3]]
-                denom -= np.diagonal(getattr(H, s).vv)[exc[:, p]]
-            step = getattr(dT, spin) / (denom - shift)
-            setattr(dT, spin, step)
-            setattr(T, spin, getattr(T, spin) + step)
-            if D is not None:
-                T, dT = D.correct(T, dT, spin, shift, t3_excitations[spin])
-    if flag_RHF:
-       T.abb = T.aab.copy()
-       dT.abb = dT.aab.copy()
-       t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
-       T.bbb = T.aaa.copy()
-       dT.bbb = dT.aaa.copy()
-       t3_excitations["bbb"] = t3_excitations["aaa"].copy()
-
     return T, dT
+
 
 def update_t1a(T, dT, H, X, shift, t3_excitations):
     """

@@ -26,9 +26,10 @@ class Arg:
     extra: object = None   # (spin) for amplitudes, (natural kinds, stored) for operators
 
 
-def linear_routine(func, name=None, source_rank=None):
-    """Subroutine with every linear (H T3/T4) block of ccsdtq.<func>, and its arguments."""
-    blocks = linear_diagrams(func, source_rank=source_rank)
+def linear_routine(func, name=None, source_rank=None, chol=False):
+    """Subroutine with every linear (H T3/T4) block of ccsdtq.<func>, and its arguments.
+    chol: no vvvv ladders (and their h1(vv) terms); resid accumulates onto its input."""
+    blocks = linear_diagrams(func, source_rank=source_rank, skip_vvvv=chol)
     tgt = blocks[0].target
     sources, ops = {}, {}
     for d in blocks:
@@ -68,12 +69,12 @@ def linear_routine(func, name=None, source_rank=None):
             w(IND + f"real(kind=8), intent(inout) :: {a.name}({dims})")
             w(IND + f"!f2py intent(in,out) :: {a.name}(0:{tgt.n}-1)")
         elif a.kind == "resid":
-            w(IND + f"real(kind=8), intent(out) :: resid({dims})")
+            w(IND + f"real(kind=8), intent({'inout' if chol else 'out'}) :: resid({dims})")
         elif a.kind == "excits":
             w(IND + f"integer, intent(in) :: {a.name}({dims})")
         else:
             w(IND + f"real(kind=8), intent(in) :: {a.name}({dims})")
-    w(IND + "integer, allocatable :: idx_table(:,:,:,:), loc_arr(:,:), block_off(:)")
+    w(IND + "integer, allocatable :: block_off(:)")
     w(IND + "integer(kind=8), allocatable :: block_key(:)")
     w(IND + "integer :: kdims(6), nblock")
     w(IND + "logical :: kchain(6)")
@@ -81,7 +82,8 @@ def linear_routine(func, name=None, source_rank=None):
     w(IND + "integer, allocatable :: t3_excits_buff(:,:), t4_excits_buff(:,:)")
     w(IND + "real(kind=8) :: hmatel, hmatel1, hmatel2, hmatel3, hmatel4")
     w(IND + "integer :: a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, idet, jdet, idx, nloc")
-    w(IND + "resid = 0.0d0")
+    if not chol:
+        w(IND + "resid = 0.0d0")
     body = "\n".join(L) + "\n\n" + "".join(d.emit() + "\n" for d in blocks)
     body += IND + "call release_sort_workspace()\n"
     body += " " * 14 + f"end subroutine {name}\n"

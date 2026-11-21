@@ -71,6 +71,11 @@ class AdaptiveCCPQ(MethodBase):
         deterministic. The statistical error target ("target_error") defaults to
         delta / (2 sqrt(2) convergence_z), half of the tolerance when both energies are
         stochastic, and must be below delta / (sqrt(2) convergence_z).
+    selection : str
+        "moments" (rank by the CC(P;Q)_D moment contributions while computing the correction)
+        or "heatbath" (ccpy.moments.heatbath_selection: rank heat-bath candidates by their
+        CC(P;Q)_A contributions, without the correction; the macroiterations before the last
+        then have no CC(P;Q) energy, NaN, and no stopping test).
     convergence_z : float
         Number of standard deviations of the energy difference in the stopping test (1.96:
         95% confidence).
@@ -88,20 +93,22 @@ class AdaptiveCCPQ(MethodBase):
     def __init__(self, upstream, target="ccsdt", percentage=None, pspaces=None, energy_tolerance=1.0e-04,
                  maximum_macroiterations=10, n_det_max=100000000, selection_factor=1.0, base_growth="ccsd",
                  buffer_factor=2, minimum_threshold=0.0, reset_amplitudes=False, nfrozen=None, ndelete=None,
-                 stochastic=None, convergence_z=1.96, **options):
+                 stochastic=None, convergence_z=1.96, selection="moments", **options):
         super().__init__(upstream, nfrozen, ndelete, **options)
         self.target = target.lower()
         if self.target not in ("ccsdt", "ccsdtq"):
             raise ValueError(f"AdaptiveCCPQ: target must be 'ccsdt' or 'ccsdtq', not {target!r}.")
         if self.target == "ccsdtq" and stochastic:
             raise ValueError("AdaptiveCCPQ: semi-stochastic corrections are not available for target='ccsdtq'.")
+        if selection not in ("moments", "heatbath"):
+            raise ValueError(f"AdaptiveCCPQ: selection must be 'moments' or 'heatbath', not {selection!r}.")
         self.convergence_z = convergence_z
         self.stochastic = self._stochastic_options(stochastic, energy_tolerance, convergence_z)
         self.percentage = percentage
         self.adaptive_options = {"energy_tolerance": energy_tolerance, "n_det_max": n_det_max,
                                  "selection_factor": selection_factor, "base_growth": base_growth,
                                  "buffer_factor": buffer_factor, "minimum_threshold": minimum_threshold,
-                                 "reset_amplitudes": reset_amplitudes}
+                                 "reset_amplitudes": reset_amplitudes, "selection": selection}
         self.nmacro = maximum_macroiterations + 1 if percentage is None else len(percentage)
         self.fixed_pspaces = None
         self._set_fixed_pspaces(pspaces)
@@ -224,6 +231,7 @@ class AdaptiveCCPQ(MethodBase):
         from ccpy.extrapolation.goodson_extrapolation import goodson_extrapolation
         from ccpy.moments.ccp3_chol import calc_ccp3_2ba_with_selection
         from ccpy.moments.ccp34 import calc_ccp34_2ba_with_selection
+        from ccpy.moments.heatbath_selection import select_heatbath
         from ccpy.utilities.selection import add_spinorbital_excitations_to_pspace
 
         self._print_header()
@@ -268,6 +276,15 @@ class AdaptiveCCPQ(MethodBase):
             elif last and self.target == "ccsdt":
                 self.ccp3 = CCP3(self.left, stochastic=self.stochastic)
                 e_ccpq, error = self.ccp3.energy(), (self.ccp3.errors or {"D": 0.0})["D"]
+            elif self.adaptive_options["selection"] == "heatbath" and not last and self.fixed_pspaces is None:
+                # shortcut: no CC(P;Q) energy until the Laplace correction is wired in; the last macroiteration has it
+                s3, s4 = select_heatbath(
+                    hbar.T, left.L, hbar.H, self.reference.H, self.system, self.cc.t3_excitations, num_add[imacro],
+                    t4_excitations=self.cc.t4_excitations if hbar4 is not None else None,
+                    H4=hbar4.H if hbar4 is not None else None, use_RHF=self.options["RHF_symmetry"],
+                    buffer_factor=self.adaptive_options["buffer_factor"])
+                selected = [s3] if s4 is None else [s3, s4]
+                e_ccpq, error = np.nan, 0.0
             elif self.target == "ccsdtq":
                 # the last macroiteration only needs the correction (minimal selection buffer)
                 e_ccpq, *selected = calc_ccp34_2ba_with_selection(

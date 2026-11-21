@@ -10,6 +10,7 @@ python_sources = [
 'crcc23_chol.py',
 'crcc24.py',
 'crcc_laplace.py',
+'heatbath_selection.py',
 'crcc34.py',
 'creacc23.py',
 'creomcc23.py',

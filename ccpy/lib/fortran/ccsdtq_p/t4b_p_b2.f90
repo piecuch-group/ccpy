@@ -45,7 +45,7 @@ module ccsdtq_p_t4b_p_b2
                   real(kind=8), intent(in) :: V2B_oovv_2013(nua,noa,nob,nub)
                   real(kind=8), intent(in) :: V2B_oovv_1023(nob,noa,nua,nub)
                   real(kind=8), intent(in) :: V2C_oovv_1023(nob,nob,nub,nub)
-                  integer, allocatable :: idx_table(:,:,:,:), loc_arr(:,:), toff(:)
+                  integer, allocatable :: toff(:)
                   integer(kind=8), allocatable :: tkey(:)
                   integer :: tdims(8), tnblk
                   logical :: tchain(8)

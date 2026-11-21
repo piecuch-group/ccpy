@@ -109,10 +109,11 @@ def _t2t2(target, coef, spec, ops):
     raise ValueError(spec)
 
 
-def parse_contractions(func, path=CCSDTQ, kinds=("t3", "t2", "t2t2")):
+def parse_contractions(func, path=CCSDTQ, kinds=("t3", "t2", "t2t2"), skip_vvvv=False):
     """Terms of ccsdtq.<func> that factor as intermediate x amplitude:
        "t3"  : I x T3 (I from H*T2 and H0*T3);  "t2": I x T2 (I from H0*T4);
-       "t2t2": H*T2*T2 as (H*T2) x T2."""
+       "t2t2": H*T2*T2 as (H*T2) x T2 (skip_vvvv: without the h2(vvvv) ones, which
+       ccpy.cc.chol_ppl computes for Cholesky CC(P))."""
     tree = ast.parse(path.read_text())
     fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == func)
     inter, out = {}, []
@@ -143,7 +144,8 @@ def parse_contractions(func, path=CCSDTQ, kinds=("t3", "t2", "t2t2")):
                     if (n == 3 and "t3" in kinds) or (n == 2 and "t2" in kinds):
                         out.append(Contraction(ts, s * c, t[1], ops[0], ops[1].split(".")[1], list(inter[ops[0]])))
                 elif (len(ops) == 3 and ops[0].startswith("H") and "t2t2" in kinds
-                      and all(len(o.split(".")[1]) == 2 for o in ops[1:])):
+                      and all(len(o.split(".")[1]) == 2 for o in ops[1:])
+                      and not (skip_vvvv and ops[0].endswith(".vvvv"))):
                     out.append(_t2t2(ts, s * c, t[1], ops))
     return out
 
@@ -453,9 +455,9 @@ class BlockTerm:
             layout = [(list(range(nk)), list(range(nk, len(cols))))
                       for (_, _, cols), nk in zip(blocks_of(self.c.t3), v.nkey)]
             keys, reads, terms = sparse_lookup(self.c.t3, tl, set(p), layout)
-            w(I6 + f"idx = idx_{v.name}({','.join(keys)})")
+            w(I6 + f"idx = {view_find(v.name, keys)}")
             w(I6 + "if (idx/=0) then")
-            w(I6 + f"do jdet = loc_{v.name}(1,idx), loc_{v.name}(2,idx)")
+            w(I6 + f"do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
             w(I6 + "   " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
             acc = {}
             for s_, mp in terms:
@@ -487,8 +489,8 @@ class BlockTerm:
                 layout = [(list(range(nk)), list(range(nk, len(cols))))
                           for (_, _, cols), nk in zip(blocks_of(sp), v.nkey)]
                 keys, reads, terms = sparse_lookup(sp, tl, set(q), layout)
-                look = f"idx = idx_{v.name}({','.join(keys)})"
-                rng = f"do jdet = loc_{v.name}(1,idx), loc_{v.name}(2,idx)"
+                look = f"idx = {view_find(v.name, keys)}"
+                rng = f"do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1"
                 pre = []
                 rcols = [f"{v.name}_excits(jdet,{5 + t_})" for t_ in range(len(reads))]
                 amp = f"{v.name}_amps(jdet)"
@@ -542,6 +544,11 @@ class BlockTerm:
         w(I3 + "end do")
 
 
+def view_find(name, keys):
+    """Block of a T3 view with the given 4 key indices (0 if absent or not ordered)."""
+    return f"pspace_find(key_{name}, nblk_{name}, pspace_key((/{','.join(keys)}/), 4, vdims_{name}, vchain_{name}))"
+
+
 def emit_fused(w, run, qcols, nb, first, last):
     """Passes of one target sort (same IX shape) in one parallel region over the q blocks."""
     w(IND + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)")
@@ -572,30 +579,17 @@ def emit_grouped(terms, tsp):
     L = []
     w = L.append
     a4 = Amp(ex, am, n4, tsp, tsp)
-    dummy = LinearDiagram([], a4, "abcd"[:nt], "ijkl"[:nt], a4, "abcd"[:nt], "ijkl"[:nt], None)
-    allocated = None
     srcs = {}
     for qcols, ps in groups.items():
         keycols = [("v", c_ - 1) if c_ <= nt else ("o", c_ - 1 - nt) for c_ in qcols]
         dims = [DIM[(kd, tsp[c_])] for kd, c_ in keycols]
         w(IND + f"!!!! {len(ps)} passes on T4 sorted by columns ({','.join(map(str, qcols))})")
-        if len(qcols) <= 4:
-            if allocated != dims:
-                if allocated:
-                    w(IND + "deallocate(loc_arr,idx_table)")
-                w(IND + f"nloc = {'*'.join(dims)}")
-                w(IND + f"allocate(loc_arr(2,nloc),idx_table({','.join(dims)}))")
-                allocated = dims
-            w(IND + f"call get_index_table(idx_table, {', '.join(dummy.ranges(keycols))}, {', '.join(dims)})")
-            w(IND + f"call sort4({ex}, {am}, loc_arr, idx_table, (/{','.join(map(str, qcols))}/), {', '.join(dims)}, nloc, {n4}, resid)")
-            nb, first, last = "nloc", "loc_arr(1,kdx)", "loc_arr(2,kdx)"
-        else:
-            chain = [".true." if p > 0 and keycols[p][0] == keycols[p - 1][0] and dims[p] == dims[p - 1] else ".false."
-                     for p in range(len(qcols))]
-            w(IND + f"tdims(1:{len(qcols)}) = (/{','.join(dims)}/)")
-            w(IND + f"tchain(1:{len(qcols)}) = (/{','.join(chain)}/)")
-            w(IND + f"call sort_pspace({ex}, {am}, {n4}, {len(qcols)}, (/{','.join(map(str, qcols))}/), tdims, tchain, tnblk, tkey, toff, resid)")
-            nb, first, last = "tnblk", "toff(kdx)", "toff(kdx+1)-1"
+        chain = [".true." if p > 0 and keycols[p][0] == keycols[p - 1][0] and dims[p] == dims[p - 1] else ".false."
+                 for p in range(len(qcols))]
+        w(IND + f"tdims(1:{len(qcols)}) = (/{','.join(dims)}/)")
+        w(IND + f"tchain(1:{len(qcols)}) = (/{','.join(chain)}/)")
+        w(IND + f"call sort_pspace({ex}, {am}, {n4}, {len(qcols)}, (/{','.join(map(str, qcols))}/), tdims, tchain, tnblk, tkey, toff, resid)")
+        nb, first, last = "tnblk", "toff(kdx)", "toff(kdx+1)-1"
         # Passes with the same IX shape run in one parallel region (one block loop). Each distinct
         # source key is indexed once per routine (sidx), not re-sorted per pass.
         runs = {}
@@ -605,8 +599,6 @@ def emit_grouped(terms, tsp):
             runs.setdefault(p["term"].ix_dims(), []).append(p)
         for run in runs.values():
             emit_fused(w, run, list(qcols), nb, first, last)
-    if allocated:
-        w(IND + "deallocate(loc_arr,idx_table)")
     if srcs:
         H = [IND + f"! index of each T4 source buffer by the key columns of its placements ({len(srcs)} distinct)",
              IND + f"allocate(sidx({len(srcs)}))"]
@@ -646,23 +638,22 @@ def emit_view_builds(views):
             row = ",".join(f"r{c + 1}" for c in keys + conts)
             w(IND + f"   {nm}_excits(jdet+{r},:) = (/{row}/); {nm}_amps(jdet+{r}) = {'-' if sign < 0 else ''}{t}_amps(idet)")
         w(IND + "end do")
-        kdims, rng = [], []
+        kdims, chain = [], []
         for (kind, s, cols), nk in zip(blocks, v.nkey):
             for t_ in range(nk):
                 kdims.append(DIM[(kind, s)])
-                rng.append(f"(/1,{DIM[(kind, s)]}/)" if t_ == 0 else f"(/-1,{DIM[(kind, s)]}/)")
-        w(IND + f"nloc_{nm} = {'*'.join(kdims)}")
-        w(IND + f"allocate(loc_{nm}(2,nloc_{nm}),idx_{nm}({','.join(kdims)}))")
-        w(IND + f"call get_index_table(idx_{nm}, {', '.join(rng)}, {', '.join(kdims)})")
-        w(IND + f"call sort4({nm}_excits, {nm}_amps, loc_{nm}, idx_{nm}, (/1,2,3,4/), {', '.join(kdims)}, nloc_{nm}, {nrep}*n3{v.sp})")
+                chain.append(".false." if t_ == 0 else ".true.")
+        w(IND + f"vdims_{nm} = (/{','.join(kdims)}/); vchain_{nm} = (/{','.join(chain)}/)")
+        w(IND + f"call sort_pspace({nm}_excits, {nm}_amps, {nrep}*n3{v.sp}, 4, (/1,2,3,4/), vdims_{nm}, vchain_{nm}, "
+                f"nblk_{nm}, key_{nm}, off_{nm})")
     return "\n".join(L) + "\n"
 
 
 # ------------------------------------------------------------------ routine
-def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2")):
+def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_vvvv=False):
     """Subroutine with the intermediate x amplitude terms of ccsdtq.<func>. Returns (text, args,
     counts); args are (name, kind, dims, extra) with extra = (opname, stored perm) for integrals."""
-    cons = parse_contractions(func, kinds=kinds)
+    cons = parse_contractions(func, kinds=kinds, skip_vvvv=skip_vvvv)
     if only is not None:
         cons = [cons[k] for k in only]
     layouts, views = {}, {}
@@ -713,7 +704,7 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2")):
             w(IND + f"integer, intent(in) :: {nm}({d})")
         else:
             w(IND + f"real(kind=8), intent(in) :: {nm}({d})")
-    w(IND + "integer, allocatable :: idx_table(:,:,:,:), loc_arr(:,:), toff(:)")
+    w(IND + "integer, allocatable :: toff(:)")
     w(IND + "integer(kind=8), allocatable :: tkey(:)")
     w(IND + "integer :: tdims(8), tnblk")
     w(IND + "logical :: tchain(8)")
@@ -722,8 +713,10 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2")):
         w(IND + f"integer, allocatable :: b{T4N[sp]}_excits(:,:)")
     for v in views:
         w(IND + f"real(kind=8), allocatable :: {v}_amps(:)")
-        w(IND + f"integer, allocatable :: {v}_excits(:,:), loc_{v}(:,:), idx_{v}(:,:,:,:)")
-        w(IND + f"integer :: nloc_{v}")
+        w(IND + f"integer, allocatable :: {v}_excits(:,:), off_{v}(:)")
+        w(IND + f"integer(kind=8), allocatable :: key_{v}(:)")
+        w(IND + f"integer :: nblk_{v}, vdims_{v}(4)")
+        w(IND + f"logical :: vchain_{v}(4)")
     w(IND + "real(kind=8), allocatable :: IX(:,:)" if any(len(t.internal) == 2 for t in terms) else
       IND + "real(kind=8), allocatable :: IX(:)")
     if any(len(t.internal) == 2 for t in terms) and any(len(t.internal) == 1 for t in terms):
@@ -740,7 +733,7 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2")):
         out += IND + f"{b}_amps(:) = {w2}_amps(:)\n" + IND + f"{b}_excits(:,:) = {w2}_excits(:,:)\n"
     out += emit_view_builds(views) + "\n" + "\n".join(bodies)
     for v in views:
-        out += IND + f"deallocate({v}_amps,{v}_excits,loc_{v},idx_{v})\n"
+        out += IND + f"deallocate({v}_amps,{v}_excits,key_{v},off_{v})\n"
     for sp in sources:
         out += IND + f"deallocate(b{T4N[sp]}_amps,b{T4N[sp]}_excits)\n"
     out += IND + "call release_sort_workspace()\n"

@@ -50,7 +50,7 @@ module ccsdtq_p_t4c_p_b2
                   real(kind=8), intent(in) :: H2C_vvvv_3012(nub,nub,nub,nub)
                   real(kind=8), intent(in) :: V2B_oovv_3012(nub,noa,nob,nua)
                   real(kind=8), intent(in) :: V2C_oovv_3012(nub,nob,nob,nub)
-                  integer, allocatable :: idx_table(:,:,:,:), loc_arr(:,:), toff(:)
+                  integer, allocatable :: toff(:)
                   integer(kind=8), allocatable :: tkey(:)
                   integer :: tdims(8), tnblk
                   logical :: tchain(8)

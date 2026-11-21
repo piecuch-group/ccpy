@@ -100,56 +100,85 @@ module vvvv_contraction
                  !$omp end parallel
               end subroutine vvvv_t2
 
-              subroutine vvvv_t3(resid, ra, rb, tdress, hoovv, &
-                                 source, amps, goff, target, poff, same_spin, &
-                                 noa, nob, nua, nub, naux, nrec, ngroup, nres)
-                 ! Raw selected-T3 contribution, shared across spin cases via
-                 ! records. Pair (a,b) has index (a-1)*nub+b; same spin uses a<b.
-                 ! source(:,is)=(e,f), target(:,it)=(group,signed determinant).
-                 ! goff/poff are one-based offsets, with end-exclusive ranges.
+              subroutine vvvv_tn(resid, ra, rb, tdress, hoovv, ha, hb, &
+                                 source, amps, goff, target, poff, tslot, texc, &
+                                 plint, plcoef, ploff, sece, secf, te, tf, &
+                                 same_spin, use_h1, &
+                                 noa, nob, nua, nub, naux, nrec, ngroup, nres, &
+                                 ntype, npl, nse, nsf, nce, ncf)
+                 ! Every Hbar(vvvv) contraction onto selected T3/T4 determinants of
+                 ! one pair spin, from one slice W_ab(e,f) per target pair (a,b):
+                 !  * ladder: records as in ccpy.cc.chol_ppl; source(:,is)=(e,f),
+                 !    target(:,it)=(group,signed determinant). Pair (a,b) has index
+                 !    (a-1)*nub+b; same spin uses a<b. goff/poff are one-based,
+                 !    end-exclusive offsets.
+                 !  * use_h1: h1(vv) delta terms folded into the ladder, weighted
+                 !    1/(nv-1) because each virtual sits in nv-1 pairs of a determinant
+                 !    with nv virtuals (texc rows 1:4, zero padded).
+                 !  * T2*T2: placements ploff(tslot(it)):ploff(tslot(it)+1)-1 of target
+                 !    record it add plcoef * sum_ef W(e,f) te(e,ce) tf(f,cf). plint rows
+                 !    (r,x,y,esec,s,z,w,fsec) name texc rows; column
+                 !    c = off + D(r) + d1*(D(x)-1 + d2*(D(y)-1)) with sec(:,isec)=(off,d1,d2).
                  integer, intent(in) :: noa,nob,nua,nub,naux,nrec,ngroup,nres
-                 logical, intent(in) :: same_spin
+                 integer, intent(in) :: ntype,npl,nse,nsf,nce,ncf
+                 logical, intent(in) :: same_spin,use_h1
                  real(kind=8), intent(in) :: ra(naux,nua,nua),rb(naux,nub,nub)
                  real(kind=8), intent(in) :: tdress(nua,nub,noa,nob)
                  real(kind=8), intent(in) :: hoovv(noa,nob,nua,nub),amps(nrec)
+                 real(kind=8), intent(in) :: ha(nua,nua),hb(nub,nub)
                  integer, intent(in) :: source(2,nrec),goff(ngroup+1),target(2,nrec),poff(nua*nub+1)
+                 integer, intent(in) :: tslot(nrec),texc(8,nres)
+                 integer, intent(in) :: plint(8,npl),ploff(ntype+1),sece(3,nse),secf(3,nsf)
+                 real(kind=8), intent(in) :: plcoef(npl),te(nua,nce),tf(nub,ncf)
                  real(kind=8), intent(out) :: resid(nres)
                  integer(kind=8), parameter :: scratch_elements=8388608_8
-                 integer(kind=8) :: pair_elements
-                 integer :: nblk,ntiles_a,tile,a,b,nb,k,e,f,i,j,ipair,it,is,g,idet
-                 logical :: tiled,has_targets
-                 real(kind=8) :: val,factor,coulomb,dressing
+                 integer :: nblk,ntiles_a,tile,a,b,nb,k,e,f,ipair,it,is,g,idet,nslot,ak
+                 integer :: it0,it1,m,mcap,maxpl,p,sl,q,ce,cf
+                 logical :: has_targets,do_t2t2
+                 real(kind=8) :: val,factor,coulomb,hv,lam,t2t2
                  real(kind=8), allocatable :: y(:,:,:),w(:,:,:),tb(:,:,:),contributions(:)
-                 integer, allocatable :: slots(:,:)
+                 real(kind=8), allocatable :: wk(:,:),u(:,:),tsub(:,:)
+                 integer, allocatable :: slots(:,:),nper(:),mark(:),cols(:)
+                 real(kind=8), external :: ddot
 
                  resid=0.0d0
                  if (nua==0 .or. nub==0 .or. noa==0 .or. nob==0) return
                  if (nrec==0 .or. nres==0) return
-                 pair_elements=2_8*nua*nub+int(noa,8)*nob
-                 nblk=min(32,nua,max(1,int(scratch_elements/pair_elements)))
+                 nblk=int(min(32_8,int(nua,8),max(1_8,scratch_elements/(2_8*nua*nub+int(noa,8)*nob))))
                  ntiles_a=(nua+nblk-1)/nblk
-                 tiled=pair_elements<=scratch_elements
                  factor=merge(0.5d0,1.0d0,same_spin)
-                 allocate(contributions(nrec),slots(3,nres))
-                 contributions=0.0d0
-                 slots=0
-                 ! Each determinant has at most three signed pair contributions.
-                 ! Store record ids in input order for a deterministic gather.
+                 do_t2t2=ploff(ntype+1)>ploff(1)
+                 maxpl=0
+                 do sl=1,ntype
+                    maxpl=max(maxpl,ploff(sl+1)-ploff(sl))
+                 end do
+                 mcap=max(maxpl,int(min(4096_8,scratch_elements/(int(nua,8)+nub))))
+                 ! Record ids per determinant, in input order, for a deterministic gather.
+                 allocate(nper(nres))
+                 nper=0
                  do it=1,nrec
                     idet=abs(target(2,it))
-                    do k=1,3
-                       if (slots(k,idet)==0) then
-                          slots(k,idet)=it
-                          exit
-                       end if
-                    end do
+                    nper(idet)=nper(idet)+1
+                 end do
+                 nslot=maxval(nper)
+                 allocate(contributions(nrec),slots(nslot,nres))
+                 contributions=0.0d0
+                 slots=0
+                 nper=0
+                 do it=1,nrec
+                    idet=abs(target(2,it))
+                    nper(idet)=nper(idet)+1
+                    slots(nper(idet),idet)=it
                  end do
 
                  !$omp parallel default(shared) &
-                 !$omp& private(tile,a,b,nb,k,e,f,i,j,ipair,it,is,g,idet,has_targets,val,coulomb,dressing,y,w,tb)
-                 ! A scalar fallback keeps even an oversized single pair within
-                 ! the 64 MiB per-thread tile budget. Record storage is shared.
-                 if (tiled) allocate(y(nub,nua,nblk),w(nua,nub,nblk),tb(nblk,noa,nob))
+                 !$omp& private(tile,a,b,nb,k,e,f,ipair,it,is,g,idet,has_targets,val,coulomb,hv,lam,ak, &
+                 !$omp& it0,it1,m,p,sl,q,ce,cf,t2t2,y,w,tb,wk,u,tsub,mark,cols)
+                 allocate(y(nub,nua,nblk),w(nua,nub,nblk),tb(nblk,noa,nob))
+                 if (do_t2t2) then
+                    allocate(wk(nua,nub),u(nua,mcap),tsub(nub,mcap),mark(ncf),cols(mcap))
+                    mark=0
+                 end if
                  !$omp do schedule(dynamic,1)
                  do tile=1,nub*ntiles_a
                     b=(tile-1)/ntiles_a+1
@@ -165,55 +194,108 @@ module vvvv_contraction
                        end if
                     end do
                     if (.not.has_targets) cycle
-                    if (tiled) then
-                       if (naux>0) then
-                          call dgemm('t','n',nub,nua*nb,naux,1.0d0,rb(:,:,b),naux, &
-                                     ra(:,:,a:a+nb-1),naux,0.0d0,y,nub)
-                       else
-                          ! Still form the dressing when the Coulomb rank is zero.
-                          y(:,:,1:nb)=0.0d0
-                       end if
-                       tb(1:nb,:,:)=tdress(a:a+nb-1,b,:,:)
-                       call dgemm('t','t',nua*nub,nb,noa*nob,factor,hoovv,noa*nob,tb,nblk,0.0d0,w,nua*nub)
+                    if (naux>0) then
+                       call dgemm('t','n',nub,nua*nb,naux,1.0d0,rb(:,:,b),naux, &
+                                  ra(:,:,a:a+nb-1),naux,0.0d0,y,nub)
+                    else
+                       y(:,:,1:nb)=0.0d0
                     end if
+                    tb(1:nb,:,:)=tdress(a:a+nb-1,b,:,:)
+                    call dgemm('t','t',nua*nub,nb,noa*nob,factor,hoovv,noa*nob,tb,nblk,0.0d0,w,nua*nub)
                     do k=1,nb
-                       ipair=(a+k-2)*nub+b
+                       ak=a+k-1
+                       ipair=(ak-1)*nub+b
+                       if (poff(ipair)==poff(ipair+1)) cycle
+                       ! ladder (+ h1) part, signed by the target record
                        do it=poff(ipair),poff(ipair+1)-1
                           g=target(1,it)
+                          idet=abs(target(2,it))
+                          lam=0.0d0
+                          if (use_h1) lam=1.0d0/dble(count(texc(1:4,idet)>0)-1)
                           val=0.0d0
                           do is=goff(g),goff(g+1)-1
                              e=source(1,is)
                              f=source(2,is)
-                             if (tiled) then
-                                coulomb=y(f,e,k)
-                                if (same_spin) coulomb=coulomb-y(e,f,k)
-                                dressing=w(e,f,k)
-                             else
-                                coulomb=dot_product(rb(:,f,b),ra(:,e,a+k-1))
-                                if (same_spin) coulomb=coulomb-dot_product(rb(:,e,b),ra(:,f,a+k-1))
-                                dressing=0.0d0
-                                do j=1,nob
-                                   do i=1,noa
-                                      dressing=dressing+tdress(a+k-1,b,i,j)*hoovv(i,j,e,f)
-                                   end do
-                                end do
-                                dressing=factor*dressing
+                             coulomb=y(f,e,k)
+                             if (same_spin) coulomb=coulomb-y(e,f,k)
+                             coulomb=coulomb+w(e,f,k)
+                             if (use_h1) then
+                                hv=0.0d0
+                                if (f==b) hv=hv+ha(ak,e)
+                                if (e==ak) hv=hv+hb(b,f)
+                                if (same_spin) then
+                                   if (e==b) hv=hv-ha(ak,f)
+                                   if (f==ak) hv=hv-hb(b,e)
+                                end if
+                                coulomb=coulomb+lam*hv
                              end if
-                             val=val+(coulomb+dressing)*amps(is)
+                             val=val+coulomb*amps(is)
                           end do
                           if (target(2,it)<0) val=-val
                           contributions(it)=val
                        end do
+                       if (.not.do_t2t2) cycle
+                       ! T2*T2 part: U = W * tf(:,distinct columns) in chunks, then dots
+                       do f=1,nub
+                          do e=1,nua
+                             wk(e,f)=y(f,e,k)+w(e,f,k)
+                             if (same_spin) wk(e,f)=wk(e,f)-y(e,f,k)
+                          end do
+                       end do
+                       it0=poff(ipair)
+                       do while (it0<poff(ipair+1))
+                          m=0
+                          it1=it0
+                          do while (it1<poff(ipair+1))
+                             sl=tslot(it1)
+                             if (m+ploff(sl+1)-ploff(sl)>mcap) exit
+                             idet=abs(target(2,it1))
+                             do p=ploff(sl),ploff(sl+1)-1
+                                cf=secf(1,plint(8,p))+texc(plint(5,p),idet)+secf(2,plint(8,p))*((texc(plint(6,p),idet)-1)&
+                                      +secf(3,plint(8,p))*(texc(plint(7,p),idet)-1))
+                                if (mark(cf)==0) then
+                                   m=m+1
+                                   mark(cf)=m
+                                   cols(m)=cf
+                                end if
+                             end do
+                             it1=it1+1
+                          end do
+                          if (m>0) then
+                             do q=1,m
+                                tsub(:,q)=tf(:,cols(q))
+                             end do
+                             call dgemm('n','n',nua,m,nub,1.0d0,wk,nua,tsub,nub,0.0d0,u,nua)
+                             do it=it0,it1-1
+                                sl=tslot(it)
+                                idet=abs(target(2,it))
+                                t2t2=0.0d0
+                                do p=ploff(sl),ploff(sl+1)-1
+                                   ce=sece(1,plint(4,p))+texc(plint(1,p),idet)+sece(2,plint(4,p))*((texc(plint(2,p),idet)-1)&
+                                      +sece(3,plint(4,p))*(texc(plint(3,p),idet)-1))
+                                   cf=secf(1,plint(8,p))+texc(plint(5,p),idet)+secf(2,plint(8,p))*((texc(plint(6,p),idet)-1)&
+                                      +secf(3,plint(8,p))*(texc(plint(7,p),idet)-1))
+                                   t2t2=t2t2+plcoef(p)*ddot(nua,te(:,ce),1,u(:,mark(cf)),1)
+                                end do
+                                contributions(it)=contributions(it)+t2t2
+                             end do
+                             do q=1,m
+                                mark(cols(q))=0
+                             end do
+                          end if
+                          it0=it1
+                       end do
                     end do
                  end do
                  !$omp end do
-                 if (tiled) deallocate(y,w,tb)
+                 deallocate(y,w,tb)
+                 if (do_t2t2) deallocate(wk,u,tsub,mark,cols)
                  ! The tile-loop barrier completes all record writes before this
                  ! disjoint determinant gather; no atomics or residual replicas.
                  !$omp do schedule(static)
                  do idet=1,nres
                     val=0.0d0
-                    do k=1,3
+                    do k=1,nslot
                        it=slots(k,idet)
                        if (it/=0) val=val+contributions(it)
                     end do
@@ -221,8 +303,9 @@ module vvvv_contraction
                  end do
                  !$omp end do
                  !$omp end parallel
-                 deallocate(contributions,slots)
-              end subroutine vvvv_t3
+                 deallocate(contributions,slots,nper)
+
+              end subroutine vvvv_tn
 
               subroutine vvvv_index(idx,a,b,c,d,nu)
                          

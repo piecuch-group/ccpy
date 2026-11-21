@@ -184,7 +184,7 @@ class Driver:
             self.operator_params["number_particles"] = 3
             self.operator_params["number_holes"] = 3
             self.operator_params["pspace_orders"] = [3]
-        elif method.lower() in ["ccsdtq_p"]:
+        elif method.lower() in ["ccsdtq_p", "ccsdtq_p_chol"]:
             self.operator_params["order"] = 4
             self.operator_params["number_particles"] = 4
             self.operator_params["number_holes"] = 4

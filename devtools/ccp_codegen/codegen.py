@@ -13,6 +13,9 @@ from itertools import combinations
 import re
 
 IND = " " * 18  # routine-level indentation of the hand-written code
+# index of LinearDiagram(index="auto"): "sparse" (sort_pspace + pspace_find, memory ~ the P space) or
+# "dense" (idx_table + sort4 up to 4 key columns, the original hand code; kept as a test reference)
+DEFAULT_INDEX = "sparse"
 
 
 def parity(seq):
@@ -100,7 +103,7 @@ class LinearDiagram:
     buffer: bool = False
     buffer_name: str = ""
     resid: str = "resid"
-    index: str = "auto"  # "dense" (idx_table + sort4), "sparse" (sort_pspace + pspace_find), "auto"
+    index: str = "auto"  # "dense" (idx_table + sort4), "sparse" (sort_pspace + pspace_find), "auto" (DEFAULT_INDEX)
     alloc_comment: str = "! allocate sorting arrays (can be reused for each permutation)"
     h1: H1 = None
     loop_order: tuple = ()   # explicit loop names, e.g. ("ABCK","ABCI","ABCJ")
@@ -211,9 +214,9 @@ class LinearDiagram:
 
     @property
     def sparse(self):
-        """Dense index tables only up to 4 key columns, as in ccsdt_p_loops."""
+        """Dense index tables (DEFAULT_INDEX = "dense") only up to 4 key columns."""
         if self.index == "auto":
-            return len(self.keycols(self.loops("v")[0], self.loops("o")[0])) > 4
+            return DEFAULT_INDEX == "sparse" or len(self.keycols(self.loops("v")[0], self.loops("o")[0])) > 4
         return self.index == "sparse"
 
     def chain(self, keycols):
@@ -316,11 +319,7 @@ class LinearDiagram:
         order = self.order()
         keycols0 = self.keycols(*order[0])
         dims = ",".join(dim(kd, self.colspin(kd, c)) for kd, c in keycols0)
-        if self.sparse:
-            nk = len(keycols0)
-            w(IND + f"kdims(1:{nk}) = (/{dims}/)")
-            w(IND + f"kchain(1:{nk}) = (/{','.join(self.chain(keycols0))}/)")
-        else:
+        if not self.sparse:
             parts = []
             for kind in ("v", "o") if self.key_order == "vo" else ("o", "v"):
                 for s, start, cnt in src.blocks(kind):
@@ -350,6 +349,9 @@ class LinearDiagram:
         w(IND + f"!!! {self.loop_name(lv, lo)} LOOP !!!")
         sres = f", {self.resid}" if (not self.buffer and src.excits == tgt.excits) else ""
         if self.sparse:
+            # key dims and chaining per loop: the loops of a diagram may order spin blocks differently
+            w(IND + f"kdims(1:{len(keycols)}) = (/{','.join(dim(kd, self.colspin(kd, c)) for kd, c in keycols)}/)")
+            w(IND + f"kchain(1:{len(keycols)}) = (/{','.join(self.chain(keycols))}/)")
             w(IND + f"call sort_pspace({sbuf_ex}, {sbuf_amp}, {src.n}, {len(keycols)}, (/{','.join(map(str, cols))}/), kdims, kchain, nblock, block_key, block_off{sres})")
         else:
             w(IND + f"call get_index_table(idx_table, {', '.join(self.ranges(keycols))}, {dims})")
@@ -821,6 +823,7 @@ class Routine:
     init_grouped: bool = False   # all `I = coef*H` before the calc calls
     extra_blocks: list = field(default_factory=list)  # e.g. the T4 blocks of CCSDTQ, before the update
     extra_args: list = field(default_factory=list)    # (name, "integer"/"real", dims), placed after shift
+    accumulate: bool = False   # resid is intent(in,out) and accumulates onto its input
 
     def all_args(self):
         if not self.extra_args:
@@ -851,27 +854,33 @@ class Routine:
         w(IND + f"!f2py intent(in,out) :: {t.excits}(0:{t.n}-1,0:5)")
         w(IND + f"real(kind=8), intent(inout) :: {t.amps}({t.n})")
         w(IND + f"!f2py intent(in,out) :: {t.amps}(0:{t.n}-1)")
-        w(IND + f"real(kind=8), intent(out) :: resid({t.n})")
+        if self.accumulate:
+            w(IND + f"real(kind=8), intent(inout) :: resid({t.n})")
+            w(IND + f"!f2py intent(in,out) :: resid(0:{t.n}-1)")
+        else:
+            w(IND + f"real(kind=8), intent(out) :: resid({t.n})")
         for a, typ, dims in self.extra_args:
             w(IND + f"{'integer' if typ == 'integer' else 'real(kind=8)'}, intent(in) :: {a}({','.join(dims)})")
+        w(IND + "integer, allocatable :: block_off(:)")
+        w(IND + "integer(kind=8), allocatable :: block_key(:)")
+        w(IND + "integer :: kdims(6), nblock")
+        w(IND + "logical :: kchain(6)")
         if self.extra_blocks:
-            w(IND + "integer, allocatable :: block_off(:)")
-            w(IND + "integer(kind=8), allocatable :: block_key(:)")
-            w(IND + "integer :: kdims(6), nblock")
-            w(IND + "logical :: kchain(6)")
             w(IND + "real(kind=8), allocatable :: t4_amps_buff(:)")
             w(IND + "integer, allocatable :: t4_excits_buff(:,:)")
             w(IND + "integer :: g, h, o, p")
-        w(IND + "integer, allocatable :: idx_table(:,:,:,:)")
-        w(IND + "integer, allocatable :: loc_arr(:,:)")
+        if not all(getattr(b, "sparse", True) for b in self.blocks + self.extra_blocks):
+            w(IND + "integer, allocatable :: idx_table(:,:,:,:)")
+            w(IND + "integer, allocatable :: loc_arr(:,:)")
         w(IND + "real(kind=8), allocatable :: t3_amps_buff(:), xbuf(:,:,:,:)")
         w(IND + "integer, allocatable :: t3_excits_buff(:,:)")
-        for I in self.intermediates:
-            w(IND + f"real(kind=8) :: {I.name}({self.shapes[I.name]})")
+        for I in self.intermediates:  # heap, not stack: v^3 o at production sizes
+            w(IND + f"real(kind=8), allocatable :: {I.name}({','.join(':' * len(self.shapes[I.name].split(',')))})")
         w(IND + "real(kind=8) :: val, denom, t_amp, hmatel")
         w(IND + "real(kind=8) :: hmatel1, hmatel2, hmatel3, hmatel4")
         w(IND + "integer :: a, b, c, d, i, j, k, l, e, f, m, n, idet, jdet")
         w(IND + "integer :: idx, nloc")
+        L += [IND + f"allocate({I.name}({self.shapes[I.name]}))" for I in self.intermediates]
         sets = [IND + f"{I.name} = {I.coef}{I.H}" for I in self.intermediates]
         calls = [IND + f"call calc_{I.name}({I.name},&\n" + IND + "     " + ", ".join(I.args) + ")"
                  for I in self.intermediates]
@@ -879,7 +888,8 @@ class Routine:
             L += sets + calls
         else:
             L += [x for pair in zip(sets, calls) for x in pair]
-        w(IND + "resid = 0.0d0")
+        if not self.accumulate:
+            w(IND + "resid = 0.0d0")
         return "\n".join(L) + "\n"
 
     def body(self):
@@ -891,4 +901,5 @@ class Routine:
         return out
 
     def emit(self):
-        return self.prologue() + "\n" + self.body() + "\n" + " " * 14 + f"end subroutine {self.name}\n"
+        dealloc = "".join(IND + f"deallocate({I.name})\n" for I in self.intermediates)
+        return self.prologue() + "\n" + self.body() + "\n" + dealloc + " " * 14 + f"end subroutine {self.name}\n"

@@ -169,12 +169,15 @@ def attach_h1(ladder, h1d):
     return ladder
 
 
-def linear_diagrams(func, layouts=None, source_rank=None, natural=False):
+def linear_diagrams(func, layouts=None, source_rank=None, natural=False, skip_vvvv=False):
     """LinearDiagrams of all linear terms of an update function, h1(oo/vv) merged into ladders.
-    source_rank=4 keeps only the terms with a T4 source (e.g. the T4 part of update_t3a)."""
+    source_rank=4 keeps only the terms with a T4 source (e.g. the T4 part of update_t3a).
+    skip_vvvv drops the h2(vvvv) ladders and the h1(vv) terms merged into them (Cholesky CC(P):
+    ccpy.cc.chol_ppl computes both)."""
     layouts = {} if layouts is None else layouts
     terms = [t for t in parse(func) if t.is_linear()
-             and (source_rank is None or len(t.ops[1].split(".")[1]) == source_rank)]
+             and (source_rank is None or len(t.ops[1].split(".")[1]) == source_rank)
+             and not (skip_vvvv and t.ops[0].split(".")[2] in ("vvvv", "vv"))]
     diags = [(t, diagram(t, layouts, natural=natural)) for t in terms]
     h1s = [(t, d) for t, d in diags if len(t.ops[0].split(".")[1]) == 1 and t.ops[0].split(".")[2] in ("oo", "vv")]
     rest = [(t, d) for t, d in diags if (t, d) not in h1s]

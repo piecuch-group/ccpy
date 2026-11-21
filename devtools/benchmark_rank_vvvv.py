@@ -61,7 +61,7 @@ def child(args):
             return result
         return call
     chol_ppl.vvvv_contraction = NS(**{name: timed(getattr(vc, name))
-        for name in ('vvvv_t2', 'vvvv_t2_sym', 'vvvv_t3')})
+        for name in ('vvvv_t2', 'vvvv_t2_sym', 'vvvv_tn')})
     results = {}
     for rank, layer in [('t2', lambda: add_vvvv_t2(T, dT, X, False)),
                         ('t3', lambda: add_vvvv_t3(T, dT, X, H, exc, False))]:

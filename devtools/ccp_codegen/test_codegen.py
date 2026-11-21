@@ -202,12 +202,12 @@ def test_t4a_vvooov_numerics(t4mod, frac3, frac4):
     assert np.allclose(resid, ref, atol=1e-10), np.abs(resid - ref).max()
 
 
-# ------------------------------------------- generated update_t3?_p vs hand code, bit for bit
+# ------------------------- update_t3?_p of ccsdt_p_loops (sparse index) vs the dense-index code
 from specs_ccsdt import CCSDT_ROUTINES, ARGS, SHAPES  # noqa: E402
 
 GEN_CCSDT = """module gen_ccsdt_p
   use omp_lib
-  use pspace_sort, only: get_index_table, sort4
+  use pspace_sort, only: get_index_table, sort4, sort_pspace, pspace_find, pspace_key
   use ccsdt_p_loops, only: calc_I2A_vooo, calc_I2A_vvov, calc_I2B_vooo, calc_I2B_ovoo, &
                            calc_I2B_vvov, calc_I2B_vvvo, calc_I2C_vooo, calc_I2C_vvov
   implicit none
@@ -219,7 +219,14 @@ end module gen_ccsdt_p
 
 @pytest.fixture(scope="module")
 def ccsdt_mods(tmp_path_factory):
-    src = GEN_CCSDT.format(routines="\n".join(r.emit() for r in CCSDT_ROUTINES.values()))
+    """(ccsdt_p_loops as written: sparse P-space index, the dense-index generator output: the original
+    hand code, which test_ccsdt_*_match_hand_code once checked line for line)."""
+    import codegen
+    codegen.DEFAULT_INDEX = "dense"
+    try:
+        src = GEN_CCSDT.format(routines="\n".join(r.emit() for r in CCSDT_ROUTINES.values()))
+    finally:
+        codegen.DEFAULT_INDEX = "sparse"
     names = list(CCSDT_ROUTINES)
     mod = build("gen_ccsdt_p", src, names, tmp_path_factory.mktemp("gen_ccsdt"),
                 extra=[Path(__file__).resolve().parents[2] / "ccpy/lib/fortran/ccsdt_p_loops.f90"])
@@ -230,7 +237,7 @@ def ccsdt_mods(tmp_path_factory):
 
 @pytest.mark.parametrize("frac", [1.0, 0.5])
 @pytest.mark.parametrize("name", list(CCSDT_ROUTINES))
-def test_generated_update_t3_bitwise(ccsdt_mods, name, frac):
+def test_update_t3_sparse_matches_dense(ccsdt_mods, name, frac):
     hand, gen = ccsdt_mods
     rng = np.random.default_rng(3)
     noa, nua, nob, nub = 4, 6, 3, 5
@@ -252,8 +259,12 @@ def test_generated_update_t3_bitwise(ccsdt_mods, name, frac):
             kw[a] = np.asfortranarray(rng.standard_normal([dims[d] for d in SHAPES[r][a].split(",")]))
     out_h = getattr(hand, name)(**{k.lower(): (v.copy(order="F") if isinstance(v, np.ndarray) else v) for k, v in kw.items()})
     out_g = getattr(gen, name)(**{k.lower(): (v.copy(order="F") if isinstance(v, np.ndarray) else v) for k, v in kw.items()})
-    for x, y in zip(out_h, out_g):
-        assert np.array_equal(x, y)
+    # the sorts leave the P space in different row orders, and the sums run in different orders
+    out_h = [np.asarray(x)[np.lexsort(np.asarray(out_h[-1]).T[::-1])] for x in out_h]
+    out_g = [np.asarray(x)[np.lexsort(np.asarray(out_g[-1]).T[::-1])] for x in out_g]
+    assert np.array_equal(out_h[-1], out_g[-1])
+    for x, y in zip(out_h[:-1], out_g[:-1]):
+        assert np.allclose(x, y, rtol=0, atol=1.0e-13 * np.abs(y).max())
     assert np.abs(out_h[0]).max() > 0
 
 
@@ -592,9 +603,9 @@ def _fortran_signature(src, name):
     return [a.strip() for a in src[i + len(f"subroutine {name}("):j].replace("&", "").split(",") if a.strip()]
 
 
-def _python_call(name):
+def _python_call(name, module="ccsdtq_p"):
     import ast as a_
-    tree = a_.parse((Path(__file__).resolve().parents[2] / "ccpy/cc/ccsdtq_p.py").read_text())
+    tree = a_.parse((Path(__file__).resolve().parents[2] / f"ccpy/cc/{module}.py").read_text())
     for node in a_.walk(tree):
         if isinstance(node, a_.Call) and a_.unparse(node.func) == f"ccsdtq_p_loops.{name}":
             return [a_.unparse(x) for x in node.args]
@@ -628,3 +639,12 @@ def test_ccsdtq_p_calls_match_fortran(name):
     sig = _fortran_signature(TARGET.read_text(), name)
     sig = [a for a in sig if a != "resid" and not a.startswith(("n3", "n4")) and a not in ("noa", "nua", "nob", "nub")]
     assert _python_call(name) == [_expected(a) for a in sig]
+
+
+@pytest.mark.parametrize("name", [f"update_t4{x}_p_chol" for x in "abcde"])
+def test_ccsdtq_p_chol_calls_match_fortran(name):
+    """The _chol entries take the Hbar(vvvv) residual of ccpy.cc.chol_ppl.vvvv_t34 as resid."""
+    from write_ccsdtq import TARGET
+    sig = _fortran_signature(TARGET.read_text(), name)
+    sig = [a for a in sig if not a.startswith(("n3", "n4")) and a not in ("noa", "nua", "nob", "nub")]
+    assert _python_call(name, "ccsdtq_p_chol") == [_expected(a) for a in sig]

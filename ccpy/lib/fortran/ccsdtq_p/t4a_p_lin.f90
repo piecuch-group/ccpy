@@ -29,7 +29,7 @@ module ccsdtq_p_t4a_p_lin
                   real(kind=8), intent(in) :: H1A_vv(nua,nua)
                   real(kind=8), intent(in) :: H2A_voov(noa,nua,nua,noa)
                   real(kind=8), intent(in) :: H2B_voov(nob,nub,nua,noa)
-                  integer, allocatable :: idx_table(:,:,:,:), loc_arr(:,:), block_off(:)
+                  integer, allocatable :: block_off(:)
                   integer(kind=8), allocatable :: block_key(:)
                   integer :: kdims(6), nblock
                   logical :: kchain(6)
@@ -45,9 +45,9 @@ module ccsdtq_p_t4a_p_lin
                   t3_amps_buff(:) = t3a_amps(:)
                   t3_excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABIJK LOOP !!!
                   kdims(1:5) = (/nua,nua,noa,noa,noa/)
                   kchain(1:5) = (/.false.,.true.,.false.,.true.,.true./)
-                  !!! ABIJK LOOP !!!
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/1,2,4,5,6/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -331,6 +331,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJK LOOP !!!
+                  kdims(1:5) = (/nua,nua,noa,noa,noa/)
+                  kchain(1:5) = (/.false.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/1,3,4,5,6/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -614,6 +616,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJK LOOP !!!
+                  kdims(1:5) = (/nua,nua,noa,noa,noa/)
+                  kchain(1:5) = (/.false.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/2,3,4,5,6/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -907,9 +911,9 @@ module ccsdtq_p_t4a_p_lin
                   t3_amps_buff(:) = t3a_amps(:)
                   t3_excits_buff(:,:) = t3a_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABCIJ LOOP !!!
                   kdims(1:5) = (/nua,nua,nua,noa,noa/)
                   kchain(1:5) = (/.false.,.true.,.true.,.false.,.true./)
-                  !!! ABCIJ LOOP !!!
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/1,2,3,4,5/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -1193,6 +1197,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCIK LOOP !!!
+                  kdims(1:5) = (/nua,nua,nua,noa,noa/)
+                  kchain(1:5) = (/.false.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/1,2,3,4,6/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -1476,6 +1482,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJK LOOP !!!
+                  kdims(1:5) = (/nua,nua,nua,noa,noa/)
+                  kchain(1:5) = (/.false.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t3_excits_buff, t3_amps_buff, n3aaa, 5, (/1,2,3,5,6/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -1765,9 +1773,9 @@ module ccsdtq_p_t4a_p_lin
 
                   !!!! +0.00520833 * H.aa.oooo(mnij) * T.aaaa(abcdmnkl) -> abcdijkl
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABCDIJ LOOP !!!
                   kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
                   kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
-                  !!! ABCDIJ LOOP !!!
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,5,6/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -1890,6 +1898,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCDIK LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,5,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2012,6 +2022,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCDIL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,5,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2134,6 +2146,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCDJK LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,6,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2256,6 +2270,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCDJL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,6,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2378,6 +2394,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCDKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,nua,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.true.,.false.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,4,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2504,9 +2522,9 @@ module ccsdtq_p_t4a_p_lin
 
                   !!!! +0.00520833 * H.aa.vvvv(abef) * T.aaaa(efcdijkl) -> abcdijkl
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABIJKL LOOP !!!
                   kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
                   kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
-                  !!! ABIJKL LOOP !!!
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2629,6 +2647,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACIJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,3,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2751,6 +2771,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ADIJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,4,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2873,6 +2895,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCIJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,3,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -2995,6 +3019,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BDIJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,4,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3117,6 +3143,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! CDIJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,noa,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.false.,.true.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/3,4,5,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3243,9 +3271,9 @@ module ccsdtq_p_t4a_p_lin
 
                   !!!! +0.0277778 * H.aa.voov(amie) * T.aaaa(ebcdmjkl) -> abcdijkl
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABCIJK LOOP !!!
                   kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
                   kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
-                  !!! ABCIJK LOOP !!!
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,5,6,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3441,6 +3469,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABDIJK LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,4,5,6,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3636,6 +3666,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACDIJK LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,3,4,5,6,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -3831,6 +3863,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCDIJK LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,3,4,5,6,7/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4026,6 +4060,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCIJL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,5,6,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4221,6 +4257,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABDIJL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,4,5,6,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4416,6 +4454,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACDIJL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,3,4,5,6,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4611,6 +4651,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCDIJL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,3,4,5,6,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -4806,6 +4848,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCIKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,5,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5001,6 +5045,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABDIKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,4,5,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5196,6 +5242,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACDIKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,3,4,5,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5391,6 +5439,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCDIKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,3,4,5,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5586,6 +5636,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABCJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,3,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5781,6 +5833,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ABDJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,2,4,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -5976,6 +6030,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! ACDJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/1,3,4,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -6171,6 +6227,8 @@ module ccsdtq_p_t4a_p_lin
                   !$omp end parallel
                   !!!! END OMP PARALLEL SECTION !!!!
                   !!! BCDJKL LOOP !!!
+                  kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
+                  kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
                   call sort_pspace(t4a_excits, t4a_amps, n4aaaa, 6, (/2,3,4,6,7,8/), kdims, kchain, nblock, block_key, block_off, resid)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&
@@ -6374,9 +6432,9 @@ module ccsdtq_p_t4a_p_lin
                   t4_amps_buff(:) = t4b_amps(:)
                   t4_excits_buff(:,:) = t4b_excits(:,:)
                   ! allocate sorting arrays (can be reused for each permutation)
+                  !!! ABCIJK LOOP !!!
                   kdims(1:6) = (/nua,nua,nua,noa,noa,noa/)
                   kchain(1:6) = (/.false.,.true.,.true.,.false.,.true.,.true./)
-                  !!! ABCIJK LOOP !!!
                   call sort_pspace(t4_excits_buff, t4_amps_buff, n4aaab, 6, (/1,2,3,5,6,7/), kdims, kchain, nblock, block_key, block_off)
                   !!!! BEGIN OMP PARALLEL SECTION !!!!
                   !$omp parallel shared(resid,&

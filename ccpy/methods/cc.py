@@ -238,11 +238,11 @@ class CCSDTQ_P(CCPBase):
     """CCSDTQ(P) (CCSD plus the triples and quadruples of the P space), e.g.
     ``CCSDTQ_P(mf, t3_excitations, t4_excitations)`` with ``t4_excitations = {"aaaa": ...,
     "aaab": ..., "aabb": ..., "abbb": ..., "bbbb": ...}`` of rows [a, b, c, d, i, j, k, l].
-    Four-index equations; HBar and left-CC are those of CCSD (two-body approximation)."""
-    module = "ccpy.cc.ccsdtq_p"
+    DF/Cholesky integrals (vvvv slices built on the fly); HBar and left-CC are those of CCSD
+    (two-body approximation)."""
+    module = "ccpy.cc.ccsdtq_p_chol"
     order = 4
     pspace_orders = [3, 4]
-    requires_df_port = True
     hbar_class = HBarCCSD
     left_class = "LeftCCSD"
 
