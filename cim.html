@@ -1,0 +1,454 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cluster-in-molecule local correlation &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Left states, densities, response and gradients" href="methods/properties.html" />
+    <link rel="prev" title="FNOs, active spaces and selected determinants" href="methods/spaces.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="methods/setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Cluster-in-molecule local correlation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#out-of-the-box-setup-and-what-is-returned">Out-of-the-box setup and what is returned</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#method">Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#potential-energy-surfaces">Potential energy surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multilevel-cim">Multilevel CIM</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#options">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#differences-from-the-papers">Differences from the papers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#restrictions-custom-domains-and-validation-status">Restrictions, custom domains and validation status</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="methods/properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methods/index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="methods/index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Cluster-in-molecule local correlation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cim.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cluster-in-molecule-local-correlation">
+<h1>Cluster-in-molecule local correlation<a class="headerlink" href="#cluster-in-molecule-local-correlation" title="Link to this heading"></a></h1>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>The CIM wrappers are experimental and are not fully tested. Limited
+canonical-limit, partition, subsystem and multilevel checks exist, but do
+not establish broad accuracy, robustness, scaling or geometry-derivative
+validation. Benchmark the chosen model and thresholds against a canonical
+calculation on representative small systems before scientific use.</p>
+<p>Every CIM calculation issues a <code class="docutils literal notranslate"><span class="pre">CIMDevelopmentWarning</span></code> (exported from
+<code class="docutils literal notranslate"><span class="pre">ccpy</span></code>) to say so; filter it with <code class="docutils literal notranslate"><span class="pre">warnings.simplefilter(&quot;ignore&quot;,</span>
+<span class="pre">CIMDevelopmentWarning)</span></code> once the model has been checked for your systems.</p>
+</div>
+<p>Cluster-in-molecule (CIM) splits a ground-state correlated calculation into
+independent calculations for small orbital subsystems and assembles the
+correlation energy from the contributions of the occupied localized orbitals
+(LMOs),</p>
+<div class="math notranslate nohighlight">
+\[\Delta E = \sum_{i'} \delta E_{i'}, \qquad
+\delta E_{i'} = \frac{1}{M_{i'}} \sum_{\{P_{i'}\}} \delta E_{i'}(\{P_{i'}\}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\{P_{i'}\}\)</span> runs over the <span class="math notranslate nohighlight">\(M_{i'}\)</span> subsystems in which the LMO
+<span class="math notranslate nohighlight">\(i'\)</span> is central. CIM is enabled on any supported method with <code class="docutils literal notranslate"><span class="pre">cim=</span></code>, in the
+same way as FNOs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">CRCC23</span><span class="p">,</span> <span class="n">MP2</span><span class="p">,</span> <span class="n">CIMOptions</span>
+
+<span class="n">mf</span> <span class="o">=</span> <span class="n">RHF</span><span class="p">(</span><span class="n">Molecule</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="s2">"6-31g*"</span><span class="p">,</span> <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">))</span>
+<span class="n">cim</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="n">ncore</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.003</span><span class="p">))</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="n">cim</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">cim</span><span class="o">.</span><span class="n">domains</span>          <span class="c1"># the subsystems (CIMDomains)</span>
+<span class="n">cim</span><span class="o">.</span><span class="n">subsystems</span>       <span class="c1"># orbital counts, method, and energy of each subsystem</span>
+</pre></div>
+</div>
+<p>The constructor returns a <code class="docutils literal notranslate"><span class="pre">ccpy.methods.cim.CIM</span></code> object; method options (solver
+settings, <code class="docutils literal notranslate"><span class="pre">variant</span></code> of CR-CC(2,3), …) are passed on to the subsystem
+calculations.</p>
+<p>The implemented class filter accepts ground-state <code class="docutils literal notranslate"><span class="pre">CCBase</span></code> subclasses,
+MP2, and the concrete <code class="docutils literal notranslate"><span class="pre">CRCC23</span></code> and <code class="docutils literal notranslate"><span class="pre">AdaptiveCCPQ</span></code> classes. Ordinary CCSD/CCSDT/CC3-style energies
+are assembled from their T1/T2 energy expression. Acceptance by that filter
+is not proof that every subclass or parameterized input is usable: selected
+CC(P) lists and external CI data need a subsystem-basis adaptation that this
+wrapper does not generally provide. Begin with MP2, CCSD, CCSDT, CRCC23 or
+AdaptiveCCPQ, which have focused canonical-limit tests.</p>
+<p>Adaptive CC(P;Q) runs its macroiterations unchanged in every subsystem: each
+subsystem grows its own P space of triples (in its QCMO basis) by its own moment
+contributions and stops by its own energy test (<code class="docutils literal notranslate"><span class="pre">energy_tolerance</span></code> applies to
+the subsystem energy). The central energy is the CC(P) energy from T1/T2 plus the
+central part of the CC(P;3)_D correction (two-body approximation) on the P space
+of the last macroiteration, partitioned like CR-CC(2,3) with the triples sum
+skipping the P space. With <code class="docutils literal notranslate"><span class="pre">percentage=[...,</span> <span class="pre">100.0]</span></code> every subsystem reaches
+CCSDT, so the calculation converges to CIM-CCSDT. Its limitations:</p>
+<ul class="simple">
+<li><p>the triples are ranked by their contributions to the whole subsystem
+correction, not to its central part, so some are spent on environment-only
+excitations;</p></li>
+<li><p>the P spaces are labeled by subsystem QCMOs, which change with the geometry, so
+<code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> (fixed domains, finite differences) reselects them rather than
+reusing them;</p></li>
+<li><p>semi-stochastic corrections (<code class="docutils literal notranslate"><span class="pre">stochastic=</span></code>) are not supported.</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.methods.corrections</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdaptiveCCPQ</span>
+
+<span class="n">local</span> <span class="o">=</span> <span class="n">AdaptiveCCPQ</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="n">ncore</span><span class="p">,</span> <span class="n">percentage</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">],</span>
+                     <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.003</span><span class="p">))</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="n">local</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span> <span class="n">The</span> <span class="n">reference</span> <span class="n">must</span> <span class="n">be</span> <span class="n">closed</span><span class="o">-</span><span class="n">shell</span>
+</pre></div>
+</div>
+<p>RHF without point-group symmetry or deleted virtuals.</p>
+<section id="out-of-the-box-setup-and-what-is-returned">
+<h2>Out-of-the-box setup and what is returned<a class="headerlink" href="#out-of-the-box-setup-and-what-is-returned" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CIM</span><span class="p">,</span> <span class="n">CIMOptions</span><span class="p">,</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">MP2</span><span class="p">,</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 0 0; H 0 0 .96; H .93 0 -.24"</span><span class="p">,</span> <span class="s2">"6-31g"</span><span class="p">,</span>
+               <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">local</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.003</span><span class="p">))</span>
+<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">CIM</span><span class="p">)</span>  <span class="c1"># this is a CIM wrapper, not a CCSD amplitude object</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">local</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">local</span><span class="o">.</span><span class="n">reference_energy</span><span class="p">,</span> <span class="n">local</span><span class="o">.</span><span class="n">correlation_energy</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">local</span><span class="o">.</span><span class="n">domains</span><span class="o">.</span><span class="n">subsystems</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">subsystem</span> <span class="ow">in</span> <span class="n">local</span><span class="o">.</span><span class="n">subsystems</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">subsystem</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">cim=</span></code> is intercepted by <code class="docutils literal notranslate"><span class="pre">MethodBase.__new__</span></code>. You can also construct
+<code class="docutils literal notranslate"><span class="pre">CIM(CCSD,</span> <span class="pre">mf,</span> <span class="pre">nfrozen=1,</span> <span class="pre">cim=CIMOptions(...))</span></code> explicitly. Start from native
+SCF or a <code class="docutils literal notranslate"><span class="pre">Reference</span></code>, not a previously solved CC/left/correction object;
+CIM creates its own subsystem calculations. Omit <code class="docutils literal notranslate"><span class="pre">cim</span></code> or pass <code class="docutils literal notranslate"><span class="pre">None</span></code> for
+a canonical calculation; <code class="docutils literal notranslate"><span class="pre">cim=False</span></code> is not the disabling convention here.</p>
+<p>The total is the full-system determinant energy plus assembled central-LMO
+correlation contributions. Each <code class="docutils literal notranslate"><span class="pre">subsystems</span></code> entry contains <code class="docutils literal notranslate"><span class="pre">method</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ncentral</span></code>, <code class="docutils literal notranslate"><span class="pre">noccupied</span></code>, <code class="docutils literal notranslate"><span class="pre">nunoccupied</span></code>, <code class="docutils literal notranslate"><span class="pre">natoms</span></code> and <code class="docutils literal notranslate"><span class="pre">energy</span></code>. That
+energy is the weighted central contribution, <strong>not</strong> a complete subsystem total
+that should have its own SCF energy added again. <code class="docutils literal notranslate"><span class="pre">raw_energy()</span></code> equals
+<code class="docutils literal notranslate"><span class="pre">energy()</span></code>: no automatic full-minus-truncated composite correction is attached.</p>
+<p><code class="docutils literal notranslate"><span class="pre">local.domains</span></code> is a <code class="docutils literal notranslate"><span class="pre">CIMDomains</span></code> object containing <code class="docutils literal notranslate"><span class="pre">subsystems</span></code> and a
+<code class="docutils literal notranslate"><span class="pre">(nLMO,natoms)</span></code> array of atomic populations. Each underlying <code class="docutils literal notranslate"><span class="pre">CIMSubsystem</span></code>
+has <code class="docutils literal notranslate"><span class="pre">central</span></code>, <code class="docutils literal notranslate"><span class="pre">occupied</span></code>, <code class="docutils literal notranslate"><span class="pre">atoms</span></code> and <code class="docutils literal notranslate"><span class="pre">method</span></code>. Orbital and atom indices
+are zero based; central LMOs are listed first in <code class="docutils literal notranslate"><span class="pre">occupied</span></code>. The wrapper
+exposes summarized subsystem results, not a global canonical T/L/R operator.
+It cannot serve as a normal CC parent for EOM or left-state composition.</p>
+<p>Use a canonical-limit check before a threshold sweep:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">canonical</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">limit</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.</span><span class="p">))</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Canonical-limit error:"</span><span class="p">,</span> <span class="n">limit</span> <span class="o">-</span> <span class="n">canonical</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">zeta</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.003</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">):</span>
+    <span class="n">approximation</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="n">zeta</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">zeta</span><span class="p">,</span> <span class="n">approximation</span><span class="o">.</span><span class="n">energy</span><span class="p">(),</span> <span class="n">approximation</span><span class="o">.</span><span class="n">subsystems</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Smaller zeta generally expands occupied environments, but domain merging can
+change discretely; monotonic energy errors and universal accuracy at the
+paper’s thresholds are not guaranteed. On a small molecule every selected
+domain can already span the full system, so a fast small example is not a
+local-correlation scaling benchmark.</p>
+</section>
+<section id="method">
+<h2>Method<a class="headerlink" href="#method" title="Link to this heading"></a></h2>
+<p>The implementation follows W. Li, P. Piecuch, J. R. Gour, and S. Li, J. Chem.
+Phys. <strong>131</strong>, 114109 (2009), with the single-environment subsystems of W. Li and
+P. Piecuch, J. Phys. Chem. A <strong>114</strong>, 8644 (2010), and the multilevel scheme of
+J. Phys. Chem. A <strong>114</strong>, 6721 (2010).</p>
+<ol class="arabic simple">
+<li><p>The correlated occupied orbitals are Boys localized.</p></li>
+<li><p><strong>Subsystems (SECIM).</strong> Every non-hydrogen atom, together with the hydrogen atoms
+bonded to it, collects as central orbitals the LMOs whose Mulliken charge (of two
+electrons) on one of these atoms exceeds <code class="docutils literal notranslate"><span class="pre">central_charge</span></code> (0.3). The environment
+are the LMOs <span class="math notranslate nohighlight">\(j\)</span> with <span class="math notranslate nohighlight">\(|\langle i|f|j\rangle| &gt; \zeta\)</span> for a central
+<span class="math notranslate nohighlight">\(i\)</span>. A subsystem whose occupied LMOs are contained in another one is merged
+into it (its central LMOs become central there). A single threshold
+<span class="math notranslate nohighlight">\(\zeta\)</span> controls the calculation: <span class="math notranslate nohighlight">\(\zeta = 0\)</span> gives one subsystem and
+the canonical result. Since subsystems are anchored on atoms, they do not
+rearrange unnecessarily as the nuclei move.</p></li>
+<li><p><strong>Local subsystem orbitals.</strong> The AO domain of an occupied LMO (core included)
+holds its largest-charge atoms whose charges add up to <code class="docutils literal notranslate"><span class="pre">domain_charge</span></code> (1.98);
+the AO domain of a subsystem is the union over its LMOs. Its extended domain adds
+every atom whose anchor (itself, or the non-hydrogen atom a hydrogen is bonded to)
+lies within <code class="docutils literal notranslate"><span class="pre">buffer_radius</span></code> (4 angstrom) of the AO domain. The occupied LMOs whose
+AO domains lie in the extended domain are projected onto its AOs (least squares)
+and symmetrically orthonormalized; the subsystem’s own ones are its occupied
+orbitals. Its unoccupied orbitals span the exact orthogonal complement of those
+projected LMOs in the extended domain (the span of its PAOs), restricted to the
+orbitals that differ from their projection onto the AO-domain atoms by less than
+<code class="docutils literal notranslate"><span class="pre">eta</span></code> (0.5) in norm. Every subsystem orbital is a combination of the AOs of its
+extended domain only, and the subsystem orbitals are exactly orthonormal.</p></li>
+<li><p><strong>Quasi-canonical orbitals.</strong> The occupied and unoccupied orbitals of each
+subsystem are rotated to the QCMOs that diagonalize its Fock blocks. Each
+subsystem is an ordinary <code class="docutils literal notranslate"><span class="pre">Reference</span></code> holding only its own orbitals: its Fock
+matrix is that of the full system (the other occupied LMOs enter through it), and
+its two-electron integrals are density fitted with the auxiliary functions of the
+extended domain, formed one auxiliary atom at a time. No full-system MO integrals
+are built, and the unmodified method runs on the subsystem. The occupied and
+unoccupied subsystem orbitals are not exactly the HF ones, so the subsystem Fock
+matrix has small occupied-unoccupied elements; CC methods include them, MP2
+neglects them.</p></li>
+<li><p><strong>Mixed-index energies.</strong> With <span class="math notranslate nohighlight">\(R\)</span> the rotation from the LMOs to the QCMOs,
+<span class="math notranslate nohighlight">\(\delta E_{i'}(\{P\})\)</span> is the energy expression with its first occupied
+index rotated back to the LMO <span class="math notranslate nohighlight">\(i'\)</span> (Eqs. (15)-(22) of the 2009 paper). For
+the CC energy, <span class="math notranslate nohighlight">\(\sum_a f_{i'a} t^a_{i'} + \tfrac12 \sum_{j,a&lt;b}
+v_{i'j}^{ab} \tau^{ab}_{i'j}\)</span>. For the triples correction of CR-CC(2,3),
+<span class="math notranslate nohighlight">\(\tfrac13 \sum \ell^{i'jk}_{abc} \mathfrak{M}_{i'jk}^{abc}\)</span>: the Fortran
+kernels are called with the moment inputs (HBar blocks and <span class="math notranslate nohighlight">\(T_2\)</span>) replaced
+by their derivatives under the occupied transformation
+<span class="math notranslate nohighlight">\(e^{\lambda P}\)</span>, which yields <span class="math notranslate nohighlight">\((P_1 + P_2 + P_3)\mathfrak{M}\)</span> exactly,
+with <span class="math notranslate nohighlight">\(P\)</span> the central projector weighted by <span class="math notranslate nohighlight">\(1/M_{i'}\)</span>. In the QCMO
+basis the triples keep their canonical (diagonal-denominator) form, so the
+corrections remain noniterative.</p></li>
+</ol>
+</section>
+<section id="potential-energy-surfaces">
+<h2>Potential energy surfaces<a class="headerlink" href="#potential-energy-surfaces" title="Link to this heading"></a></h2>
+<p>By default the subsystems are determined at every geometry (they adapt to the
+nuclear arrangement through their atom anchors). Where a reaction coordinate changes
+them (e.g. two subsystems merge as a bond breaks), the energy can jump. The
+fixed-domain variant reuses the subsystems of one geometry everywhere:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ref</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">mf_re</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="n">ncore</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">))</span>
+<span class="n">ref</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">mf</span> <span class="ow">in</span> <span class="n">scan</span><span class="p">:</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="n">ncore</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">zeta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">domains</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">domains</span><span class="p">))</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The LMOs of the new geometry are matched to those of the reference geometry by their
+atomic Mulliken populations (an assignment problem), and each subsystem keeps its
+AO-domain atoms. <code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> (and so finite-difference gradients, which are the
+only gradients CIM provides) always use the fixed domains. For a gradient or an optimization, solve the
+reference CIM calculation first so its domains exist:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize_geometry</span>
+
+<span class="n">local</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">gradient</span> <span class="o">=</span> <span class="n">local</span><span class="o">.</span><span class="n">gradient</span><span class="p">()</span>  <span class="c1"># numerical energy differences, no analytic CIM response</span>
+<span class="c1"># Potentially expensive; this remains an experimental numerical surface.</span>
+<span class="n">optimized</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Frozen domain membership does not freeze the LMOs or QCMO coefficients. The
+orbitals are relocalized/rematched and subsystem orbitals rebuilt at each
+geometry. Population-based assignments can become ambiguous at degeneracies,
+and changes in the number of unoccupied orbitals passing <code class="docutils literal notranslate"><span class="pre">eta</span></code> can still affect
+smoothness. Verify energy/gradient
+continuity before using CIM for minima, transition states, frequencies or IRCs.
+Static property convenience methods currently request an analytic property
+gradient and therefore are unavailable on CIM; a consistent fixed-domain
+finite-field scalar-energy callback is the generic alternative described in
+<a class="reference internal" href="methods/multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a>.</p>
+<p>Constructing a fresh CIM object independently at every displaced geometry
+without <code class="docutils literal notranslate"><span class="pre">domains=...</span></code> is a different, adaptively selected surface. It need
+not give the same derivative as <code class="docutils literal notranslate"><span class="pre">local.fd_gradient()</span></code> or <code class="docutils literal notranslate"><span class="pre">local.at_geometry</span></code>.</p>
+</section>
+<section id="multilevel-cim">
+<h2>Multilevel CIM<a class="headerlink" href="#multilevel-cim" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">levels</span></code> assigns higher-level methods to atoms; the method CIM is called on treats
+the rest:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cim</span> <span class="o">=</span> <span class="n">MP2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="n">ncore</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span><span class="n">levels</span><span class="o">=</span><span class="p">{</span><span class="n">CRCC23</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]}))</span>
+</pre></div>
+</div>
+<p>A subsystem is treated by the highest level for which one of its central LMOs lies
+entirely on that level’s atoms (hydrogen atoms follow the atom they are bonded to). A
+subsystem is not merged into one of a lower level, and an LMO central in subsystems of
+different levels contributes their average. The keys are method classes,
+not method instances; atom lists use zero-based full-molecule indices. Dictionary
+insertion order defines the ranking: list the highest level first. Hydrogens
+follow their heavy-atom anchors. The assignment is based on an LMO’s atomic
+population set, not simply a per-atom additive correlation energy.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mixed</span> <span class="o">=</span> <span class="n">MP2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cim</span><span class="o">=</span><span class="n">CIMOptions</span><span class="p">(</span>
+    <span class="n">zeta</span><span class="o">=</span><span class="mf">0.003</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="p">{</span><span class="n">CCSD</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]},</span>
+<span class="p">))</span>
+<span class="n">mixed_total</span> <span class="o">=</span> <span class="n">mixed</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">row</span><span class="p">[</span><span class="s2">"method"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">mixed</span><span class="o">.</span><span class="n">subsystems</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>This upgrades qualifying subsystems anchored on atom 0 to CCSD and leaves
+the others at MP2. A single water may all qualify, so test a separated-fragment
+model when demonstrating mixed levels. Shared solver options reach subsystem
+methods, but method-specific kwargs such as <code class="docutils literal notranslate"><span class="pre">variant</span></code> are forwarded only
+when the subsystem’s class is the wrapper’s base method. <code class="docutils literal notranslate"><span class="pre">levels</span></code> does not
+accept per-level constructor option dictionaries; an upgraded CRCC23 class
+therefore uses its own default variant.</p>
+</section>
+<section id="options">
+<h2>Options<a class="headerlink" href="#options" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">zeta</span></code> (0.003)</dt><dd><p>environment threshold; SECIM(0.003) and SECIM(0.001) are the settings of the 2010
+paper.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">central_charge</span></code> (0.3), <code class="docutils literal notranslate"><span class="pre">domain_charge</span></code> (1.98), <code class="docutils literal notranslate"><span class="pre">bond_tolerance</span></code> (0.168 angstrom)</dt><dd><p>LMO-to-atom assignments; X-H bonds use covalent radii.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">buffer_radius</span></code> (4.0 angstrom)</dt><dd><p>buffer atoms of the extended domains, as in the 2009 paper. Much smaller values
+let occupied orbitals of excluded neighbors leak into the unoccupied space; this is
+detected (an unoccupied QCMO below the occupied ones) and raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">eta</span></code> (0.5)</dt><dd><p>selection of the unoccupied orbitals of a subsystem (step 12 of the 2009 paper,
+which recommends 0.5 when the unoccupied orbitals are strictly orthonormalized).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">levels</span></code>, <code class="docutils literal notranslate"><span class="pre">domains</span></code></dt><dd><p>multilevel methods and fixed subsystems.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">localization_tol</span></code> (1e-12), <code class="docutils literal notranslate"><span class="pre">localization_maxiter</span></code> (1000)</dt><dd><p>Boys localization convergence and iteration limit.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">verbose</span></code> (False)</dt><dd><p>print the output of the subsystem calculations.</p>
+</dd>
+</dl>
+</section>
+<section id="differences-from-the-papers">
+<h2>Differences from the papers<a class="headerlink" href="#differences-from-the-papers" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The subsystem orbitals are kept in the extended domain (AO domain plus buffer)
+rather than projected back onto the AO domain, and they are strictly orthonormal
+(an option in the 2009 paper). The <code class="docutils literal notranslate"><span class="pre">eta</span></code> selection is applied to the whole
+unoccupied space of the extended domain at once (the subspace with weight above
+1 - eta^2 on the AO-domain atoms) instead of to its Boys-localized orbitals. With an
+extended domain covering the molecule and one subsystem, the canonical calculation
+is recovered.</p></li>
+<li><p>The two-electron integrals are fitted locally, with the auxiliary functions of the
+extended domain.</p></li>
+<li><p>X-H bonds use covalent radii plus <code class="docutils literal notranslate"><span class="pre">bond_tolerance</span></code>.</p></li>
+<li><p>Among the noniterative corrections only CR-CC(2,3) and the CC(P;3) correction of
+adaptive CC(P;Q) have the triples partition; CCSD(T), CC(t;3), CC(P;3) with a given
+P space, EOM, and open-shell references are not supported yet. Adaptive CC(P;Q) is
+not part of the papers.</p></li>
+</ul>
+</section>
+<section id="restrictions-custom-domains-and-validation-status">
+<h2>Restrictions, custom domains and validation status<a class="headerlink" href="#restrictions-custom-domains-and-validation-status" title="Link to this heading"></a></h2>
+<p>CIM is currently closed-shell native RHF, C1, without deleted virtuals, with density
+fitting (<code class="docutils literal notranslate"><span class="pre">cholesky_tei</span></code> molecules are not supported). It does
+not support UHF/ROHF, EE/IP/EA/DEA/DIP/SF EOM, ADC or STEOM. FNO+CIM composition
+is unsupported, including starting from an already FNO-reduced reference.
+Noniterative CCSD(T), CC(t;3), standalone CC(P;3) and quadruples corrections do not
+have this wrapper’s correction partition. Stochastic CIM correction sampling is not
+implemented: the CRCC23 and adaptive CC(P;Q) central correction paths directly call
+deterministic kernels. Do not infer availability from kwargs that a subsystem
+class otherwise accepts.</p>
+<p>For advanced fixed/custom domains, <code class="docutils literal notranslate"><span class="pre">CIMDomains</span></code> is exported from CCpy;
+<code class="docutils literal notranslate"><span class="pre">CIMSubsystem</span></code> is available from <code class="docutils literal notranslate"><span class="pre">ccpy.methods.cim</span></code>. Custom central labels,
+occupied lists, atom domains and population references must describe the same
+correlated LMO space and molecule. Every occupied LMO must be covered as central
+with consistent multiplicity; central orbitals must occupy the leading positions
+of each subsystem list. The wrapper is not a general validator/remapper for
+arbitrary selected determinants or external orbital labels.</p>
+<p>The current result keeps only summarized subsystem counts/energies. Inspect
+subsystem solver output with <code class="docutils literal notranslate"><span class="pre">CIMOptions(verbose=True)</span></code> and use tight solver
+settings: the wrapper’s final <code class="docutils literal notranslate"><span class="pre">converged</span></code> flag alone is not an independent
+check that every inner iterative solve converged.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tests/methods/test_cim.py</span></code> contains focused checks for full-space limits
+(MP2, CCSD, CCSDT, CRCC23), a dense mixed-index CRCC23_A partition oracle,
+water-trimer subsystem construction, truncated extended domains (n-decane), the
+buffer-too-small check, fixed-domain matching, multilevel
+assignment and rejected unsupported classes/references. These are limited
+implementation checks, not a broad method/reference/basis benchmark or a
+production scaling test. Derivatives, large/localized systems and general
+reaction paths remain insufficiently validated.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="methods/spaces.html" class="btn btn-neutral float-left" title="FNOs, active spaces and selected determinants" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="methods/properties.html" class="btn btn-neutral float-right" title="Left states, densities, response and gradients" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

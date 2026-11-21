@@ -1,0 +1,475 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spin-integrated STEOM-CCSD &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Legacy Driver interface" href="legacy.html" />
+    <link rel="prev" title="Density-fitted ADC(2)" href="adc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Spin-integrated STEOM-CCSD</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#manual-active-spaces">Manual active spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#automatic-selection">Automatic selection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#equations-and-diagnostics">Equations and diagnostics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#current-scope">Current scope</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#validation">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#higher-rank-auxiliaries-and-an-sd-sized-neutral-problem">Higher-rank auxiliaries and an SD-sized neutral problem</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#p-space-selection">P-space selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#transformation-and-neutral-sigma-vectors">Transformation and neutral sigma vectors</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spin-and-solver-behavior">Spin and solver behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-validation">Additional validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#targeting-neutral-cis-or-cisd-roots">Targeting neutral CIS or CISd roots</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Spin-integrated STEOM-CCSD</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/steomcc.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="spin-integrated-steom-ccsd">
+<h1>Spin-integrated STEOM-CCSD<a class="headerlink" href="#spin-integrated-steom-ccsd" title="Link to this heading"></a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">STEOMCC</span></code> is available from <code class="docutils literal notranslate"><span class="pre">ccpy</span></code> and <code class="docutils literal notranslate"><span class="pre">ccpy.methods</span></code>. It requires a
+closed-shell restricted reference and computes singlet (<code class="docutils literal notranslate"><span class="pre">multiplicity=1</span></code>) or
+triplet (<code class="docutils literal notranslate"><span class="pre">multiplicity=3</span></code>) excitation energies. The ground-state calculation
+is CCSD; an upstream <code class="docutils literal notranslate"><span class="pre">CCSD</span></code> object is reused.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">STEOMCC</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"Li 0 0 0; H 0 0 1.6"</span><span class="p">,</span> <span class="s2">"sto-3g"</span><span class="p">,</span>
+               <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">)</span>
+
+<span class="c1"># State-averaged CIS natural orbitals select the active spaces automatically.</span>
+<span class="n">steom</span> <span class="o">=</span> <span class="n">STEOMCC</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">nroots</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">omega</span><span class="p">)</span>       <span class="c1"># excitation energies in hartree</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">energy</span><span class="p">())</span>    <span class="c1"># total excited-state energies in hartree</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">energy</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>   <span class="c1"># total energy of root 0</span>
+</pre></div>
+</div>
+<section id="manual-active-spaces">
+<h2>Manual active spaces<a class="headerlink" href="#manual-active-spaces" title="Link to this heading"></a></h2>
+<p>Specify both <code class="docutils literal notranslate"><span class="pre">nacto</span></code> and <code class="docutils literal notranslate"><span class="pre">nactu</span></code> to select the highest occupied and lowest
+virtual canonical orbitals. Alternatively, give both <code class="docutils literal notranslate"><span class="pre">active_occupied</span></code> and
+<code class="docutils literal notranslate"><span class="pre">active_virtual</span></code> as lists of distinct, zero-based indices within their
+respective correlated spaces. Frozen occupied and deleted virtual orbitals
+are excluded from these indices.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">steom</span> <span class="o">=</span> <span class="n">STEOMCC</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">nroots</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">explicit</span> <span class="o">=</span> <span class="n">STEOMCC</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">nroots</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">active_occupied</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">active_virtual</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>The active space selects the model orbitals and the targeted principal IP/EA
+roots. The auxiliary IP-EOMCCSD(2h-1p) and EA-EOMCCSD(2p-1h) correlation spaces
+retain all correlated orbitals. The final diagonalization also retains all
+occupied-to-virtual singles, including inactive ones. It is not an active-only
+CIS projection.</p>
+</section>
+<section id="automatic-selection">
+<h2>Automatic selection<a class="headerlink" href="#automatic-selection" title="Link to this heading"></a></h2>
+<p>The automatic algorithm forms the occupied and virtual state-averaged CIS
+densities for the lowest <code class="docutils literal notranslate"><span class="pre">nroots</span></code> CIS states of the requested multiplicity.
+It selects natural orbitals by cumulative population and diagonalizes the
+active/active and inactive/inactive Fock blocks separately. Degenerate natural
+orbital populations are kept together at the selection boundary.</p>
+<p>The defaults follow Dutta et al., J. Chem. Phys. <strong>146</strong>, 074103 (2017):</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Singlets</p></th>
+<th class="head"><p>Triplets</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">occupied_threshold</span></code></p></td>
+<td><p>0.99</p></td>
+<td><p>0.999</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">virtual_threshold</span></code></p></td>
+<td><p>0.99</p></td>
+<td><p>0.999</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ip_threshold</span></code></p></td>
+<td><p>0.90</p></td>
+<td><p>0.80</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ea_threshold</span></code></p></td>
+<td><p>0.90</p></td>
+<td><p>0.80</p></td>
+</tr>
+</tbody>
+</table>
+<p>All thresholds are fractions, not percentages. IP/EA thresholds apply to the
+one-hole/one-particle weight using the determinant metric (including a factor
+of one half for same-spin doubles). Low-character roots are discarded, with
+pivoted QR choosing a matching square subset of the original model orbitals.
+An empty sector, an unconverged auxiliary solve, or an overlap condition number
+above <code class="docutils literal notranslate"><span class="pre">condition_limit</span></code> (default <code class="docutils literal notranslate"><span class="pre">1e10</span></code>) raises an error. Set the IP/EA
+thresholds to zero to retain all converged auxiliary states.</p>
+<p>CCSD and its HBar can be computed in the original orbitals: rotating their
+converged tensors is equivalent to recomputing them in the CIS-NO basis.
+The upstream reference, T amplitudes, and cached HBar are preserved. Automatic
+STEOM roots are matched one-to-one to the CIS states by maximum total squared
+overlap. Manual calculations return the lowest STEOM roots in energy order.
+Explicit neutral guesses can use per-irrep counts; the final Hamiltonian is
+not diagonalized in separate point-group blocks. See neutral targeting below.</p>
+</section>
+<section id="equations-and-diagnostics">
+<h2>Equations and diagnostics<a class="headerlink" href="#equations-and-diagnostics" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ccpy/eomcc/steomccsd.py</span></code> implements the spatial-orbital equations of
+Nooijen and Bartlett, J. Chem. Phys. <strong>107</strong>, 6812 (1997). The <code class="docutils literal notranslate"><span class="pre">ab</span></code> blocks of
+the closed-shell CCpy HBar supply the spin-free two-electron coefficients in
+1212 notation. Intermediate normalization uses a matrix solve on the active
+one-hole/one-particle overlaps; IP amplitudes carry the extra hole-contraction
+minus sign. The G construction includes the mixed IP/EA quadratic terms
+that account for implicit triple excitations.</p>
+<p>Only G.oo, G.vv, G.vovo and G.voov are formed. With row <code class="docutils literal notranslate"><span class="pre">(a,i)</span></code> and column
+<code class="docutils literal notranslate"><span class="pre">(b,j)</span></code>, the final matrix is</p>
+<div class="math notranslate nohighlight">
+\[A_{ai,bj} = \delta_{ij}g_{ab} - \delta_{ab}g_{ji}
+             + c\,g_{ajib} - g_{ajbi},\]</div>
+<p>where <code class="docutils literal notranslate"><span class="pre">c=2</span></code> for singlets and <code class="docutils literal notranslate"><span class="pre">c=0</span></code> for triplets. The S1 transformation is
+omitted because it preserves the spectrum of the full singles block.</p>
+<p>The first <code class="docutils literal notranslate"><span class="pre">H.ov</span> <span class="pre">*</span> <span class="pre">S(EA)</span></code> contribution to the phph intermediate is positive
+in this implementation, differing from the minus printed in Eq. (57).
+An independent determinant-space normal-ordering oracle, with nonzero H.ov,
+verifies this sign and all linear and quadratic contributions for singlets
+and triplets. Eq. (44) also requires attention to the order of its EA indices:
+<code class="docutils literal notranslate"><span class="pre">s_ie^ab</span> <span class="pre">=</span> <span class="pre">s_ei^ba</span></code>.</p>
+<p>Useful result attributes include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ip</span></code> and <code class="docutils literal notranslate"><span class="pre">ea</span></code>: auxiliary <code class="docutils literal notranslate"><span class="pre">R</span></code>, <code class="docutils literal notranslate"><span class="pre">omega</span></code>, <code class="docutils literal notranslate"><span class="pre">root_converged</span></code>,
+<code class="docutils literal notranslate"><span class="pre">singles_character</span></code> and <code class="docutils literal notranslate"><span class="pre">retained_roots</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">active_occupied</span></code> and <code class="docutils literal notranslate"><span class="pre">active_virtual</span></code>: retained model labels;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">S_ip</span></code> and <code class="docutils literal notranslate"><span class="pre">S_ea</span></code>: compact tensors <code class="docutils literal notranslate"><span class="pre">[m,i,j,b]</span></code> and <code class="docutils literal notranslate"><span class="pre">[e,a,b,j]</span></code>;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">G</span></code> and <code class="docutils literal notranslate"><span class="pre">matrix</span></code>: the transformed blocks and singles matrix;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">orbital_rotations</span></code>: occupied and virtual matrices, with old orbitals on
+rows and working orbitals on columns;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">active_weights</span></code>: final right-vector squared weight in active singles;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">residual_norms</span></code> and <code class="docutils literal notranslate"><span class="pre">root_converged</span></code>: final eigenpair checks.</p></li>
+</ul>
+<p>G, S and active labels refer to the working basis. <code class="docutils literal notranslate"><span class="pre">R</span></code> contains normalized
+spin-resolved singles transformed back to the upstream orbital basis. These
+are reduced-space eigenvectors, not full STEOM wavefunctions or transition
+densities. The IP/EA and final matrices are non-Hermitian; selected complex
+final eigenpairs raise an error when they are genuinely complex. Conjugate
+pairs split only by numerical noise are converted to a real basis when the
+resulting vectors satisfy the requested residual tolerance.</p>
+</section>
+<section id="current-scope">
+<h2>Current scope<a class="headerlink" href="#current-scope" title="Link to this heading"></a></h2>
+<p>This implementation materializes the legacy four-index HBar and uses dense
+CIS and final singles diagonalizations. It supports energies, with the common
+method API’s finite-difference gradients; no analytical STEOM gradients,
+transition properties, open-shell equations, or DF-specific STEOM contractions
+are provided. Auxiliary roots are followed individually from active orbital
+unit vectors using the existing Davidson solver. If separate guesses converge
+to linearly dependent roots, the model-overlap check rejects the calculation.</p>
+</section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">tests/eomcc/test_steomccsd.py</span></code> compares the tensor contractions to independent
+normal-ordered fermion algebra, including partial and full active spaces, and
+checks normalization, filtering and CIS-NO selection.
+<code class="docutils literal notranslate"><span class="pre">tests/methods/test_steomcc.py</span></code> exercises singlet/triplet molecular calculations,
+automatic selection, full-space orbital covariance, upstream cache preservation,
+cache invalidation and failure handling. These checks do not replace a broad
+comparison against published excitation-energy benchmarks.</p>
+</section>
+<section id="higher-rank-auxiliaries-and-an-sd-sized-neutral-problem">
+<h2>Higher-rank auxiliaries and an SD-sized neutral problem<a class="headerlink" href="#higher-rank-auxiliaries-and-an-sd-sized-neutral-problem" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">STEOMCC(...,</span> <span class="pre">level=&quot;sdt&quot;)</span></code> dispatches to <code class="docutils literal notranslate"><span class="pre">STEOMCCSDT</span></code>. The ground-state
+operator remains CCSD. The new level solves IP-EOMCCSD(3h-2p) and
+EA-EOMCCSD(3p-2h) auxiliaries and diagonalizes the final neutral Hamiltonian
+over singles <strong>and doubles</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">extended</span> <span class="o">=</span> <span class="n">STEOMCC</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"sdt"</span><span class="p">,</span> <span class="n">nroots</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                   <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                   <span class="n">auxiliary_solver</span><span class="o">=</span><span class="s2">"pspace"</span><span class="p">)</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extended</span><span class="o">.</span><span class="n">omega</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extended</span><span class="o">.</span><span class="n">singles_weights</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extended</span><span class="o">.</span><span class="n">ip</span><span class="o">.</span><span class="n">model_weights</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">extended</span><span class="o">.</span><span class="n">ea</span><span class="o">.</span><span class="n">model_weights</span><span class="p">)</span>
+
+<span class="c1"># Equivalent explicit class; use dense auxiliary triples for comparison.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">STEOMCCSDT</span>
+<span class="n">full_aux</span> <span class="o">=</span> <span class="n">STEOMCCSDT</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">nroots</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                     <span class="n">auxiliary_solver</span><span class="o">=</span><span class="s2">"dense"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The auxiliary model is enlarged to include all correlated 1h/1p configurations
+and all active 2h1p/2p1h <strong>doublets</strong>. Both the dense initial guesses and the
+normalization use this enlarged model. The guesses come from <code class="docutils literal notranslate"><span class="pre">ipcisd.py</span></code> and
+<code class="docutils literal notranslate"><span class="pre">eacisd.py</span></code>. One root is solved for each spin-adapted model configuration,
+using block Davidson with a unique assignment of Ritz roots to guesses. This
+allows predominantly 2h1p/2p1h roots to be retained rather than rejecting them
+with the ordinary STEOM singles-character cutoff.</p>
+<p>With auxiliary eigenvectors stored in the columns of R and an orthonormal
+model basis P, the wave operator satisfies</p>
+<div class="math notranslate nohighlight">
+\[\Omega P = R (P^\dagger R)^{-1} P^\dagger.\]</div>
+<p>The number of auxiliary roots is therefore set by the model dimension, not by
+the requested number of neutral roots. An unconverged root or an ill-conditioned
+model overlap fails the calculation. In the new level <code class="docutils literal notranslate"><span class="pre">ip_threshold</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ea_threshold</span></code> apply to the <strong>total enlarged-model weight</strong>, including active
+satellites. Both default to zero. No root is silently dropped because doing so
+would leave the prescribed model incomplete.</p>
+<section id="p-space-selection">
+<h3>P-space selection<a class="headerlink" href="#p-space-selection" title="Link to this heading"></a></h3>
+<p>Only the highest-rank auxiliary sector is restricted in P-space mode. Lower
+1h+2h1p / 1p+2p1h amplitudes remain unrestricted. By default auxiliary triples
+contain at least one active hole (IP) or one active particle (EA), matching
+CCpy’s active 3h2p/3p2h convention. <code class="docutils literal notranslate"><span class="pre">minimum_active=2</span></code> or <code class="docutils literal notranslate"><span class="pre">3</span></code> tightens that
+condition. Empty spin cases use CCpy’s zero-amplitude sentinel convention.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ip_pspace</span></code> and <code class="docutils literal notranslate"><span class="pre">ea_pspace</span></code> can provide custom <code class="docutils literal notranslate"><span class="pre">aaa</span></code>, <code class="docutils literal notranslate"><span class="pre">aab</span></code> and <code class="docutils literal notranslate"><span class="pre">abb</span></code>
+arrays with one-based canonical rows. IP rows are <code class="docutils literal notranslate"><span class="pre">[b,c,i,j,k]</span></code>; EA rows are
+<code class="docutils literal notranslate"><span class="pre">[a,b,c,j,k]</span></code>. These labels refer to the <strong>working basis</strong> after the reported
+orbital rotation, not necessarily the upstream canonical basis. Custom spaces
+should preserve spin symmetry. Fortran kernels may sort excitation lists;
+the wrapper restores a fixed external ordering after every sigma evaluation
+so that stored Davidson vectors retain their meaning. Caller-owned arrays
+are copied.</p>
+<p><code class="docutils literal notranslate"><span class="pre">auxiliary_order=2</span></code> selects the lower-rank IP/EA solvers with the same
+enlarged model and neutral SD projection. It is useful for isolating the
+higher-rank auxiliary contribution, but does not reproduce the 2000 paper’s
+original one-hole/one-particle normalization model.</p>
+</section>
+<section id="transformation-and-neutral-sigma-vectors">
+<h3>Transformation and neutral sigma vectors<a class="headerlink" href="#transformation-and-neutral-sigma-vectors" title="Link to this heading"></a></h3>
+<p>The 2000 extended-STEOM paper extends the final diagonalization space while
+retaining an S2 transformation obtained from ordinary IP/EA auxiliaries. The
+implementation here goes beyond that paper: its enlarged satellite model
+requires additional normal-ordered operator components as well as the
+higher-rank auxiliary amplitudes.</p>
+<p>Write S by the numbers of quasiparticle creation and annihilation operators:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">S.one2</span></code>: three creators and one annihilator;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">S.one3</span></code>: five creators and one annihilator;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">S.same</span></code>: three creators and three annihilators;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">S.higher</span></code>: five creators and three annihilators.</p></li>
+</ul>
+<p>The three-annihilator terms act on the satellite model. They are obtained
+recursively from the normalized auxiliary wave operator, subtracting the
+already determined one-annihilator action. Both IP and EA terms enter these
+subtractions. In particular, simply inserting improved R2 into the original
+STEOM S2 formula does not implement the enlarged-model transformation.</p>
+<p>Let U be the normal exponential of S, and let C contain neutral singles and
+doubles. The code forms the induced components</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}R_1 &amp;= C_1, \\
+R_2 &amp;= S_{3,1} C_1 + (1+S_{3,3}) C_2, \\
+R_3 &amp;= S_{3,1} C_2 + S_{5,1} C_1 + S_{5,3} C_2
+        + \tfrac12\{S_{3,1}^2\}C_1
+        + \{S_{3,3}S_{3,1}\}C_2.\end{split}\]</div>
+<p>Braces exclude contractions between the S operators. Implicit neutral
+quadruples are dropped before HBar acts, following the truncation strategy of
+Eq. (18) in the 2000 paper. The SD-projected sigma vector is computed with
+the existing EE-EOMCC(P) singles/doubles contractions and sparse induced
+triples. No dense R3 array is allocated and no neutral triples are optimized.
+The CCSD HBar’s factorized three-body contributions are retained by these
+existing contractions.</p>
+<p>The SD block of U is lower triangular:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}M=P_{SD}UP_{SD}=
+\begin{pmatrix}1&amp;0\\S_{3,1}&amp;1+S_{3,3}\end{pmatrix}.\end{split}\]</div>
+<p>The final action is</p>
+<div class="math notranslate nohighlight">
+\[G_{SD}C=M^{-1}P_{SD}\bar H P_{SDT}UP_{SD}C.\]</div>
+<p>The new rank-preserving satellite contribution makes the doubles block of M
+nontrivial. The ordinary <code class="docutils literal notranslate"><span class="pre">1-S2</span></code> left factor is insufficient; a sparse LU
+solve applies this inverse. This projected, omitted-quadruples extension is a
+research implementation, not a claim of equivalence to the published
+S2-only extended-STEOM method or to full EOMCCSDT.</p>
+</section>
+<section id="spin-and-solver-behavior">
+<h3>Spin and solver behavior<a class="headerlink" href="#spin-and-solver-behavior" title="Link to this heading"></a></h3>
+<p>The final basis contains unique Ms=0 SD configurations and is projected onto
+singlets or triplets by diagonalizing small connected blocks of the spin
+matrix. <code class="docutils literal notranslate"><span class="pre">nroots</span></code> may exceed the CIS dimension. Without an explicit neutral
+guess, roots are returned in energy order, including doubly excited roots.
+Configured neutral guesses instead determine both the targeted states and their
+returned order. <code class="docutils literal notranslate"><span class="pre">singles_weights</span></code> are measured
+in the transformed EOM picture, normalized over R1+R2, as in the paper.</p>
+<p><code class="docutils literal notranslate"><span class="pre">G</span></code> is a spin-adapted <code class="docutils literal notranslate"><span class="pre">scipy.sparse.linalg.LinearOperator</span></code>. Dimensions up to
+<code class="docutils literal notranslate"><span class="pre">dense_limit</span></code> (default 80) use dense diagonalization; larger problems use
+Arnoldi. Asking for almost all roots also uses dense diagonalization. <code class="docutils literal notranslate"><span class="pre">matrix</span></code>
+is populated only for dense solves. The solver options <code class="docutils literal notranslate"><span class="pre">maximum_iterations</span></code>,
+<code class="docutils literal notranslate"><span class="pre">amp_convergence</span></code> and <code class="docutils literal notranslate"><span class="pre">davidson_max_subspace_size</span></code> control the iterative
+solves. Upstream CCSD amplitudes and HBar remain unchanged, and neutral R
+vectors are returned in the upstream orbital basis.</p>
+<p>Automatic orbital selection uses CIS by default. With a configured CISd
+guess, it instead includes the selected guesses’ singles and doubles contributions
+to the occupied-hole and virtual-particle densities. A manual auxiliary active
+space remains available. The sparse
+normal-product implementation is intended to establish correctness and avoids
+full Fock-space matrices, but its Python exterior-algebra loops are not a
+replacement for a fully factorized production tensor implementation. Large
+satellite models can require many auxiliary roots, substantial storage, and
+expensive induced-triples contractions. Published molecular benchmarks and
+systematic active-space convergence studies remain necessary.</p>
+</section>
+<section id="additional-validation">
+<h3>Additional validation<a class="headerlink" href="#additional-validation" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">tests/eomcc/test_steomccsdt_equations.py</span></code> checks normal products against
+independent fermion strings, verifies the enlarged-model normalization, and
+compares the complete SD action and inverse metric against explicit small
+Fock-space matrices. <code class="docutils literal notranslate"><span class="pre">tests/methods/test_steomccsdt.py</span></code> checks the exact
+neutral two-electron limit, higher-rank full/P-space agreement, satellite roots,
+Arnoldi diagonalization, and failure handling.</p>
+</section>
+</section>
+<section id="targeting-neutral-cis-or-cisd-roots">
+<h2>Targeting neutral CIS or CISd roots<a class="headerlink" href="#targeting-neutral-cis-or-cisd-roots" title="Link to this heading"></a></h2>
+<p>Both STEOM levels support <code class="docutils literal notranslate"><span class="pre">initial_guess(&quot;cis&quot;,</span> <span class="pre">...)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">initial_guess(&quot;cisd&quot;,</span> <span class="pre">...)</span></code>. CISd retains all singles and active doubles and
+uses CCpy’s existing spin-adapted <code class="docutils literal notranslate"><span class="pre">ccpy.eom_guess.cisd</span></code> solver. The guess
+multiplicity is the STEOM calculation’s multiplicity.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">steom</span> <span class="o">=</span> <span class="n">STEOMCC</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"sdt"</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">steom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">steom</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">omega</span><span class="p">)</span>                  <span class="c1"># targets in guess order: 1, then 5</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">guess_singles_weights</span><span class="p">)</span>  <span class="c1"># singles fractions of the CISd guesses</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">steom</span><span class="o">.</span><span class="n">guess_overlaps</span><span class="p">)</span>         <span class="c1"># squared final overlaps with the guesses</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">roots</span></code> are distinct zero-based indices in the energy-ordered, spin-adapted
+guess spectrum. The call above computes enough CISd roots to select indices 1
+and 5 and targets two final states, even if they are not the two lowest STEOM
+states. Omitting <code class="docutils literal notranslate"><span class="pre">roots</span></code> targets the lowest <code class="docutils literal notranslate"><span class="pre">nroots</span></code> guess states. Optional
+<code class="docutils literal notranslate"><span class="pre">roots_per_irrep</span></code> supplies guess counts using the actual molecular irrep
+labels, with <code class="docutils literal notranslate"><span class="pre">use_symmetry=True</span></code> to enable symmetry restriction in the guess.
+Explicit indices then refer to the concatenated guess output in dictionary
+order. Without explicit indices all requested per-irrep guesses are targeted.</p>
+<p>The guess <code class="docutils literal notranslate"><span class="pre">nacto</span></code> and <code class="docutils literal notranslate"><span class="pre">nactu</span></code> define the highest occupied / lowest virtual
+canonical orbitals allowed in the <strong>neutral guess doubles</strong>. They are independent
+of the auxiliary active space passed to the STEOM constructor. For manual
+auxiliary spaces the guess counts default to the corresponding active counts;
+for automatic selection provide explicit CISd guess counts. The guess is solved
+on the bare Hamiltonian in the original reference orbital basis, then rotated
+into the STEOM working basis.</p>
+<p>For the extended SD problem, final C vectors are compared to CIS/CISd guesses
+in the transformed EOM picture: <code class="docutils literal notranslate"><span class="pre">R_SD</span> <span class="pre">=</span> <span class="pre">M</span> <span class="pre">C_SD</span></code>. The normalized overlap uses
+unique determinants, equivalently the metric with a 1/4 factor for same-spin
+doubles and unit weight for mixed-spin doubles. A one-to-one assignment
+maximizes the total squared overlap across targeted states. Dense solves search
+the full spectrum. Configured iterative solves use block Davidson with the
+same overlap criterion throughout; they do not search only the lowest-energy
+Arnoldi roots. Intermediate complex Ritz pairs can occur in non-Hermitian
+subspaces; real residual expansions are allowed, but converged targets must
+satisfy the real full SD equation.</p>
+<p>For automatic active-space selection, state averaging uses the selected
+CISd vectors’ full hole and particle densities. Thus a pure double with zero
+singles amplitude still selects its occupied and virtual orbitals. OO and VV
+one-body operators preserve excitation rank, so these densities contain the
+singles/singles and doubles/doubles contributions without cross terms.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">level=&quot;sdt&quot;</span></code> to represent neutral states dominated by doubles. The
+original <code class="docutils literal notranslate"><span class="pre">level=&quot;sd&quot;</span></code> Hamiltonian has only a singles space: it can accept a
+CISd guess’s singles projection, but a guess with no singles projection is
+rejected. Neither guess selection nor root following enlarges that singles-only
+Hamiltonian.</p>
+<p><code class="docutils literal notranslate"><span class="pre">guess_energy</span></code> and <code class="docutils literal notranslate"><span class="pre">guess_vectors</span></code> retain the selected bare CI energies
+and normalized ClusterOperator guesses. Changing <code class="docutils literal notranslate"><span class="pre">initial_guess</span></code> invalidates
+the cached neutral solution; geometry reconstruction preserves the guess setup.
+Without <code class="docutils literal notranslate"><span class="pre">initial_guess</span></code>, the previous defaults remain: automatic ordinary
+STEOM follows CIS roots, manual ordinary STEOM selects the lowest energies,
+and extended STEOM selects the lowest energies.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="adc.html" class="btn btn-neutral float-left" title="Density-fitted ADC(2)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="legacy.html" class="btn btn-neutral float-right" title="Legacy Driver interface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

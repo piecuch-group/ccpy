@@ -1,0 +1,496 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ground states and energy corrections &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Excitation, attachment, ionization, ADC and STEOM" href="excited.html" />
+    <link rel="prev" title="Molecules, references and composing calculations" href="setup.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ground states and energy corrections</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#mpn-and-coupled-cluster-levels">MPn and coupled-cluster levels</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#approximate-coupled-pair-and-external-correction-inputs">Approximate coupled-pair and external correction inputs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ground-state-noniterative-corrections">Ground-state noniterative corrections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#selected-triples-cc-t-3-and-cc-p-3">Selected triples, CC(t;3), and CC(P;3)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#adaptive-cc-p-q">Adaptive CC(P;Q)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#semi-stochastic-triples-corrections">Semi-stochastic triples corrections</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state-universal-multireference-cc">State-universal multireference CC</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Ground states and energy corrections</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/ground.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ground-states-and-energy-corrections">
+<h1>Ground states and energy corrections<a class="headerlink" href="#ground-states-and-energy-corrections" title="Link to this heading"></a></h1>
+<p>For the experimental <code class="docutils literal notranslate"><span class="pre">cim=CIMOptions(...)</span></code> dispatch on supported ground
+levels, see <a class="reference internal" href="../cim.html"><span class="doc">Cluster-in-molecule local correlation</span></a>. It returns a local-correlation wrapper, not an ordinary
+global CC amplitude object; its restrictions and validation status differ.</p>
+<section id="mpn-and-coupled-cluster-levels">
+<h2>MPn and coupled-cluster levels<a class="headerlink" href="#mpn-and-coupled-cluster-levels" title="Link to this heading"></a></h2>
+<p>For any ordinary ground-state level, instantiate it on native SCF or a
+<code class="docutils literal notranslate"><span class="pre">Reference</span></code> and call <code class="docutils literal notranslate"><span class="pre">energy()</span></code>. Additional required inputs are listed below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MP2</span><span class="p">,</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">CCSDT</span><span class="p">,</span> <span class="n">CCSDpT</span><span class="p">,</span> <span class="n">CRCC23</span>
+
+<span class="n">mp2</span> <span class="o">=</span> <span class="n">MP2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">e_mp2</span> <span class="o">=</span> <span class="n">mp2</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">e_ccsd</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_ccsdt</span> <span class="o">=</span> <span class="n">CCSDT</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_ccsd_t</span> <span class="o">=</span> <span class="n">CCSDpT</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_cr</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"D"</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Each energy includes the SCF determinant energy. <code class="docutils literal notranslate"><span class="pre">correlation_energy</span></code> is the
+raw correlated contribution, not a second total energy. <code class="docutils literal notranslate"><span class="pre">raw_energy()</span></code> omits
+FNO completion. For CC, <code class="docutils literal notranslate"><span class="pre">T</span></code> contains the converged excitation amplitudes.
+<code class="docutils literal notranslate"><span class="pre">total_energy</span></code> is a reporting property and does not itself trigger a fresh
+solve; use <code class="docutils literal notranslate"><span class="pre">energy()</span></code> when the method may be unsolved.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Ground-state method selection</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 45.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Class</p></th>
+<th class="head"><p>Equations / inputs</p></th>
+<th class="head"><p>Implementation notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MP2</span></code></p></td>
+<td><p>Second-order MP energy; native DF occupied-pair contractions.</p></td>
+<td><p>Handles internal semicanonicalization and Fov singles for general references.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MP3</span></code>, <code class="docutils literal notranslate"><span class="pre">MP4</span></code></p></td>
+<td><p>Third-/fourth-order MP energies.</p></td>
+<td><p>Materialized four-index kernels.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCD</span></code></p></td>
+<td><p>Doubles CC.</p></td>
+<td><p>Materialized equations; no default HBar or left method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CC2</span></code></p></td>
+<td><p>Approximate second-order CC.</p></td>
+<td><p>Materialized equations; default <code class="docutils literal notranslate"><span class="pre">HBarCC2</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code></p></td>
+<td><p>Singles and doubles CC.</p></td>
+<td><p>Native DF; default <code class="docutils literal notranslate"><span class="pre">HBarCCSD</span></code> and <code class="docutils literal notranslate"><span class="pre">LeftCCSD</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CC3</span></code></p></td>
+<td><p>Approximate iterative triples.</p></td>
+<td><p>Materialized; stored operator order 2, with triples handled by the kernel.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSDT</span></code></p></td>
+<td><p>Full singles, doubles and triples.</p></td>
+<td><p>Materialized; stored order 3, <code class="docutils literal notranslate"><span class="pre">HBarCCSDT</span></code> / <code class="docutils literal notranslate"><span class="pre">LeftCCSDT</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CC4</span></code></p></td>
+<td><p>Approximate quadruples model.</p></td>
+<td><p>Materialized; stored order 3; explicitly restricted to closed-shell RHF.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSDTQ</span></code></p></td>
+<td><p>Full singles through quadruples.</p></td>
+<td><p>Materialized; no default HBar/left method exposed by this wrapper.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CCSDT_P</span></code></p></td>
+<td><p>Full T1/T2 plus selected T3; requires <code class="docutils literal notranslate"><span class="pre">t3_excitations</span></code>.</p></td>
+<td><p>Native DF CC solve; downstream HBar/left equations can be materialized.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ACCD</span></code>, <code class="docutils literal notranslate"><span class="pre">ACCSD</span></code></p></td>
+<td><p>Require <code class="docutils literal notranslate"><span class="pre">acparray</span></code>: five scaling coefficients for T2-squared diagrams.</p></td>
+<td><p>Materialized; no default HBar/left method.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ACCSDT_P</span></code></p></td>
+<td><p>Requires <code class="docutils literal notranslate"><span class="pre">t3_excitations</span></code> and <code class="docutils literal notranslate"><span class="pre">acparray</span></code>.</p></td>
+<td><p>Materialized selected-triples approximate coupled-pair equations.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ECCC2</span></code></p></td>
+<td><p>Requires <code class="docutils literal notranslate"><span class="pre">ci_vectors_file</span></code> for external cluster analysis.</p></td>
+<td><p>Materialized; external T3/T4 are held fixed during CCSD-like iterations.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Higher excitation rank can rapidly increase memory and cost even for small
+molecules. The operator rank is not always the formal perturbative level:
+<code class="docutils literal notranslate"><span class="pre">CC3</span></code> and <code class="docutils literal notranslate"><span class="pre">CC4</span></code> are examples. Use the equation descriptions and method name,
+not <code class="docutils literal notranslate"><span class="pre">T.order</span></code> alone, to identify the model.</p>
+</section>
+<section id="approximate-coupled-pair-and-external-correction-inputs">
+<h2>Approximate coupled-pair and external correction inputs<a class="headerlink" href="#approximate-coupled-pair-and-external-correction-inputs" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">ACCSD</span><span class="p">,</span> <span class="n">ECCC2</span>
+
+<span class="n">acp</span> <span class="o">=</span> <span class="n">ACCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">acparray</span><span class="o">=</span><span class="p">[</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">],</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">acp_total</span> <span class="o">=</span> <span class="n">acp</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+
+<span class="n">external</span> <span class="o">=</span> <span class="n">ECCC2</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">ci_vectors_file</span><span class="o">=</span><span class="s2">"ci_wavefunction.dat"</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">external_total</span> <span class="o">=</span> <span class="n">external</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The example scaling vector is a selectable diagram model, not a universal
+recommended setting. <code class="docutils literal notranslate"><span class="pre">ECCC2</span></code> uses
+<code class="docutils literal notranslate"><span class="pre">ccpy.extcorr.external_correction.cluster_analysis</span></code>’s headerless text format.
+Each line contains an identifier, a floating-point CI coefficient, then the
+occupied spin-orbital labels of that determinant. For example, in a correlated
+two-electron space:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>1  0.98   1 2
+2 -0.10   1 4
+</pre></div>
+</div>
+<p>Spin-orbital labels are one based with alpha odd and beta even: spatial orbital
+p has alpha label <code class="docutils literal notranslate"><span class="pre">2*p-1</span></code> and beta label <code class="docutils literal notranslate"><span class="pre">2*p</span></code>. Frozen electrons are excluded
+and correlated orbital labels restart at one. Include the sorted HF determinant
+with a nonzero coefficient; the reader uses it for intermediate normalization.
+It processes excitations through quadruples. Do not insert headers, comments
+or blank records into this parser’s input. A generic coefficient vector without
+determinant labels is insufficient.</p>
+<p>The CI determinants, orbital ordering, frozen core and basis must match the
+working reference. FNO rotation requires a CI wavefunction already expressed
+in the reduced working basis. This wrapper does not rotate external CI data.</p>
+</section>
+<section id="ground-state-noniterative-corrections">
+<h2>Ground-state noniterative corrections<a class="headerlink" href="#ground-state-noniterative-corrections" title="Link to this heading"></a></h2>
+<p>Corrections are separate objects so that the same CC, HBar and left state can
+be reused. <code class="docutils literal notranslate"><span class="pre">energy()</span></code> is the corrected total, while <code class="docutils literal notranslate"><span class="pre">deltas</span></code> contains the
+additive increments by variant. Most wrappers default to variant D; the
+catalog gives the exact variant tuple and default for each class.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Standard correction chains</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 23.0%" />
+<col style="width: 30.0%" />
+<col style="width: 47.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Correction</p></th>
+<th class="head"><p>Standard parent</p></th>
+<th class="head"><p>Important settings / meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCSDpT</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code></p></td>
+<td><p>CCSD(T); A only; bare Hamiltonian, no left state or HBar needed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CRCC23</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code> + <code class="docutils literal notranslate"><span class="pre">LeftCCSD</span></code></p></td>
+<td><p>CR-CC(2,3); A/B/C/D; native DF; optional semi-stochastic evaluation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCT3</span></code></p></td>
+<td><p>active <code class="docutils literal notranslate"><span class="pre">CCSDT_P</span></code></p></td>
+<td><p>CC(t;3); <code class="docutils literal notranslate"><span class="pre">num_active</span></code>, optional <code class="docutils literal notranslate"><span class="pre">nacto/nactu</span></code>; optional stochastic evaluation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CCP3</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCSDT_P</span></code></p></td>
+<td><p>CC(P;3); default two-body approximation, optional full selected-triples HBar/left.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CRCC24</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code></p></td>
+<td><p>CR-CC(2,4), materialized quadruples correction.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CRCC34</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CCSDT</span></code> + <code class="docutils literal notranslate"><span class="pre">LeftCCSDT</span></code></p></td>
+<td><p>CR-CC(3,4), RHF kernel; default A. Do not assume every inherited variant is implemented.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CCP4</span></code></p></td>
+<td><p>default <code class="docutils literal notranslate"><span class="pre">CCSD</span></code></p></td>
+<td><p>Requires <code class="docutils literal notranslate"><span class="pre">t4_excitations</span></code>; materialized selected-quadruples correction.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cr</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"D"</span><span class="p">)</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">cr</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cr</span><span class="o">.</span><span class="n">deltas</span><span class="p">)</span>                 <span class="c1"># e.g. A/B/C/D increments</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cr</span><span class="o">.</span><span class="n">cc</span> <span class="ow">is</span> <span class="n">cc</span><span class="p">)</span>               <span class="c1"># reuse the parent</span>
+</pre></div>
+</div>
+<p>Changing <code class="docutils literal notranslate"><span class="pre">variant</span></code> among computed supported keys changes reporting; it does
+not require solving CC again. Scientific kernel restrictions can be narrower
+than inherited wrapper options. In particular, inspect returned <code class="docutils literal notranslate"><span class="pre">deltas</span></code>
+before assuming a high-rank correction supplies every A/B/C/D variant.
+FNO completion is included once in the final total, in addition to the
+high-level correction.</p>
+</section>
+<section id="selected-triples-cc-t-3-and-cc-p-3">
+<h2>Selected triples, CC(t;3), and CC(P;3)<a class="headerlink" href="#selected-triples-cc-t-3-and-cc-p-3" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">Reference</span><span class="p">,</span> <span class="n">CCSDT_P</span><span class="p">,</span> <span class="n">CCT3</span><span class="p">,</span> <span class="n">CCP3</span><span class="p">,</span>
+                  <span class="n">get_active_triples_pspace</span><span class="p">)</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">Reference</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">set_active_space</span><span class="p">(</span><span class="n">nact_occupied</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">triples</span> <span class="o">=</span> <span class="n">get_active_triples_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ccp</span> <span class="o">=</span> <span class="n">CCSDT_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">triples</span><span class="p">)</span>
+<span class="n">e_p</span> <span class="o">=</span> <span class="n">ccp</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_t3</span> <span class="o">=</span> <span class="n">CCT3</span><span class="p">(</span><span class="n">ccp</span><span class="p">,</span> <span class="n">num_active</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_pq_2ba</span> <span class="o">=</span> <span class="n">CCP3</span><span class="p">(</span><span class="n">ccp</span><span class="p">,</span> <span class="n">two_body_approx</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">e_pq_full</span> <span class="o">=</span> <span class="n">CCP3</span><span class="p">(</span><span class="n">ccp</span><span class="p">,</span> <span class="n">two_body_approx</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">CCT3</span></code>’s active counts configure the correction’s <code class="docutils literal notranslate"><span class="pre">System</span></code>; they do not
+retroactively generate the right CC triples. Supply a consistent selected-triples
+parent or explicit <code class="docutils literal notranslate"><span class="pre">t3_excitations</span></code>. <code class="docutils literal notranslate"><span class="pre">CCP3</span></code> can also accept
+<code class="docutils literal notranslate"><span class="pre">target_irrep</span></code>; <code class="docutils literal notranslate"><span class="pre">high_memory</span></code> selects the high-memory full correction only
+when <code class="docutils literal notranslate"><span class="pre">two_body_approx=False</span></code>. Full and two-body-approximation corrections use
+different HBars/left states and need not give the same energy.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CCP4</span></code> requires an explicit <code class="docutils literal notranslate"><span class="pre">t4_excitations</span></code> dictionary with keys
+<code class="docutils literal notranslate"><span class="pre">aaaa</span></code>, <code class="docutils literal notranslate"><span class="pre">aaab</span></code>, <code class="docutils literal notranslate"><span class="pre">aabb</span></code>, <code class="docutils literal notranslate"><span class="pre">abbb</span></code> and <code class="docutils literal notranslate"><span class="pre">bbbb</span></code> and rows
+<code class="docutils literal notranslate"><span class="pre">[a,b,c,d,i,j,k,l]</span></code> in the expected selected-space convention. The helper
+<code class="docutils literal notranslate"><span class="pre">get_quadruples_pspace_from_cipsi</span></code> reads the supported external CIPSI format;
+its signature and file convention should be inspected before using external
+lists. It does not create a CCSDTQ(P) parent: no such ground-state wrapper is
+exported here. Selected-space conventions are detailed in <a class="reference internal" href="spaces.html"><span class="doc">FNOs, active spaces and selected determinants</span></a>.</p>
+</section>
+<section id="adaptive-cc-p-q">
+<h2>Adaptive CC(P;Q)<a class="headerlink" href="#adaptive-cc-p-q" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">AdaptiveCCPQ</span>
+
+<span class="n">adaptive</span> <span class="o">=</span> <span class="n">AdaptiveCCPQ</span><span class="p">(</span>
+    <span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">percentage</span><span class="o">=</span><span class="p">[</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">],</span>
+    <span class="n">energy_tolerance</span><span class="o">=</span><span class="mf">1.e-4</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">adaptive</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">adaptive</span><span class="o">.</span><span class="n">ccp_energies</span><span class="p">,</span> <span class="n">adaptive</span><span class="o">.</span><span class="n">ccpq_energies</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">adaptive</span><span class="o">.</span><span class="n">adaptive_converged</span><span class="p">,</span> <span class="n">adaptive</span><span class="o">.</span><span class="n">ccpq_errors</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The percentages specify successive P-space sizes relative to all triples in
+the reference symmetry. Each macroiteration solves CCSDT(P), constructs a
+CCSD-like HBar/left state for the two-body approximation, and selects new triples
+from CC(P;3) moment contributions. The final macroiteration computes the
+correction without further growth. Without <code class="docutils literal notranslate"><span class="pre">percentage</span></code>, growth uses
+<code class="docutils literal notranslate"><span class="pre">selection_factor</span></code> times a singles or singles+doubles base
+(<code class="docutils literal notranslate"><span class="pre">base_growth=&quot;ccsd&quot;</span></code> by default), for up to
+<code class="docutils literal notranslate"><span class="pre">maximum_macroiterations</span> <span class="pre">+</span> <span class="pre">1</span></code> macroiterations.</p>
+<p>Controls include <code class="docutils literal notranslate"><span class="pre">n_det_max</span></code>, <code class="docutils literal notranslate"><span class="pre">buffer_factor</span></code>, <code class="docutils literal notranslate"><span class="pre">minimum_threshold</span></code> and
+<code class="docutils literal notranslate"><span class="pre">reset_amplitudes</span></code>. Explicit <code class="docutils literal notranslate"><span class="pre">pspaces=[...]</span></code> replays prescribed spaces.
+<code class="docutils literal notranslate"><span class="pre">pspaces</span></code>, <code class="docutils literal notranslate"><span class="pre">timings</span></code> and <code class="docutils literal notranslate"><span class="pre">extrapolated</span></code> record the selection history,
+wall times and Goodson extrapolations. <code class="docutils literal notranslate"><span class="pre">adaptive_converged</span></code> distinguishes
+meeting the adaptive energy criterion from merely finishing the prescribed
+schedule. This wrapper is ground-state AdaptiveCCPQ; legacy adaptive excited
+state drivers are separate APIs.</p>
+</section>
+<section id="semi-stochastic-triples-corrections">
+<h2>Semi-stochastic triples corrections<a class="headerlink" href="#semi-stochastic-triples-corrections" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">CRCC23</span></code>, <code class="docutils literal notranslate"><span class="pre">CCT3</span></code> and two-body <code class="docutils literal notranslate"><span class="pre">CCP3</span></code> accept:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">stochastic</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">stochastic</span><span class="o">=</span><span class="p">{</span><span class="s2">"target_error"</span><span class="p">:</span> <span class="mf">1.e-5</span><span class="p">,</span> <span class="s2">"seed"</span><span class="p">:</span> <span class="mi">7</span><span class="p">})</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">stochastic</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">stochastic</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span> <span class="n">stochastic</span><span class="o">.</span><span class="n">stochastic_info</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">errors</span></code> reports one-standard-deviation estimates by variant. These are
+sampling uncertainties, not estimates of basis-set, FNO or truncation errors.
+<code class="docutils literal notranslate"><span class="pre">stochastic=True</span></code> uses the algorithm defaults; the complete controls live in
+<code class="docutils literal notranslate"><span class="pre">ccpy.moments.stochastic_triples.DEFAULT_OPTIONS</span></code>. Unsupported correction
+classes reject stochastic evaluation. Full <code class="docutils literal notranslate"><span class="pre">CCP3</span></code> requires deterministic
+operation.</p>
+<p><code class="docutils literal notranslate"><span class="pre">AdaptiveCCPQ(stochastic=...,</span> <span class="pre">convergence_z=1.96)</span></code> uses stochastic corrections
+for convergence decisions while determinant selection remains deterministic.
+Its stopping criterion includes the uncertainty of consecutive energies:</p>
+<div class="math notranslate nohighlight">
+\[|E_n-E_{n-1}|+z\sqrt{\sigma_n^2+\sigma_{n-1}^2}
+   &lt; \mathrm{energy\_tolerance}.\]</div>
+<p>The statistical target must be small enough to resolve that tolerance; the
+wrapper checks this. Analytic gradients are disabled for stochastic correction
+instances; numerical differentiation of sampled energies needs its own noise
+assessment.</p>
+</section>
+<section id="state-universal-multireference-cc">
+<h2>State-universal multireference CC<a class="headerlink" href="#state-universal-multireference-cc" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SUMRCCSD(mf,</span> <span class="pre">n,</span> <span class="pre">m)</span></code> solves the Jeziorski-Monkhorst SU-MRCCSD equations in the
+complete model space CAS(n, m) of RHF/ROHF orbitals, with the <code class="docutils literal notranslate"><span class="pre">m</span></code> active orbitals
+right above the core. Each model-space determinant (all spin states with the
+reference’s <span class="math notranslate nohighlight">\(M_s\)</span>) is a reference with its own CCSD-like cluster operator, and
+<code class="docutils literal notranslate"><span class="pre">energy()</span></code> returns the eigenvalues of the effective Hamiltonian, one per determinant:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mr</span> <span class="o">=</span> <span class="n">SUMRCCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">roots</span> <span class="o">=</span> <span class="n">mr</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>             <span class="c1"># ascending; mr.energy(0) is the lowest</span>
+<span class="n">mr</span><span class="o">.</span><span class="n">heff</span><span class="p">,</span> <span class="n">mr</span><span class="o">.</span><span class="n">coefficients</span>        <span class="c1"># effective Hamiltonian, model-space eigenvectors</span>
+<span class="n">SUMRCCSD1</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>    <span class="c1"># core-virtual amplitudes at first-order MRMBPT</span>
+</pre></div>
+</div>
+<p>A general (incomplete) model space is given as a list of determinants instead, each
+listing the <span class="math notranslate nohighlight">\(N_\alpha\)</span> occupied alpha and then the <span class="math notranslate nohighlight">\(N_\beta\)</span> occupied beta
+correlated orbitals, numbered from 1 (as in <code class="docutils literal notranslate"><span class="pre">ccpy.models.hilbert.Determinant</span></code>), e.g.
+a CAS with a determinant that causes convergence problems removed:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># H2, CAS(2,2) without the doubly excited determinant</span>
+<span class="n">mr</span> <span class="o">=</span> <span class="n">SUMRCCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">determinants</span><span class="o">=</span><span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">]])</span>
+</pre></div>
+</div>
+<p>Orbitals occupied (empty) in every determinant are core (virtual). Amplitudes of the
+internal excitations, which take one reference into another, follow the C conditions of
+Li and Paldus [J. Chem. Phys. 119, 5320 (2003)]: internal singles vanish, internal
+doubles are <span class="math notranslate nohighlight">\(-\mathcal{A}\,t_1 t_1\)</span>, and internal excitations of higher rank (at
+most the number of active electrons) carry amplitudes equal to minus their disconnected
+clusters. These enter the effective Hamiltonian and the coupling terms, keeping both
+connected, and the direct terms, where the internal triples and quadruples add their
+CCSDT/CCSDTQ contributions to the singles and doubles equations (higher ranks cannot reach
+them). In a complete model space all internal amplitudes vanish.</p>
+<p>Such determinants can also be dropped automatically: <code class="docutils literal notranslate"><span class="pre">prune_intruders=gap</span></code> removes
+determinants, highest energy first, until every single or double of the remaining ones
+lies at least <code class="docutils literal notranslate"><span class="pre">gap</span></code> (Eh) above the highest of them, at the orbital-energy estimate used
+for the intruder warning (<code class="docutils literal notranslate"><span class="pre">0.0</span></code> removes exactly what the warning flags). A positive gap is
+necessary for the Jacobi iterations to converge but no value guarantees it; for H4/6-31G,
+CAS(4,4) converged from a gap of about 0.3 Eh. The removed determinants are printed, and
+their states are no longer computed.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">mr</span> <span class="o">=</span> <span class="n">SUMRCCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">prune_intruders</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+<span class="n">mr</span><span class="o">.</span><span class="n">model_space</span><span class="o">.</span><span class="n">determinants</span>     <span class="c1"># the determinants kept</span>
+</pre></div>
+</div>
+<p>Noniterative triples corrections from the method of moments of the SU-MRCC equations,
+MM-SUCC(2,3) [Piecuch and Kowalski, Int. J. Mol. Sci. 3, 676 (2002)], are available as
+<code class="docutils literal notranslate"><span class="pre">mr.mmsucc23()</span></code> (energies of all roots, or <code class="docutils literal notranslate"><span class="pre">mr.mmsucc23(root)</span></code>):</p>
+<div class="math notranslate nohighlight">
+\[E_\mu(2,3) = E_\mu + \frac{\sum_p c_{p\mu}\langle\Psi_\mu|\Gamma_3(p)|\Phi_p\rangle}
+                            {\langle\Psi_\mu|\Psi_\mu^{\mathrm{SU}}\rangle},\]</div>
+<p>where <span class="math notranslate nohighlight">\(\Gamma_3(p)\)</span> are the triples moments of the SU-MRCC equations of each reference
+(direct and coupling terms) and the trial wave function is the multireference analog of
+CR-CCSD(T), <span class="math notranslate nohighlight">\(\Psi_\mu = \sum_q c_{q\mu}(1 + T_1 + T_2 + Z_3)(q)|\Phi_q\rangle\)</span> with
+<span class="math notranslate nohighlight">\(Z_3 = R_3[(V_N T_2)_C + (V_N T_1)_{DC}]\)</span> from the converged amplitudes. For one
+reference the triples part reduces to CR-CCSD(T)’s. Everything is evaluated on the fly over
+the triples of each reference (no triples are stored), at a CR-CC(2,3)-like cost per
+reference plus the projections of the other references’ wave functions onto its triples.</p>
+<p>The effective Hamiltonian elements and coupling terms are exact for any model space and any
+number of active electrons: both come from one primitive, the coefficient of each single or
+double of reference <span class="math notranslate nohighlight">\(p\)</span> in <span class="math notranslate nohighlight">\(e^{T(q)}|\Phi_q\rangle\)</span>, evaluated by a recursion over
+the partitions of the excitation into cluster blocks (t1, t2, and the C-condition internal
+amplitudes), with array sizes set by the longest excitation present. The cost grows as the
+square of the number of determinants; pairs of references of different point-group symmetry
+are skipped, and in complete model spaces partitions without a core or virtual index in every
+block are pruned. To see the formula behind any element, list its terms:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.mrcc.sumrcc</span><span class="w"> </span><span class="kn">import</span> <span class="n">cluster_terms</span><span class="p">,</span> <span class="n">format_cluster_terms</span>
+<span class="c1"># alpha 1,2 -&gt; 3,4 and beta 1 -&gt; 3 relative to Phi_q (spin orbitals, 4 spatial orbitals)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">format_cluster_terms</span><span class="p">(</span><span class="n">cluster_terms</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="mi">4</span><span class="p">),</span> <span class="mi">4</span><span class="p">))</span>
+<span class="c1"># + t1(3a;1a) t1(4a;2a) t1(3b;1b)</span>
+<span class="c1"># + t1(3a;1a) t2(4a,3b;2a,1b)</span>
+<span class="c1"># ... Larger model spaces</span>
+</pre></div>
+</div>
+<p>are prone to intruder states, which are reported when an external determinant lies
+below the highest reference. <code class="docutils literal notranslate"><span class="pre">solver=&quot;auto&quot;</span></code> (default) runs Jacobi/DIIS and falls
+back to Newton-Krylov; <code class="docutils literal notranslate"><span class="pre">&quot;jacobi&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;newton_krylov&quot;</span></code> select one. The equations
+use the DF vectors directly: each reference stores its Fock matrix, Cholesky vectors and
+only the two-body integrals with at most two unoccupied indices.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="setup.html" class="btn btn-neutral float-left" title="Molecules, references and composing calculations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="excited.html" class="btn btn-neutral float-right" title="Excitation, attachment, ionization, ADC and STEOM" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

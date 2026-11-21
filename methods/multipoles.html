@@ -1,0 +1,369 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multipole moments and harmonic IR intensities &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Analytic gradients and finite differences" href="gradients.html" />
+    <link rel="prev" title="Left states, densities, response and gradients" href="properties.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Multipole moments and harmonic IR intensities</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#analytic-property-derivatives">Analytic property derivatives</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state-moments-units-and-origin">State moments, units and origin</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#analytic-convenience-versus-a-generic-finite-field-route">Analytic convenience versus a generic finite-field route</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compute-frequencies-and-ir-intensities-together">Compute frequencies and IR intensities together</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#saved-tensors-isotope-reanalysis-and-intensity-scope">Saved tensors, isotope reanalysis and intensity scope</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-examples-and-inspect-validation">Run the examples and inspect validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Multipole moments and harmonic IR intensities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/multipoles.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="multipole-moments-and-harmonic-ir-intensities">
+<h1>Multipole moments and harmonic IR intensities<a class="headerlink" href="#multipole-moments-and-harmonic-ir-intensities" title="Link to this heading"></a></h1>
+<p>The derivative-density machinery now supplies relaxed state multipole moments
+and combined nuclear gradients/dipoles. Differences of the dipoles along
+nuclear displacements give an atomic polar tensor and double-harmonic IR
+intensities. This chapter distinguishes static moments, electronic energy
+perturbations and vibrational intensities; none is automatically an electronic
+transition strength or a Raman spectrum.</p>
+<section id="analytic-property-derivatives">
+<h2>Analytic property derivatives<a class="headerlink" href="#analytic-property-derivatives" title="Link to this heading"></a></h2>
+<p>For an electronic one-body perturbation</p>
+<div class="math notranslate nohighlight">
+\[h(\boldsymbol\lambda)=h+\sum_k\lambda_k V_k,
+\qquad \frac{\partial E}{\partial\lambda_k}=D_{\mathrm{relaxed}}:V_k,\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">V</span></code> is a real AO matrix <code class="docutils literal notranslate"><span class="pre">(nao,nao)</span></code> or component stack
+<code class="docutils literal notranslate"><span class="pre">(ncomp,nao,nao)</span></code>. The analytic gradient kernels use orbital-relaxed density
+and response information for this derivative as well as for nuclear gradients.
+The operator holds the nuclei and AO basis positions fixed during the field
+variation.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.derivative_integrals</span><span class="w"> </span><span class="kn">import</span> <span class="n">multipole_integrals</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 .05 .1173; H 0 .7572 -.4692; H .1 -.7572 -.4692"</span><span class="p">,</span>
+               <span class="s2">"sto-3g"</span><span class="p">,</span> <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">)</span>
+<span class="n">labels</span><span class="p">,</span> <span class="n">V</span> <span class="o">=</span> <span class="n">multipole_integrals</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">))</span>
+<span class="n">derivatives</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">perturbation</span><span class="o">=</span><span class="n">V</span><span class="p">)</span>  <span class="c1"># (ncomp,), electronic dE/dlambda</span>
+<span class="n">nuclear_gradient</span><span class="p">,</span> <span class="n">derivatives</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">gradient</span><span class="p">(</span><span class="n">properties</span><span class="o">=</span><span class="n">V</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The three forms of <code class="docutils literal notranslate"><span class="pre">gradient</span></code> have different returns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gradient()</span></code>: nuclear gradient <code class="docutils literal notranslate"><span class="pre">(natoms,3)</span></code>, Eh/bohr.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gradient(perturbation=V)</span></code>: property derivatives <code class="docutils literal notranslate"><span class="pre">(ncomp,)</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gradient(properties=V)</span></code>: <code class="docutils literal notranslate"><span class="pre">(nuclear_gradient,</span> <span class="pre">property_derivatives)</span></code>
+from one analytic response calculation.</p></li>
+</ul>
+<p>Use <code class="docutils literal notranslate"><span class="pre">properties=</span></code> on <code class="docutils literal notranslate"><span class="pre">gradient</span></code>, not <code class="docutils literal notranslate"><span class="pre">energy_and_gradient</span></code>: the latter
+passes kwargs to <code class="docutils literal notranslate"><span class="pre">energy</span></code> as well, and property-integral kwargs are not energy
+arguments. Use either perturbation or properties according to the desired
+return. For EOM or an excited correction, pass <code class="docutils literal notranslate"><span class="pre">root=...</span></code> to select one
+returned state. Matching the energy variant matters, e.g. CRCC23/CREOMCC23
+analytic property paths are available for variant A under their normal
+reference restrictions. See <a class="reference internal" href="gradients.html"><span class="doc">Analytic gradients and finite differences</span></a> for eligibility and convergence.</p>
+</section>
+<section id="state-moments-units-and-origin">
+<h2>State moments, units and origin<a class="headerlink" href="#state-moments-units-and-origin" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">moments</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">multipole_moments</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">moments</span><span class="p">[</span><span class="s2">"x"</span><span class="p">],</span> <span class="n">moments</span><span class="p">[</span><span class="s2">"xy"</span><span class="p">],</span> <span class="n">moments</span><span class="p">[</span><span class="s2">"xyz"</span><span class="p">])</span>
+<span class="n">gradient</span><span class="p">,</span> <span class="n">dipole</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">gradient_and_dipole</span><span class="p">()</span>  <span class="c1"># dipole (3,), ordered x,y,z</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">multipole_moments</span></code> returns a dictionary of all Cartesian moments through
+<code class="docutils literal notranslate"><span class="pre">order</span></code>: 3 dipole components for order 1; those plus 6 quadrupole components
+for order 2; those plus 10 octupole components for order 3. <code class="docutils literal notranslate"><span class="pre">origin</span></code> is in
+bohr and defaults to the coordinate origin. Keys follow
+<code class="docutils literal notranslate"><span class="pre">x,y,z,xx,xy,xz,yy,yz,zz,xxx,xxy,xxz,xyy,xyz,xzz,yyy,yyz,yzz,zzz</span></code>.
+These are primitive Cartesian charge moments, not traceless tensors or
+spherical multipoles, with units e bohr, e bohr squared and e bohr cubed.</p>
+<p>The helper returns the <strong>total physical charge moment</strong>, nuclear minus the
+electronic position-moment derivative:</p>
+<div class="math notranslate nohighlight">
+\[M_{x^a y^b z^c}=\sum_A Z_A(X_A-O_x)^a(Y_A-O_y)^b(Z_A-O_z)^c
+    -\frac{\partial E}{\partial\lambda_{x^a y^b z^c}}.\]</div>
+<p>Do not negate or add the nuclear part again. By comparison,
+<code class="docutils literal notranslate"><span class="pre">get_multipole_integral</span></code> used by LRCC returns positive position operators and
+an electronic reference expectation; that is a different return convention.
+Charged dipoles depend on the origin, and higher moments generally do too.
+Neutral dipoles are origin invariant. Keep a fixed origin when differentiating
+moments across geometries.</p>
+<p><code class="docutils literal notranslate"><span class="pre">gradient_and_dipole</span></code> uses the coordinate origin and returns no energy.
+Its kwargs select gradient options such as an electronic <code class="docutils literal notranslate"><span class="pre">root</span></code>; it does not
+expose an origin argument. For a custom origin build <code class="docutils literal notranslate"><span class="pre">V</span></code> explicitly and use
+<code class="docutils literal notranslate"><span class="pre">gradient(properties=V)</span></code> plus the charge-moment conversion helper.</p>
+</section>
+<section id="analytic-convenience-versus-a-generic-finite-field-route">
+<h2>Analytic convenience versus a generic finite-field route<a class="headerlink" href="#analytic-convenience-versus-a-generic-finite-field-route" title="Link to this heading"></a></h2>
+<p>The convenience methods above currently call <code class="docutils literal notranslate"><span class="pre">gradient</span></code> with a property
+request. When no analytic property gradient is available,
+<code class="docutils literal notranslate"><span class="pre">gradient(perturbation=...)</span></code> and <code class="docutils literal notranslate"><span class="pre">gradient(properties=...)</span></code> raise
+<code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code>; they do <strong>not</strong> automatically differentiate energies
+with respect to fields. This includes methods with a numerical nuclear-gradient
+fallback. The existence of a nuclear finite-difference gradient does not itself
+provide a finite-field moment.</p>
+<p>For any method for which a consistent scalar energy can be rebuilt in a field,
+the finite-field route is available: recompute SCF and the complete correlated
+calculation for each strength, differentiate the electronic total energy and
+add the nuclear moment with the helper above. A runnable example callback,
+<code class="docutils literal notranslate"><span class="pre">finite_field_moments</span></code>, is provided in
+<code class="docutils literal notranslate"><span class="pre">examples/methods_api/multipole_ir.py</span></code>. It is an example function rather than
+an additional exported MethodBase method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.derivative_integrals</span><span class="w"> </span><span class="kn">import</span> <span class="n">multipole_integrals</span><span class="p">,</span> <span class="n">multipole_moments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.finite_difference</span><span class="w"> </span><span class="kn">import</span> <span class="n">finite_difference</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">finite_field_moments</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="n">scalar_energy</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">field_step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">):</span>
+    <span class="n">labels</span><span class="p">,</span> <span class="n">operators</span> <span class="o">=</span> <span class="n">multipole_integrals</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">origin</span><span class="p">)</span>
+    <span class="n">xyz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">molecule</span><span class="o">.</span><span class="n">atoms</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">energy_in_field</span><span class="p">(</span><span class="n">strengths</span><span class="p">):</span>
+        <span class="n">field_molecule</span> <span class="o">=</span> <span class="n">molecule</span><span class="o">.</span><span class="n">with_geometry</span><span class="p">(</span><span class="n">xyz</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s2">"bohr"</span><span class="p">)</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">field_molecule</span><span class="o">.</span><span class="n">ints_hcore</span><span class="p">()</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">einsum</span><span class="p">(</span><span class="s2">"k,kmn-&gt;mn"</span><span class="p">,</span> <span class="n">strengths</span><span class="p">,</span> <span class="n">operators</span><span class="p">)</span>
+        <span class="n">field_molecule</span><span class="o">.</span><span class="n">ints_hcore</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">h</span>
+        <span class="k">return</span> <span class="n">scalar_energy</span><span class="p">(</span><span class="n">field_molecule</span><span class="p">)</span>  <span class="c1"># create fresh SCF and correlation here</span>
+
+    <span class="n">dE</span> <span class="o">=</span> <span class="n">finite_difference</span><span class="p">(</span><span class="n">energy_in_field</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)),</span>
+                           <span class="n">step</span><span class="o">=</span><span class="n">field_step</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">multipole_moments</span><span class="p">(</span><span class="n">dE</span><span class="p">,</span> <span class="n">molecule</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">origin</span><span class="o">=</span><span class="n">origin</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For instance <code class="docutils literal notranslate"><span class="pre">scalar_energy</span></code> can instantiate MP2 or another energy-only
+method on <code class="docutils literal notranslate"><span class="pre">RHF(field_molecule)</span></code> and return its <code class="docutils literal notranslate"><span class="pre">energy()</span></code>. An excited
+callback must configure guesses and return <code class="docutils literal notranslate"><span class="pre">energy(root=...)</span></code> for the chosen
+physical state. Do not reuse a zero-field solved reference or merely perturb
+integrals after SCF: orbital relaxation requires re-solving SCF in every field.
+Construct the field on each fresh molecule; an arbitrary monkey-patched
+<code class="docutils literal notranslate"><span class="pre">ints_hcore</span></code> is not automatically preserved by <code class="docutils literal notranslate"><span class="pre">MethodBase.at_geometry</span></code>.</p>
+<p>Field strengths are in atomic units conjugate to the selected operator. Check
+field-step and electronic-tolerance convergence; cancellation amplifies energy
+noise. If FNOs, CIM or selected spaces are used, ensure consistent energy
+completion, fixed domains/selections as appropriate and smooth state tracking.
+The analytic helpers retain their existing reference/variant limitations; this
+finite-field recipe is the general scalar-energy path, not a claim that every
+method/reference combination is already validated.</p>
+</section>
+<section id="compute-frequencies-and-ir-intensities-together">
+<h2>Compute frequencies and IR intensities together<a class="headerlink" href="#compute-frequencies-and-ir-intensities-together" title="Link to this heading"></a></h2>
+<p>Use the native Hessian/vibrational helpers with an optimized molecule:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.hessian</span><span class="w"> </span><span class="kn">import</span> <span class="n">vibrational_analysis</span>
+
+<span class="n">optimized</span> <span class="o">=</span> <span class="n">minimum</span><span class="o">.</span><span class="n">molecule</span>  <span class="c1"># from a converged, consistently defined optimization</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">gradient_and_dipole_at</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+    <span class="n">g</span><span class="p">,</span> <span class="n">mu</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">gradient_and_dipole</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">method</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">scf</span><span class="o">.</span><span class="n">converged</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Unconverged displaced calculation"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">g</span><span class="p">,</span> <span class="n">mu</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">vibrational_analysis</span><span class="p">(</span><span class="n">optimized</span><span class="p">,</span> <span class="n">gradient</span><span class="o">=</span><span class="n">gradient_and_dipole_at</span><span class="p">,</span>
+                              <span class="n">dipole</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"frequencies"</span><span class="p">])</span>       <span class="c1"># cm^-1</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"ir_intensities"</span><span class="p">])</span>    <span class="c1"># km/mol, same mode ordering</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"atomic_polar_tensor"</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>  <span class="c1"># (3,3*natoms)</span>
+</pre></div>
+</div>
+<p>With <code class="docutils literal notranslate"><span class="pre">dipole=True</span></code> the callback must return <strong>(gradient,dipole)</strong> or
+<strong>(energy,gradient,dipole)</strong>. Supplying the ordinary <code class="docutils literal notranslate"><span class="pre">(energy,gradient)</span></code> pair
+has the wrong meaning. The dipole must be the total physical dipole including
+the nuclear contribution, in atomic units, not an electronic position vector.
+With <code class="docutils literal notranslate"><span class="pre">dipole=False</span></code>, the ordinary gradient or <code class="docutils literal notranslate"><span class="pre">(energy,gradient)</span></code> callback
+remains valid. <code class="docutils literal notranslate"><span class="pre">dipole=True</span></code> requires a callback providing dipoles;
+<code class="docutils literal notranslate"><span class="pre">energy=...</span></code> alone cannot supply intensities automatically.</p>
+<p>The same +/- nuclear displacements give the Hessian and atomic polar tensor</p>
+<div class="math notranslate nohighlight">
+\[P_{a,Ab}=\frac{\partial\mu_a}{\partial R_{Ab}},\qquad
+\frac{\partial\mu}{\partial Q_k}=P M^{-1/2}L_k.\]</div>
+<p>IR intensity is proportional to the squared norm of this mode dipole derivative
+and is converted to km/mol. The code uses mass-normalized vibrational
+coordinates for this contraction; do not contract <code class="docutils literal notranslate"><span class="pre">P</span></code> (units e) with the separately
+Euclidean-normalized display modes without restoring their normalization.
+For a charge q, the translational sum rule is
+<code class="docutils literal notranslate"><span class="pre">sum_A</span> <span class="pre">P[a,A,b]</span> <span class="pre">=</span> <span class="pre">q*delta[a,b]</span></code>. This is a useful sign/nuclear-term diagnostic,
+subject to finite-difference error.</p>
+<p>All Hessians here are numerical derivatives, even when the gradient and dipole
+at each displacement are analytic. A generic numerical callback can instead
+return a finite-difference nuclear gradient and a finite-field total dipole.
+The shipped <code class="docutils literal notranslate"><span class="pre">--mode</span> <span class="pre">finite-field</span></code> example implements that construction for
+MP2 as well as CCSD/CRCC23_A. It costs many more energy evaluations; there are
+separate nuclear-gradient, field and Hessian step sizes to converge. Finite
+fields on the existing analytic nuclear gradient are not a substitute: moving
+AO multipole operators require additional nuclear derivative terms that the
+ordinary field-free gradient contraction does not add automatically.</p>
+</section>
+<section id="saved-tensors-isotope-reanalysis-and-intensity-scope">
+<h2>Saved tensors, isotope reanalysis and intensity scope<a class="headerlink" href="#saved-tensors-isotope-reanalysis-and-intensity-scope" title="Link to this heading"></a></h2>
+<p>To separate derivative generation from harmonic analysis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.gradients.hessian</span><span class="w"> </span><span class="kn">import</span> <span class="n">fd_hessian</span><span class="p">,</span> <span class="n">harmonic_analysis</span>
+
+<span class="n">H</span><span class="p">,</span> <span class="n">P</span> <span class="o">=</span> <span class="n">fd_hessian</span><span class="p">(</span><span class="n">optimized</span><span class="p">,</span> <span class="n">gradient</span><span class="o">=</span><span class="n">gradient_and_dipole_at</span><span class="p">,</span>
+                   <span class="n">dipole</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">harmonic_analysis</span><span class="p">(</span><span class="n">H</span><span class="p">,</span> <span class="n">optimized</span><span class="p">,</span> <span class="n">dipole_derivatives</span><span class="o">=</span><span class="n">P</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savez</span><span class="p">(</span><span class="s2">"vibrations_ir.npz"</span><span class="p">,</span> <span class="o">**</span><span class="n">result</span><span class="p">,</span> <span class="n">hessian</span><span class="o">=</span><span class="n">H</span><span class="p">,</span> <span class="n">atomic_polar_tensor</span><span class="o">=</span><span class="n">P</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">harmonic_analysis</span></code> accepts an optional <code class="docutils literal notranslate"><span class="pre">masses</span></code> array in amu for isotope
+substitution. Recompute both frequencies and intensities from the same H/P
+with the new masses; no new electronic derivatives are needed within this
+harmonic Born-Oppenheimer treatment. Native default masses are the most
+abundant isotopes through Kr, with a fallback atomic mass beyond that table;
+this can differ slightly from external pysisyphus mass-table defaults.</p>
+<p>Native results contain <code class="docutils literal notranslate"><span class="pre">normal_modes</span></code> with shape <code class="docutils literal notranslate"><span class="pre">(nvib,natoms,3)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">reduced_masses</span></code> (amu), <code class="docutils literal notranslate"><span class="pre">force_constants</span></code> (mdyn/angstrom), <code class="docutils literal notranslate"><span class="pre">eigenvalues</span></code>
+(Eh/(bohr squared amu)), and <code class="docutils literal notranslate"><span class="pre">zpe</span></code> (Eh, positive real modes only), as well
+as frequencies. With dipoles they also contain mode <code class="docutils literal notranslate"><span class="pre">dipole_derivatives</span></code>
+<code class="docutils literal notranslate"><span class="pre">(nvib,3)</span></code> in e/sqrt(amu) and <code class="docutils literal notranslate"><span class="pre">ir_intensities</span></code>. The convenience
+<code class="docutils literal notranslate"><span class="pre">vibrational_analysis</span></code> additionally stores <code class="docutils literal notranslate"><span class="pre">hessian</span></code> and
+<code class="docutils literal notranslate"><span class="pre">atomic_polar_tensor</span></code>. Native mode arrays differ in layout from pysisyphus’
+column-vector return, documented in <a class="reference internal" href="frequencies.html"><span class="doc">Computing vibrational frequencies</span></a>.</p>
+<p>The implemented intensities are electric-dipole, double-harmonic vibrational
+IR intensities. Higher Cartesian moments can be computed but do not by
+themselves provide quadrupole/octupole absorption intensities, Raman
+activities or electronic transition oscillator strengths. No anharmonic
+corrections or spectral line broadening are implied. Do not interpret a TS
+imaginary mode as an ordinary absorption line.</p>
+</section>
+<section id="run-the-examples-and-inspect-validation">
+<h2>Run the examples and inspect validation<a class="headerlink" href="#run-the-examples-and-inspect-validation" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/methods_api/multipole_ir.py<span class="w"> </span>--task<span class="w"> </span>moments<span class="w"> </span>--method<span class="w"> </span>ccsd<span class="w"> </span>--order<span class="w"> </span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>analytic<span class="w"> </span>--out-dir<span class="w"> </span>analytic-moments
+python<span class="w"> </span>examples/methods_api/multipole_ir.py<span class="w"> </span>--task<span class="w"> </span>ir<span class="w"> </span>--method<span class="w"> </span>ccsd<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>analytic<span class="w"> </span>--out-dir<span class="w"> </span>ccsd-ir
+python<span class="w"> </span>examples/methods_api/multipole_ir.py<span class="w"> </span>--task<span class="w"> </span>ir<span class="w"> </span>--method<span class="w"> </span>mp2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--mode<span class="w"> </span>finite-field<span class="w"> </span>--out-dir<span class="w"> </span>mp2-ir
+</pre></div>
+</div>
+<p>The IR tasks first optimize the demonstration water molecule and save
+<code class="docutils literal notranslate"><span class="pre">summary.json</span></code> and <code class="docutils literal notranslate"><span class="pre">harmonic_ir.npz</span></code>. These use a small default basis to
+illustrate the interface; basis, step-size and electronic-model convergence
+remain necessary for quantitative spectra. Existing checks in
+<code class="docutils literal notranslate"><span class="pre">test_property_gradients.py</span></code> compare relaxed derivatives against finite-field
+energies, and <code class="docutils literal notranslate"><span class="pre">test_ir_intensities.py</span></code> checks the atomic polar tensor against
+energy derivatives, charge sum rules and CO2 IR selection rules. These checks
+cover particular references and methods, not all possible method combinations.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="properties.html" class="btn btn-neutral float-left" title="Left states, densities, response and gradients" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gradients.html" class="btn btn-neutral float-right" title="Analytic gradients and finite differences" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

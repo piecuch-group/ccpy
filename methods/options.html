@@ -1,0 +1,388 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Solver controls, diagnostics and custom calculations &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Complete methods API catalog" href="catalog.html" />
+    <link rel="prev" title="Computing vibrational frequencies" href="frequencies.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Solver controls, diagnostics and custom calculations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#shared-correlated-method-options">Shared correlated-method options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#convergence-and-result-inspection">Convergence and result inspection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#flexible-combinations-and-hbar-choices">Flexible combinations and HBar choices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#implementing-another-method-level">Implementing another method level</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#troubleshooting-common-setup-mistakes">Troubleshooting common setup mistakes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Solver controls, diagnostics and custom calculations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/options.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="solver-controls-diagnostics-and-custom-calculations">
+<h1>Solver controls, diagnostics and custom calculations<a class="headerlink" href="#solver-controls-diagnostics-and-custom-calculations" title="Link to this heading"></a></h1>
+<section id="shared-correlated-method-options">
+<h2>Shared correlated-method options<a class="headerlink" href="#shared-correlated-method-options" title="Link to this heading"></a></h2>
+<p>Pass options as constructor keywords. Unknown keywords are rejected, which
+helps catch legacy Driver spellings accidentally used with this API.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span>
+
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">maximum_iterations</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+          <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-8</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-9</span><span class="p">,</span>
+          <span class="n">diis_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">denominator</span><span class="o">=</span><span class="s2">"mp"</span><span class="p">,</span> <span class="n">energy_shift</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">davidson_max_subspace_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
+              <span class="n">davidson_selection_method</span><span class="o">=</span><span class="s2">"overlap"</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Defaults in MethodBase</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 32.0%" />
+<col style="width: 18.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">maximum_iterations</span></code></p></td>
+<td><p>80</p></td>
+<td><p>Iteration limit for iterative solvers; ADC applies it to inner/outer loops.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">amp_convergence</span></code></p></td>
+<td><p>1e-7</p></td>
+<td><p>Residual/amplitude convergence tolerance.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">energy_convergence</span></code></p></td>
+<td><p>1e-7</p></td>
+<td><p>Energy/eigenvalue change tolerance, in hartree.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">energy_shift</span></code></p></td>
+<td><p>0.0</p></td>
+<td><p>Shift used by kernels that support shifted iterative denominators.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">denominator</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;mp&quot;</span></code></p></td>
+<td><p>Ground-CC update denominator scheme; supported schemes depend on the level.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">diis_size</span></code></p></td>
+<td><p>6</p></td>
+<td><p>DIIS history; ground CC uses -1 to disable DIIS.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">diis_out_of_core</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Disk storage for DIIS vectors in solvers that implement it.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RHF_symmetry</span></code></p></td>
+<td><p>None</p></td>
+<td><p>Automatic closed-shell spin-block shortcut; not the spatial symmetry switch.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">amp_print_threshold</span></code></p></td>
+<td><p>0.09</p></td>
+<td><p>Threshold for amplitude printing, not amplitude truncation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">davidson_max_subspace_size</span></code></p></td>
+<td><p>30</p></td>
+<td><p>Maximum Davidson basis size before restarting.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">davidson_solver</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;standard&quot;</span></code></p></td>
+<td><p>Standard sequential EOM or <code class="docutils literal notranslate"><span class="pre">&quot;multiroot&quot;</span></code> block EOM; ADC supports standard only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">davidson_selection_method</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;overlap&quot;</span></code></p></td>
+<td><p>Ritz selection by starting-vector overlap or <code class="docutils literal notranslate"><span class="pre">&quot;energy&quot;</span></code> proximity.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">davidson_out_of_core</span></code></p></td>
+<td><p>False</p></td>
+<td><p>Disk-backed Davidson vectors where supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fd_step</span></code></p></td>
+<td><p>1e-3</p></td>
+<td><p>Finite-difference displacement, bohr.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fd_npoints</span></code></p></td>
+<td><p>4</p></td>
+<td><p>Central finite-difference stencil size (2, 4 or 6).</p></td>
+</tr>
+</tbody>
+</table>
+<p>The wrapper automatically disables ground DIIS on very small spaces when no
+explicit history size was given. SCF has separate defaults and uses
+<code class="docutils literal notranslate"><span class="pre">diis_size=0</span></code> to disable SCF DIIS. Shared option names do not imply that every
+kernel uses every option. EOMCC3 is nonlinear DIIS; STEOM has separate auxiliary
+and final solvers; MBPT is noniterative.</p>
+<p><code class="docutils literal notranslate"><span class="pre">CCSD</span></code>, <code class="docutils literal notranslate"><span class="pre">CCSDT</span></code> and <code class="docutils literal notranslate"><span class="pre">CCSDT_P</span></code> accept <code class="docutils literal notranslate"><span class="pre">denominator=&quot;mp&quot;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&quot;epstein-nesbet&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;quasilinear&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;newton&quot;</span></code> in their ground-state
+updates. Other levels default to MP and reject unsupported schemes. These
+select iterative updates/preconditioning; they are not interchangeable with
+correction variant A/B/C/D or ADC’s perturbation partition.</p>
+</section>
+<section id="convergence-and-result-inspection">
+<h2>Convergence and result inspection<a class="headerlink" href="#convergence-and-result-inspection" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">energy</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">version</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">is_current</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">reference_energy</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">correlation_energy</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">cc</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">a</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">ab</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+<span class="n">totals</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">root_converged</span><span class="p">,</span> <span class="n">eom</span><span class="o">.</span><span class="n">root_irreps</span><span class="p">,</span> <span class="n">eom</span><span class="o">.</span><span class="n">omega</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">guess_energy</span><span class="p">,</span> <span class="n">eom</span><span class="o">.</span><span class="n">guess_irreps</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Do not infer convergence from the fact that <code class="docutils literal notranslate"><span class="pre">energy()</span></code> returned a number.
+Most CC/EOM wrappers preserve convergence flags even on failure, and some can
+return the last iterate. ADC and STEOM have additional fail-fast checks.
+For repeated or suspicious EOM roots, inspect state amplitudes and overlap,
+not just energy ordering. Tightening only the downstream tolerance does not
+resolve an unconverged or inaccurate upstream CC calculation.</p>
+<p>To restart ground CC from its current amplitudes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">cc</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"maximum_iterations"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">160</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s2">"amp_convergence"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.e-9</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">converged</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>An explicit <code class="docutils literal notranslate"><span class="pre">solve()</span></code> also reruns without setting <code class="docutils literal notranslate"><span class="pre">converged=False</span></code>.
+Dependency tracking is version based; arbitrary in-place changes to <code class="docutils literal notranslate"><span class="pre">T</span></code>,
+orbital matrices or dictionaries are not automatically detected. After changing
+amplitudes or options, explicitly solve the affected upstream object before
+requesting downstream results. After changing orbitals, build a consistent
+reference and chain rather than mutating a live calculation’s basis.</p>
+</section>
+<section id="flexible-combinations-and-hbar-choices">
+<h2>Flexible combinations and HBar choices<a class="headerlink" href="#flexible-combinations-and-hbar-choices" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span><span class="p">,</span> <span class="n">HBarCCSD</span><span class="p">,</span> <span class="n">HBarCCSDLegacy</span>
+
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">factorized</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">get_hbar</span><span class="p">(</span><span class="n">HBarCCSD</span><span class="p">)</span>
+<span class="n">materialized</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">get_hbar</span><span class="p">(</span><span class="n">HBarCCSDLegacy</span><span class="p">)</span>
+<span class="n">custom_eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">hbar_class</span><span class="o">=</span><span class="n">HBarCCSD</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">get_hbar</span></code> ensures the parent is solved and returns a built HBar wrapper;
+its actual integral object is <code class="docutils literal notranslate"><span class="pre">.H</span></code> and its associated amplitudes are <code class="docutils literal notranslate"><span class="pre">.T</span></code>.
+Available HBars include <code class="docutils literal notranslate"><span class="pre">HBarCC2</span></code>, <code class="docutils literal notranslate"><span class="pre">HBarCC3</span></code>, <code class="docutils literal notranslate"><span class="pre">HBarCCSD</span></code>,
+<code class="docutils literal notranslate"><span class="pre">HBarCCSDLegacy</span></code>, <code class="docutils literal notranslate"><span class="pre">HBarCCSDT</span></code>, <code class="docutils literal notranslate"><span class="pre">HBarCCSDT1</span></code>, <code class="docutils literal notranslate"><span class="pre">HBarCCSDTA</span></code> and
+<code class="docutils literal notranslate"><span class="pre">HBarCCSDT_P</span></code>. Use the HBar specified by the scientific model. Different
+HBar classes may require amplitudes of different rank or selected lists;
+construction is not a generic type-compatibility proof.</p>
+<p>For ordinary runs, use the method’s default HBar and left class. Advanced
+combinations are useful when deliberately defining an approximation, but
+should be tested against a standard chain or independent oracle. Reusing a
+CCSD parent in a higher-rank EOM class does not automatically supply converged
+CCSDT amplitudes. A correction object is not a replacement right-state
+wavefunction: building EOM on it generally reuses its underlying CC method,
+not a fictitious corrected T operator.</p>
+</section>
+<section id="implementing-another-method-level">
+<h2>Implementing another method level<a class="headerlink" href="#implementing-another-method-level" title="Link to this heading"></a></h2>
+<p>A ground-state CC level can subclass <code class="docutils literal notranslate"><span class="pre">CCBase</span></code> and select its equation module,
+operator order, HBar and left class. The module must provide the update protocol
+expected by the chosen solver; inspect a nearby implementation before adding
+one. A minimal definition is:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.methods.cc</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCBase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.methods.hbar</span><span class="w"> </span><span class="kn">import</span> <span class="n">HBarCCSD</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyCCLevel</span><span class="p">(</span><span class="n">CCBase</span><span class="p">):</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="s2">"my_package.my_cc_equations"</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">hbar_class</span> <span class="o">=</span> <span class="n">HBarCCSD</span>
+    <span class="n">left_class</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">requires_df_port</span> <span class="o">=</span> <span class="kc">True</span>
+</pre></div>
+</div>
+<p>This is a protocol sketch; it cannot run until the named update module exists.
+Declare <code class="docutils literal notranslate"><span class="pre">requires_df_port</span></code> truthfully. DF references prohibit accidental
+full <code class="docutils literal notranslate"><span class="pre">vvvv</span></code> access by default; a legacy kernel needs materialization or a
+proper DF port. If the model has a gradient, name <code class="docutils literal notranslate"><span class="pre">gradient_module</span></code> and
+<code class="docutils literal notranslate"><span class="pre">gradient_function</span></code> and implement the correct scheme-specific invocation.</p>
+<p>An EOM level chooses the relevant EE/SF/Fock base, <code class="docutils literal notranslate"><span class="pre">module</span></code> containing <code class="docutils literal notranslate"><span class="pre">HR</span></code>
+and <code class="docutils literal notranslate"><span class="pre">update</span></code>, parent/HBar classes and operator dimensions. Selected-space
+levels also need their list keys, spin conventions and solver extra arguments.
+Override <code class="docutils literal notranslate"><span class="pre">_guess_arguments</span></code> only when the new method requires a different
+Hamiltonian/guess protocol, as ADC and STEOM do. <code class="docutils literal notranslate"><span class="pre">InitialGuessMixin</span></code> owns
+spin/irrep/root configuration; avoid inventing an incompatible root numbering
+scheme for a new family.</p>
+<p>FNO preparation belongs to <code class="docutils literal notranslate"><span class="pre">MethodBase</span></code>/<code class="docutils literal notranslate"><span class="pre">Reference</span></code>. New correlation
+kernels should use the ordinary working dimensions and remain unaware of the
+original virtual count. Apply composite energy shifts at reporting boundaries,
+not inside CC/EOM residuals or iterative denominators. A new low-level FNO model
+can use the provider contract in <a class="reference internal" href="spaces.html"><span class="doc">FNOs, active spaces and selected determinants</span></a> and <a class="reference internal" href="../fno.html"><span class="doc">Frozen natural orbitals</span></a>.</p>
+</section>
+<section id="troubleshooting-common-setup-mistakes">
+<h2>Troubleshooting common setup mistakes<a class="headerlink" href="#troubleshooting-common-setup-mistakes" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Symptoms and next checks</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 38.0%" />
+<col style="width: 62.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Symptom</p></th>
+<th class="head"><p>Check</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Expected native SCF object</p></td>
+<td><p>Use CCpy RHF/ROHF/UHF; PySCF objects belong to the legacy interface.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Unknown option</p></td>
+<td><p>Check constructor signature; do not use Driver option names such as nact_occupied in initial_guess.</p></td>
+</tr>
+<tr class="row-even"><td><p>Call initial_guess before solving</p></td>
+<td><p>Ordinary EOM/ADC need a configured guess pool and root selection.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Missing irrep or unavailable root</p></td>
+<td><p>Inspect point group, guess dimensions, active counts, spin and actual guess_irreps.</p></td>
+</tr>
+<tr class="row-even"><td><p>Conflicting nfrozen / FNO settings</p></td>
+<td><p>Start a fresh chain from SCF/full Reference instead of changing a shared basis downstream.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Selected list exceeds dimensions</p></td>
+<td><p>Regenerate after FNO preparation; use one-based particle-first rows.</p></td>
+</tr>
+<tr class="row-even"><td><p>Property operator belongs to another reference</p></td>
+<td><p>Transform the AO operator with the current reference.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Folded ADC pole / no primary character</p></td>
+<td><p>Select formulation=”full” and suitable CISd guesses for the target.</p></td>
+</tr>
+<tr class="row-even"><td><p>DFPortWarning / unexpected memory use</p></td>
+<td><p>The selected method materializes four-index equations; inspect the catalog/registry.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Repeated EOM states</p></td>
+<td><p>Check overlaps/character, enlarge or change guesses, and consider multiroot where supported.</p></td>
+</tr>
+<tr class="row-even"><td><p>Unexpected FNO gap correction</p></td>
+<td><p>Ground completion cancels from gaps; state-specific ADC completion needs matching targets.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Expensive gradient</p></td>
+<td><p>Inspect has_analytic_gradient(); FNO and unsupported reference/variant combinations use finite differences.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="frequencies.html" class="btn btn-neutral float-left" title="Computing vibrational frequencies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="catalog.html" class="btn btn-neutral float-right" title="Complete methods API catalog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

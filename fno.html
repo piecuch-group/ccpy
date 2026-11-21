@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Frozen natural orbitals &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Density-fitted ADC(2)" href="adc.html" />
+    <link rel="prev" title="Complete methods API catalog" href="methods/catalog.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="methods/index.html">The methods API: a calculation guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Frozen natural orbitals</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#df-mp2-usage">DF-MP2 usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#selection-and-reference-handling">Selection and reference handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adc-2-provider-hook">ADC(2) provider hook</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Frozen natural orbitals</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fno.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="frozen-natural-orbitals">
+<h1>Frozen natural orbitals<a class="headerlink" href="#frozen-natural-orbitals" title="Link to this heading"></a></h1>
+<p>FNO preparation is enabled on any object-oriented method through <code class="docutils literal notranslate"><span class="pre">MethodBase</span></code>.
+It runs the low-level calculation in the full virtual space, builds its virtual
+occupation density, selects virtual natural orbitals, semicanonicalizes the
+retained subspace, transforms the DF factors, and reruns the low-level calculation
+in the reduced space. Occupied orbitals and the SCF determinant energy are
+unchanged. CC/EOM kernels receive ordinary reduced orbital dimensions.</p>
+<section id="df-mp2-usage">
+<h2>DF-MP2 usage<a class="headerlink" href="#df-mp2-usage" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">EOMCCSD</span><span class="p">,</span> <span class="n">FNOOptions</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 0 0; H 0 0 .96; H .93 0 -.24"</span><span class="p">,</span> <span class="s2">"cc-pvdz"</span><span class="p">,</span>
+               <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">)</span>
+<span class="n">mf</span> <span class="o">=</span> <span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">FNOOptions</span><span class="p">(</span><span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">))</span>
+<span class="n">energy</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">truncated_energy</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">raw_energy</span><span class="p">()</span>
+<span class="n">delta_mp2</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">fno_result</span><span class="o">.</span><span class="n">delta_ground</span>
+
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">)</span>  <span class="c1"># the identical reduced reference, T, and HBar are shared</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+<span class="n">total_state_energies</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="n">gaps</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">completed_omega</span>
+</pre></div>
+</div>
+<p>The default completion is</p>
+<div class="math notranslate nohighlight">
+\[E_{\mathrm{FNO}} = E_{\mathrm{trunc}} +
+   E_{\mathrm{MP2,full}} - E_{\mathrm{MP2,trunc}}.\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">correlation_energy</span></code> and <code class="docutils literal notranslate"><span class="pre">omega</span></code> remain raw truncated-space quantities.
+<code class="docutils literal notranslate"><span class="pre">energy()</span></code> and CC <code class="docutils literal notranslate"><span class="pre">total_energy</span></code> include completion; <code class="docutils literal notranslate"><span class="pre">raw_energy()</span></code> does not.
+The MP2 correction shifts every EOM total by the same amount, leaving all
+target-minus-parent gaps unchanged. Corrections such as CR-CC(2,3) and
+CR-EOMCC(2,3) include the shift exactly once. STEOM completion applies to its
+final neutral energies, not its internal auxiliary eigenvalues.</p>
+<p>MP2 is computed directly from occupied-pair contractions of three-index DF
+factors, without four-index ERIs or a full doubles-amplitude tensor. Pair
+workspace is quadratic in virtual count. The standalone <code class="docutils literal notranslate"><span class="pre">MP2</span></code> method uses
+the same DF implementation. Occupied/virtual Fock blocks are internally
+semicanonicalized for MP2; its density is returned in the original basis.
+For ROHF this defines the spin-Fock MP partition including singles, which
+can differ from other ROHF-MP2 conventions. Occupied orbitals passed to CC
+remain unchanged.</p>
+</section>
+<section id="selection-and-reference-handling">
+<h2>Selection and reference handling<a class="headerlink" href="#selection-and-reference-handling" title="Link to this heading"></a></h2>
+<p>Specify one of <code class="docutils literal notranslate"><span class="pre">occupation_cutoff</span></code>, <code class="docutils literal notranslate"><span class="pre">retained_population</span></code> (fraction in
+<code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1]</span></code>), or <code class="docutils literal notranslate"><span class="pre">nvirtuals</span></code>. The default absolute cutoff is <code class="docutils literal notranslate"><span class="pre">1.e-6</span></code>.
+<code class="docutils literal notranslate"><span class="pre">occupation_cutoff=0</span></code> keeps all orbitals. Restricted occupations use the
+spatial 0–2 convention; UHF occupations use the spin 0–1 convention.
+Occupation-degenerate groups are retained together, so counts can exceed the
+requested minimum. A threshold removing all external virtuals raises an error.</p>
+<p>Selection and Fock diagonalization preserve irreps. UHF uses separate spin
+rotations but equal removals per irrep. Restricted open-shell references keep
+every singly occupied spatial orbital, rotating only external spatial virtuals.
+This preserves the determinant for SF-EOM. Accuracy for diffuse attachment,
+double-attachment, and spin-flip states must be checked by threshold convergence.</p>
+<p>To preserve specific input virtual directions, set, for example,
+<code class="docutils literal notranslate"><span class="pre">FNOOptions(occupation_cutoff=1.e-6,</span> <span class="pre">protected_virtuals=(0,</span> <span class="pre">2))</span></code>. These are
+zero-based external spatial virtual indices for restricted references (excluding
+all singly occupied ROHF orbitals) and local virtual indices in each spin for
+UHF. Protected directions are added to the selected natural-orbital subspace
+before semicanonicalization. This can increase the retained count; the resulting
+orbitals span the protected directions but need not individually equal them.
+Symmetry closure can add directions in multiple irreps. UHF conservatively
+retains a complete irrep in both spins if protected-space ranks would otherwise
+give unequal removals. Providers can supply general dense subspaces as described
+below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">fno_result</span></code> exposes the full/truncated low-level evaluations, natural
+occupations before semicanonicalization, all-MO parent-to-child transforms,
+retained populations, and discarded counts. It is shared through the reference.
+The original full reference is <code class="docutils literal notranslate"><span class="pre">method.reference.fno_parent</span></code>. SCF data are not
+mutated. A new threshold requires a new chain starting from SCF or the full
+reference; conflicting downstream settings and <code class="docutils literal notranslate"><span class="pre">ndelete</span></code> with FNO are rejected.</p>
+<p>For active or selected spaces, prepare the reference first and build lists in
+its working basis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Reference</span><span class="p">,</span> <span class="n">prepare_fno</span><span class="p">,</span> <span class="n">CCSDT_P</span><span class="p">,</span> <span class="n">get_active_triples_pspace</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">prepare_fno</span><span class="p">(</span><span class="n">Reference</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">nvirtuals</span><span class="o">=</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="o">.</span><span class="n">set_active_space</span><span class="p">(</span><span class="n">nact_occupied</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nact_unoccupied</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">triples</span> <span class="o">=</span> <span class="n">get_active_triples_pspace</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">system</span><span class="p">)</span>
+<span class="n">cc_p</span> <span class="o">=</span> <span class="n">CCSDT_P</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">triples</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>External CI wavefunctions, guesses, selected excitation lists and orbital labels
+must refer to this new basis. Dense virtual rotations cannot be handled by
+relabeling old canonical orbital indices. For one-body properties,
+<code class="docutils literal notranslate"><span class="pre">reference.one_body_from_ao(operator)</span></code> returns per-spin correlated-space
+matrices, including any leading component axes of the AO operator.
+<code class="docutils literal notranslate"><span class="pre">reference.one_body_operator_from_ao(operator)</span></code> wraps a single AO matrix as
+a reference-bound <code class="docutils literal notranslate"><span class="pre">Integral</span></code> for LR-CC. Multipole generation accepts the
+reference directly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">LRCCSD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.interfaces.scf_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_multipole_integral</span>
+
+<span class="n">dipoles</span><span class="p">,</span> <span class="n">reference_dipole</span> <span class="o">=</span> <span class="n">get_multipole_integral</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">cc</span><span class="o">.</span><span class="n">reference</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">LRCCSD</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">dipoles</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">property</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>LR-CC rejects operators bound to a different reference and operators whose
+dimensions do not match the working space. CC(P) and EOM(P) reject malformed
+or out-of-range selected excitation lists before calling compiled kernels.
+Unbound operators and selected lists whose indices fit still require the caller
+to establish the correct basis: matching dimensions alone do not prove this.</p>
+<p>Existing analytic gradients are disabled for FNO references. Finite differences
+rebuild FNOs and the completion at every geometry; cutoff crossings or changed
+target roots can make derivatives discontinuous. The energy correction does not
+restore full-space densities or transition properties. Legacy four-index methods
+still materialize their integrals, but only in the reduced space.</p>
+</section>
+<section id="adc-2-provider-hook">
+<h2>ADC(2) provider hook<a class="headerlink" href="#adc-2-provider-hook" title="Link to this heading"></a></h2>
+<p>Strict DF EE/IP/EA-ADC(2) and their unrelaxed ISR virtual densities are supplied by
+<code class="docutils literal notranslate"><span class="pre">ADC2</span></code>, <code class="docutils literal notranslate"><span class="pre">IPADC2</span></code> and <code class="docutils literal notranslate"><span class="pre">EAADC2</span></code> (see <a class="reference internal" href="adc.html"><span class="doc">Density-fitted ADC(2)</span></a>). The native <code class="docutils literal notranslate"><span class="pre">adc2</span></code> FNO provider is installed
+automatically and follows projected full-space roots in the reduced space.
+RHF, ROHF and UHF, including noncanonical references, are supported.
+<code class="docutils literal notranslate"><span class="pre">FNOTarget(...,</span> <span class="pre">formulation=&quot;folded&quot;)</span></code> is the default primary-state solver;
+use <code class="docutils literal notranslate"><span class="pre">formulation=&quot;full&quot;</span></code> for doubles-dominated EE or charged satellite targets.
+Other ADC sectors remain explicit unsupported capabilities.
+To extend or replace the native provider, register one before construction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span><span class="n">FNOEvaluation</span><span class="p">,</span> <span class="n">FNOOptions</span><span class="p">,</span> <span class="n">FNOTarget</span><span class="p">,</span>
+                  <span class="n">register_fno_provider</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">evaluate_adc2</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="p">(),</span> <span class="n">need_density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">full_result</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="c1"># Your DF-ADC(2) implementation runs on exactly this reference/basis.</span>
+    <span class="c1"># Match each target to the same physical root in both evaluations.</span>
+    <span class="c1"># Return absolute ground/target totals; densities are spin-resolved</span>
+    <span class="c1"># STATE 1-RDM virtual blocks in this reference's working MO basis.</span>
+    <span class="n">ground_energy</span><span class="p">,</span> <span class="n">states</span><span class="p">,</span> <span class="n">densities</span> <span class="o">=</span> <span class="n">run_your_adc2</span><span class="p">(</span>
+        <span class="n">reference</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">need_density</span><span class="o">=</span><span class="n">need_density</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">FNOEvaluation</span><span class="p">(</span>
+        <span class="n">ground_energy</span><span class="o">=</span><span class="n">ground_energy</span><span class="p">,</span>
+        <span class="n">state_energies</span><span class="o">=</span><span class="n">states</span><span class="p">,</span>          <span class="c1"># {FNOTarget: absolute energy}</span>
+        <span class="n">virtual_densities</span><span class="o">=</span><span class="n">densities</span><span class="p">,</span>   <span class="c1"># {FNOTarget: {"a": Dvv_a, "b": Dvv_b}}</span>
+        <span class="n">converged</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"density_convention"</span><span class="p">:</span> <span class="s2">"document your order/relaxation"</span><span class="p">})</span>
+
+<span class="n">register_fno_provider</span><span class="p">(</span><span class="s2">"adc2"</span><span class="p">,</span> <span class="n">evaluate_adc2</span><span class="p">)</span>
+<span class="n">targets</span> <span class="o">=</span> <span class="p">(</span><span class="n">FNOTarget</span><span class="p">(</span><span class="s2">"EE"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">irrep</span><span class="o">=</span><span class="s2">"A"</span><span class="p">),)</span>
+<span class="n">options</span> <span class="o">=</span> <span class="n">FNOOptions</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"adc2"</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">targets</span><span class="p">,</span>
+                     <span class="n">occupation_cutoff</span><span class="o">=</span><span class="mf">1.e-6</span><span class="p">,</span>
+                     <span class="n">energy_completion</span><span class="o">=</span><span class="s2">"state_specific"</span><span class="p">)</span>
+<span class="n">eom</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fno</span><span class="o">=</span><span class="n">options</span><span class="p">,</span> <span class="n">fno_targets</span><span class="o">=</span><span class="n">targets</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The provider is called first on the full reference with <code class="docutils literal notranslate"><span class="pre">need_density=True</span></code>,
+then on the fixed reduced reference with <code class="docutils literal notranslate"><span class="pre">need_density=False</span></code>. Do not enable
+FNO recursively inside the provider. Use density key <code class="docutils literal notranslate"><span class="pre">None</span></code> for a ground-state
+selection with no targets. ADC providers must explicitly reject unsupported
+sectors or missing state-density capabilities; there is no silent MP2 fallback.
+Complex, non-Hermitian, nonfinite, significantly negative, or symmetry-mixing
+occupation densities are rejected. Transition and signed difference densities
+are not state occupation densities.</p>
+<p>During the second call, <code class="docutils literal notranslate"><span class="pre">full_result</span></code> is the full-space <code class="docutils literal notranslate"><span class="pre">FNOEvaluation</span></code>;
+its <code class="docutils literal notranslate"><span class="pre">metadata</span></code> can carry eigenvectors or other root-tracking data.
+<code class="docutils literal notranslate"><span class="pre">reference.fno_parent</span></code> and <code class="docutils literal notranslate"><span class="pre">reference.orbital_transform</span></code> give the full
+reference and rectangular all-MO parent-to-child transforms. Use these to
+project and match states before returning the reduced-space energies.</p>
+<p>The full-space provider may set <code class="docutils literal notranslate"><span class="pre">FNOEvaluation.protected_subspaces</span></code> to
+<code class="docutils literal notranslate"><span class="pre">{&quot;a&quot;:</span> <span class="pre">V_alpha,</span> <span class="pre">&quot;b&quot;:</span> <span class="pre">V_beta}</span></code>, where each finite real matrix has one row per
+input spin virtual and one column per direction to retain. Columns need not
+be normalized or independent. The union of these spaces and the selected FNOs
+is orthonormalized and semicanonicalized. For ROHF, include the singly occupied
+beta virtual rows; their occupied spatial orbitals remain unchanged and the
+external projection of each supplied direction is also retained. Providers must
+compute new matrices for each geometry rather than reuse old-basis vectors.</p>
+<p>For target <code class="docutils literal notranslate"><span class="pre">s</span></code>, supply signed absolute energies consistent with
+<code class="docutils literal notranslate"><span class="pre">E_target</span> <span class="pre">=</span> <span class="pre">E_ground</span> <span class="pre">+</span> <span class="pre">omega</span></code>. IP/DIP targets have N-1/N-2 electrons and EA/DEA
+targets N+1/N+2; a positive electron affinity has the opposite sign from the
+attachment <code class="docutils literal notranslate"><span class="pre">omega</span></code>. State completion is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\delta_s &amp;= E^{L}_{s,\mathrm{full}} - E^{L}_{s,\mathrm{trunc}},\\
+E_s^{\mathrm{FNO}} &amp;= E_{s,\mathrm{trunc}}^{\mathrm{CC/EOM}} + \delta_s,\\
+\omega_s^{\mathrm{completed}} &amp;= \omega_{s,\mathrm{trunc}}^{\mathrm{EOM}}
+                                   + \delta_s - \delta_0.\end{split}\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">fno_targets</span></code> identifies targets in EOM output order (defaults to the options’
+target order). The method layer checks sector, irrep, and available energies;
+the provider and caller must establish physical state correspondence using
+overlaps/character rather than sorted energies. Providers must raise on lost
+roots or failed matching. Declare the chosen density relaxation/order and
+convergence diagnostics in <code class="docutils literal notranslate"><span class="pre">metadata</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">space_policy=&quot;average&quot;</span></code> diagonalizes the weighted state-average density;
+<code class="docutils literal notranslate"><span class="pre">weights</span></code> defaults to equal weights. <code class="docutils literal notranslate"><span class="pre">&quot;union&quot;</span></code> spans independently selected
+state spaces before Fock diagonalization. UHF unions conservatively retain full
+irreps when independently selected ranks would give unequal spin removals.
+<code class="docutils literal notranslate"><span class="pre">&quot;root_specific&quot;</span></code> requires one target: create a separate method/reference
+chain per target. Ground-state corrections are reevaluated in each target’s
+own reduced space. Cross-space transition properties are not supplied.
+<code class="docutils literal notranslate"><span class="pre">energy_completion=&quot;none&quot;</span></code> exposes an uncompleted FNO calculation; <code class="docutils literal notranslate"><span class="pre">&quot;ground&quot;</span></code>
+uses only the ground-state correction even with state-derived selection.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="methods/catalog.html" class="btn btn-neutral float-left" title="Complete methods API catalog" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="adc.html" class="btn btn-neutral float-right" title="Density-fitted ADC(2)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

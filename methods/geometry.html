@@ -1,0 +1,612 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometry optimization, transition states and IRC validation &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Computing vibrational frequencies" href="frequencies.html" />
+    <link rel="prev" title="Analytic gradients and finite differences" href="gradients.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Geometry optimization, transition states and IRC validation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#installation-and-units">Installation and units</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#minimize-an-electronic-method-directly">Minimize an electronic method directly</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-a-callback-for-custom-calculations">Use a callback for custom calculations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optimization-controls-and-result-fields">Optimization controls and result fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hessian-evaluation-and-cost">Hessian evaluation and cost</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#find-a-transition-state">Find a transition state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#projected-vibrational-analysis">Projected vibrational analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-both-irc-branches-with-run-irc">Run both IRC branches with run_irc</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#optimize-and-validate-the-endpoints">Optimize and validate the endpoints</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#electronic-excited-states-and-custom-surfaces">Electronic excited states and custom surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#runnable-end-to-end-examples">Runnable end-to-end examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#validation-of-the-shipped-example">Validation of the shipped example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#external-documentation-and-version-checks">External documentation and version checks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Geometry optimization, transition states and IRC validation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/geometry.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="geometry-optimization-transition-states-and-irc-validation">
+<h1>Geometry optimization, transition states and IRC validation<a class="headerlink" href="#geometry-optimization-transition-states-and-irc-validation" title="Link to this heading"></a></h1>
+<p>CCpy’s <code class="docutils literal notranslate"><span class="pre">ccpy.optimize</span></code> interface connects native energy/gradient calculations
+to pysisyphus. It provides <code class="docutils literal notranslate"><span class="pre">optimize_geometry</span></code> for minima,
+<code class="docutils literal notranslate"><span class="pre">optimize_transition_state</span></code> for first-order saddles,
+<code class="docutils literal notranslate"><span class="pre">fd_energy_and_gradient</span></code> for energy-only functions, and <code class="docutils literal notranslate"><span class="pre">make_calculator</span></code>
+for direct pysisyphus use. <code class="docutils literal notranslate"><span class="pre">run_irc</span></code> is exported by both <code class="docutils literal notranslate"><span class="pre">ccpy</span></code> and
+<code class="docutils literal notranslate"><span class="pre">ccpy.optimize</span></code>; it integrates an Euler predictor-corrector IRC and returns
+native endpoint molecules, trajectories and branch diagnostics.</p>
+<p>Build the native molecule with <strong>symmetry=False</strong>. Geometry changes and finite
+differences preserve the supplied Cartesian frame and atom order; symmetry
+detection/reorientation would invalidate that assumption. Use a separate working
+directory for each optimizer/IRC calculation, since the external algorithms
+write trajectories, logs and Hessian data.</p>
+<section id="installation-and-units">
+<h2>Installation and units<a class="headerlink" href="#installation-and-units" title="Link to this heading"></a></h2>
+<p>pysisyphus is listed as a CCpy runtime dependency. If it is missing from an
+existing environment, install it in that same environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>pysisyphus
+</pre></div>
+</div>
+<p>The native CCpy calculator does not need an external QC executable. A missing
+<code class="docutils literal notranslate"><span class="pre">.pysisyphusrc</span></code> notice from pysisyphus does not itself prevent this Python
+calculator from running.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Molecule</span></code> defaults to angstrom for text input. Native stored coordinates and
+pysisyphus Cartesian arrays are <strong>bohr</strong>. Calculator energies are hartree;
+gradients are Eh/bohr and Cartesian Hessians are Eh/bohr squared. The bridge
+converts gradients into negative Cartesian forces. Do not negate the gradient
+in your callback. <code class="docutils literal notranslate"><span class="pre">get_normal_modes</span></code> applies masses and projects rigid motions
+before reporting signed vibrational wavenumbers in inverse centimeters.</p>
+</section>
+<section id="minimize-an-electronic-method-directly">
+<h2>Minimize an electronic method directly<a class="headerlink" href="#minimize-an-electronic-method-directly" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize_geometry</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 0 .12; H 0 .80 -.47; H 0 -.78 -.45"</span><span class="p">,</span>
+               <span class="s2">"6-31g"</span><span class="p">,</span> <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span>
+               <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+          <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">)</span>
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">coord_type</span><span class="o">=</span><span class="s2">"redund"</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">,</span>
+                            <span class="n">max_cycles</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">hessian_init</span><span class="o">=</span><span class="s2">"fischer"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">minimum</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">minimum</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="n">minimum</span><span class="o">.</span><span class="n">ncycles</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">minimum</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">atoms</span><span class="p">)</span>  <span class="c1"># optimized coordinates in bohr</span>
+</pre></div>
+</div>
+<p>This creates a pysisyphus rational-function optimizer and evaluates
+<code class="docutils literal notranslate"><span class="pre">cc.at_geometry(mol).energy_and_gradient()</span></code> at requested geometries. It chooses
+analytic gradients where available and otherwise uses the method’s finite
+differences. The originally supplied <code class="docutils literal notranslate"><span class="pre">cc</span></code> object remains the template; its
+stored molecule and amplitudes are not the optimized result. Reconstruct with
+<code class="docutils literal notranslate"><span class="pre">cc.at_geometry(minimum.molecule)</span></code> for final properties.</p>
+<p>Configure <code class="docutils literal notranslate"><span class="pre">nfrozen</span></code>, solver thresholds, FNO policy and correction variant on
+the template. Geometry copies reproduce that constructor chain. For example,
+<code class="docutils literal notranslate"><span class="pre">optimize_geometry(CRCC23(cc,</span> <span class="pre">variant=&quot;A&quot;))</span></code> minimizes the analytic-A surface;
+variant D instead uses a numerical gradient. An MP2/ADC/FNO template may require
+many energy evaluations per optimizer step because it lacks an eligible
+analytic derivative. See <a class="reference internal" href="gradients.html"><span class="doc">Analytic gradients and finite differences</span></a> before choosing a costly model.</p>
+<p>A completed optimizer run is not necessarily converged. Inspect
+<code class="docutils literal notranslate"><span class="pre">result.converged</span></code> and verify the final gradient. The wrapper does not
+universally reject every unconverged inner electronic iterate. For explicit
+control over SCF, CC and left-state convergence, use a callback.</p>
+</section>
+<section id="use-a-callback-for-custom-calculations">
+<h2>Use a callback for custom calculations<a class="headerlink" href="#use-a-callback-for-custom-calculations" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">CCSD</span><span class="p">,</span> <span class="n">CRCC23</span><span class="p">,</span> <span class="n">RHF</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">energy_and_gradient</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">mf</span> <span class="o">=</span> <span class="n">RHF</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">)</span>
+    <span class="n">cc</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">mf</span><span class="p">,</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span>
+              <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">)</span>
+    <span class="n">corrected</span> <span class="o">=</span> <span class="n">CRCC23</span><span class="p">(</span><span class="n">cc</span><span class="p">,</span> <span class="n">variant</span><span class="o">=</span><span class="s2">"A"</span><span class="p">)</span>
+    <span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">corrected</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">mf</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">cc</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">corrected</span><span class="o">.</span><span class="n">converged</span>
+            <span class="ow">and</span> <span class="n">corrected</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">converged</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Unconverged electronic calculation"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">gradient</span>
+
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">energy_and_gradient</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The callback contract is <code class="docutils literal notranslate"><span class="pre">callable(Molecule)</span> <span class="pre">-&gt;</span> <span class="pre">(float,</span> <span class="pre">array(natoms,3))</span></code>.
+Do not pass <code class="docutils literal notranslate"><span class="pre">gradient_and_dipole</span></code> here: its return is <code class="docutils literal notranslate"><span class="pre">(g,mu)</span></code>, not <code class="docutils literal notranslate"><span class="pre">(E,g)</span></code>.
+Use the native Hessian/IR helpers in <a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a> for dipole intensities.
+It lets you select correction variants, check convergence, target an excited
+state, or define a custom scalar composite energy consistently. Pass either a
+method or a molecule plus callback, not both method and callback.</p>
+<p>For an energy-only calculation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">MP2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">fd_energy_and_gradient</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">energy_only</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">method</span> <span class="o">=</span> <span class="n">MP2</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">molecule</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">method</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+
+<span class="n">numerical</span> <span class="o">=</span> <span class="n">fd_energy_and_gradient</span><span class="p">(</span><span class="n">energy_only</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">1.e-3</span><span class="p">,</span> <span class="n">npoints</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">numerical</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">make_calculator</span></code> caches the last Cartesian geometry’s energy and gradient,
+so an energy request followed by a force request at identical coordinates
+needs one callback evaluation. This is not a persistent calculation cache or
+an orbital/amplitude warm start. Energy-only requests still invoke the combined
+callback and can therefore calculate a gradient.</p>
+</section>
+<section id="optimization-controls-and-result-fields">
+<h2>Optimization controls and result fields<a class="headerlink" href="#optimization-controls-and-result-fields" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Minimum and saddle wrappers</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 26.0%" />
+<col style="width: 28.0%" />
+<col style="width: 46.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Setting</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Meaning</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">coord_type</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;redund&quot;</span></code></p></td>
+<td><p>Redundant internals. Also supports the installed pysisyphus <code class="docutils literal notranslate"><span class="pre">&quot;dlc&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;tric&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;cart&quot;</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">thresh</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;gau&quot;</span></code></p></td>
+<td><p>Named convergence preset; <code class="docutils literal notranslate"><span class="pre">&quot;gau_loose&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;gau_tight&quot;</span></code> are also available.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">max_cycles</span></code></p></td>
+<td><p>100</p></td>
+<td><p>Maximum optimizer cycles, separate from electronic iterations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hessian_init</span></code> (minimum)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;fischer&quot;</span></code></p></td>
+<td><p>Model Hessian; <code class="docutils literal notranslate"><span class="pre">&quot;lindh&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;swart&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;calc&quot;</span></code> also supported.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hessian_init</span></code> (TS)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">&quot;calc&quot;</span></code></p></td>
+<td><p>Finite-difference Hessian from calculator gradients.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">root</span></code> (TS)</p></td>
+<td><p>0</p></td>
+<td><p>Lowest Hessian mode followed uphill; <strong>not</strong> an electronic-state root.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">hessian_recalc</span></code> (TS)</p></td>
+<td><p>None</p></td>
+<td><p>Periodic Hessian recomputation interval; otherwise uses the optimizer’s updates.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hessian_step</span></code> (TS / calculator)</p></td>
+<td><p>5e-3 bohr</p></td>
+<td><p>Cartesian gradient-difference displacement for the Hessian.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Extra keyword arguments go to <code class="docutils literal notranslate"><span class="pre">RFOptimizer</span></code> or <code class="docutils literal notranslate"><span class="pre">RSPRFOptimizer</span></code>. Check the
+installed pysisyphus signatures before passing advanced controls; the wrapper
+already supplies <code class="docutils literal notranslate"><span class="pre">dump=False</span></code>, so do not pass <code class="docutils literal notranslate"><span class="pre">dump</span></code> a second time.
+<code class="docutils literal notranslate"><span class="pre">verbose=False</span></code> suppresses bridge messages, not necessarily all external
+optimizer output. <code class="docutils literal notranslate"><span class="pre">optimize_geometry</span></code> does not expose a separate
+<code class="docutils literal notranslate"><span class="pre">hessian_step</span></code> parameter: use <code class="docutils literal notranslate"><span class="pre">make_calculator</span></code> and the external optimizer
+directly to customize that minimum Hessian displacement.</p>
+<p><code class="docutils literal notranslate"><span class="pre">OptimizationResult</span></code> exposes <code class="docutils literal notranslate"><span class="pre">molecule</span></code>, <code class="docutils literal notranslate"><span class="pre">energy</span></code>, <code class="docutils literal notranslate"><span class="pre">converged</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ncycles</span></code> and <code class="docutils literal notranslate"><span class="pre">optimizer</span></code> (the external optimizer/history).
+<code class="docutils literal notranslate"><span class="pre">hessian_eigenvalues</span></code> is filled only by the TS wrapper. It contains raw
+<strong>unweighted Cartesian</strong> Hessian eigenvalues, not vibrational frequencies or
+projected mass-weighted mode eigenvalues. The minimum wrapper does not perform
+a final frequency calculation automatically.</p>
+</section>
+<section id="hessian-evaluation-and-cost">
+<h2>Hessian evaluation and cost<a class="headerlink" href="#hessian-evaluation-and-cost" title="Link to this heading"></a></h2>
+<p>CCpy’s calculator computes a Cartesian Hessian by two-point differences of
+Cartesian gradients at +/- <code class="docutils literal notranslate"><span class="pre">hessian_step</span></code>, then symmetrizes it. This requires
+6N displaced gradients for N atoms, plus a central energy/force request as
+needed. There is no analytic molecular Hessian exposed by this bridge.</p>
+<p>With numerical gradients, the Hessian is a nested finite difference and its
+cost is quadratic in atom count times the scalar energy cost. <code class="docutils literal notranslate"><span class="pre">fd_step</span></code> /
+<code class="docutils literal notranslate"><span class="pre">fd_npoints</span></code> control the <strong>inner energy gradient</strong>, while <code class="docutils literal notranslate"><span class="pre">hessian_step</span></code>
+controls the <strong>outer gradient derivative</strong>. Tight electronic convergence and
+step-size checks are essential when distinguishing weak imaginary modes from
+noise. A model Hessian is useful to start minimization; it is not a final
+vibrational characterization.</p>
+</section>
+<section id="find-a-transition-state">
+<h2>Find a transition state<a class="headerlink" href="#find-a-transition-state" title="Link to this heading"></a></h2>
+<p>Supply a chemically plausible near-saddle guess. The following ammonia inversion
+example starts close to planar and follows the umbrella mode:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize_transition_state</span>
+
+<span class="n">guess</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"N 0 0 .10; H .95 0 0; H -.475 .8227 0; H -.475 -.8227 0"</span><span class="p">,</span>
+                 <span class="s2">"6-31g"</span><span class="p">,</span> <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span>
+                 <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">method</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">guess</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">),</span>
+              <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">)</span>
+<span class="n">ts</span> <span class="o">=</span> <span class="n">optimize_transition_state</span><span class="p">(</span>
+    <span class="n">method</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">coord_type</span><span class="o">=</span><span class="s2">"redund"</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">,</span>
+    <span class="n">hessian_init</span><span class="o">=</span><span class="s2">"calc"</span><span class="p">,</span> <span class="n">hessian_recalc</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">hessian_step</span><span class="o">=</span><span class="mf">5.e-3</span><span class="p">,</span>
+    <span class="n">max_cycles</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">ts</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="n">ts</span><span class="o">.</span><span class="n">hessian_eigenvalues</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The wrapper uses restricted-step partitioned RFO, maximizing along one mode
+and minimizing the others. <code class="docutils literal notranslate"><span class="pre">root=0</span></code> is appropriate when the lowest relevant
+mode is the desired reaction coordinate. A poor starting guess can have no
+negative mode, several negative modes or the wrong unstable motion. Inspect
+mode displacements rather than accepting a converged optimizer flag as proof
+of the intended transition state.</p>
+<p>After the search the wrapper <strong>always</strong> computes a final finite-difference
+Cartesian Hessian, even if optimization did not converge. Check <code class="docutils literal notranslate"><span class="pre">ts.converged</span></code>
+first, then characterize its projected vibrational modes and verify the chemical
+motion. Do not count tiny negative raw Cartesian eigenvalues as separate
+imaginary vibrations; translations/rotations and numerical noise can contribute.</p>
+</section>
+<section id="projected-vibrational-analysis">
+<h2>Projected vibrational analysis<a class="headerlink" href="#projected-vibrational-analysis" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="frequencies.html"><span class="doc">Computing vibrational frequencies</span></a> for a complete minimum-frequency calculation, mode
+displacements, isotope substitution, Hessian reuse and numerical convergence.</p>
+<p>Use public pysisyphus objects with CCpy’s calculator, on the same electronic
+surface and basis as the optimization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysisyphus.Geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Geometry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.integrals.atom_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Z_TO_ATOM_SYMBOL</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_calculator</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">at_geometry</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">calculation</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+    <span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">calculation</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">calculation</span><span class="o">.</span><span class="n">converged</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Unconverged electronic state"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">gradient</span>
+
+<span class="n">atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">Z_TO_ATOM_SYMBOL</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="p">)]</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">atomic_charges</span><span class="p">]</span>
+<span class="n">coords</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="o">.</span><span class="n">atoms</span><span class="p">])</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">coord_type</span><span class="o">=</span><span class="s2">"cart"</span><span class="p">)</span>
+<span class="n">geom</span><span class="o">.</span><span class="n">set_calculator</span><span class="p">(</span><span class="n">make_calculator</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="p">,</span> <span class="n">at_geometry</span><span class="p">,</span>
+                                   <span class="n">hessian_step</span><span class="o">=</span><span class="mf">5.e-3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="n">frequencies</span><span class="p">,</span> <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">mass_weighted_modes</span><span class="p">,</span> <span class="n">cartesian_modes</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_normal_modes</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span>  <span class="c1"># cm^-1; negative values denote imaginary modes</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">get_normal_modes</span></code> mass-weights the Hessian and projects rigid motions. A
+nonlinear isolated molecule has 3N-6 vibrational modes (3N-5 if linear), with
+special handling needed for atomic/degenerate limits. A minimum should have
+no significant imaginary vibration; a first-order saddle should have exactly
+one. The associated displacement must follow the proposed chemical reaction.
+Low-frequency negative values require numerical checks rather than an arbitrary
+universal cutoff. The runnable example uses -20 cm^-1 only as a practical
+small-molecule demonstration threshold.</p>
+<p>This standalone analysis computes a Hessian again because the CCpy TS result
+stores only its eigenvalues. The resulting <code class="docutils literal notranslate"><span class="pre">geom</span></code> retains the Hessian cache
+and can serve as the initial geometry for direct pysisyphus use. Keep atom order, charge,
+spin, isotopic masses and coordinate frame consistent when reusing Hessians.</p>
+</section>
+<section id="run-both-irc-branches-with-run-irc">
+<h2>Run both IRC branches with run_irc<a class="headerlink" href="#run-both-irc-branches-with-run-irc" title="Link to this heading"></a></h2>
+<p>Use the converged TS molecule and the same scalar electronic callback used
+for the saddle search:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_irc</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">run_irc</span><span class="p">(</span>
+    <span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="p">,</span> <span class="n">at_geometry</span><span class="p">,</span> <span class="n">forward</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">hessian_init</span><span class="o">=</span><span class="s2">"calc"</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hessian_step</span><span class="o">=</span><span class="mf">5.e-3</span><span class="p">,</span>
+    <span class="n">step_length</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">max_cycles</span><span class="o">=</span><span class="mi">150</span><span class="p">,</span> <span class="n">rms_grad_thresh</span><span class="o">=</span><span class="mf">5.e-4</span><span class="p">,</span>
+    <span class="n">displ</span><span class="o">=</span><span class="s2">"length"</span><span class="p">,</span> <span class="n">displ_length</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">"irc"</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"reaction"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">start_energy</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="n">branch</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">branches</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="n">branch</span><span class="o">.</span><span class="n">converged</span><span class="p">,</span> <span class="n">branch</span><span class="o">.</span><span class="n">energy_converged</span><span class="p">,</span>
+          <span class="n">branch</span><span class="o">.</span><span class="n">energy_increased</span><span class="p">,</span> <span class="n">branch</span><span class="o">.</span><span class="n">gradient_rms</span><span class="p">,</span> <span class="n">branch</span><span class="o">.</span><span class="n">ncycles</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Alternatively pass a method rebuilt on the saddle geometry:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_irc</span><span class="p">(</span><span class="n">method</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="p">),</span> <span class="n">out_dir</span><span class="o">=</span><span class="s2">"method-irc"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This repeats the method’s configured scalar energy/gradient calculation at each
+geometry and checks its convergence flag. For an excited-state method select
+its <strong>returned electronic root</strong> with <code class="docutils literal notranslate"><span class="pre">state</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">result</span> <span class="o">=</span> <span class="n">run_irc</span><span class="p">(</span><span class="n">eom_template</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">molecule</span><span class="p">),</span> <span class="n">state</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                 <span class="n">out_dir</span><span class="o">=</span><span class="s2">"excited-irc"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">state=1</span></code> is passed to the method’s <code class="docutils literal notranslate"><span class="pre">energy(root=1)</span></code> and
+<code class="docutils literal notranslate"><span class="pre">gradient(root=1)</span></code>; <code class="docutils literal notranslate"><span class="pre">root=0</span></code> selects the Hessian mode. An array-valued energy
+without an explicit scalar state raises a clear error before computing the
+method gradient. With a molecule/callback input, select the state inside the
+callback instead of passing <code class="docutils literal notranslate"><span class="pre">state</span></code>. The wrapper checks that every energy is
+a finite real scalar and every gradient has finite real shape <code class="docutils literal notranslate"><span class="pre">(natoms,3)</span></code>.
+It does not implement universal electronic root tracking; keep the state-following
+checks discussed below.</p>
+<p>The result types <code class="docutils literal notranslate"><span class="pre">IRCResult</span></code> and <code class="docutils literal notranslate"><span class="pre">IRCBranch</span></code> are also exported by CCpy:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">start_molecule</span></code> and <code class="docutils literal notranslate"><span class="pre">start_energy</span></code> describe the input geometry.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">branches</span></code> maps requested directions to <code class="docutils literal notranslate"><span class="pre">IRCBranch</span></code> objects.</p></li>
+<li><p>Each branch stores <code class="docutils literal notranslate"><span class="pre">coordinates</span></code> in Cartesian bohr with shape
+<code class="docutils literal notranslate"><span class="pre">(npoints,natoms,3)</span></code>, <code class="docutils literal notranslate"><span class="pre">energies</span></code> in hartree, and <code class="docutils literal notranslate"><span class="pre">gradients</span></code> in Eh/bohr.
+Points run from the initial displacement toward the last stored endpoint;
+the separate starting TS is not prepended to each branch.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">branch.molecule</span></code> is the native molecule at the last stored point;
+<code class="docutils literal notranslate"><span class="pre">result.endpoints</span></code> maps directions to these molecules.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">converged</span></code> means all requested branches met the external integrator’s
+convergence criteria. A cycle-limited path returns <code class="docutils literal notranslate"><span class="pre">False</span></code>; it does not
+silently become a validated connection. <code class="docutils literal notranslate"><span class="pre">gradient_rms</span></code> is evaluated at the
+last stored branch point. <code class="docutils literal notranslate"><span class="pre">ncycles</span></code> is the external cycle index plus one.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">result.irc</span></code> exposes the original pysisyphus object for complete histories,
+mass-weighted coordinates and additional diagnostics.</p></li>
+</ul>
+<p>Both directions are enabled by default. Disable one with <code class="docutils literal notranslate"><span class="pre">forward=False</span></code> or
+<code class="docutils literal notranslate"><span class="pre">backward=False</span></code>. <code class="docutils literal notranslate"><span class="pre">downhill=True</span></code> instead returns a single <code class="docutils literal notranslate"><span class="pre">&quot;downhill&quot;</span></code>
+branch and ignores those two switches. At least one direction is required when
+not running downhill. Extra keyword arguments are passed to pysisyphus
+<code class="docutils literal notranslate"><span class="pre">EulerPC</span></code>/<code class="docutils literal notranslate"><span class="pre">IRC</span></code>, including initial-displacement settings, <code class="docutils literal notranslate"><span class="pre">energy_thresh</span></code>,
+<code class="docutils literal notranslate"><span class="pre">hessian_recalc</span></code> and <code class="docutils literal notranslate"><span class="pre">dump_every</span></code>. A saved Hessian path can be supplied as
+<code class="docutils literal notranslate"><span class="pre">hessian_init</span></code>; verify matching geometry, atom order, units and electronic
+surface before reusing it. The native wrapper starts from a molecule, so it
+calculates its own Hessian unless a file is supplied; it does not implicitly
+reuse the standalone <code class="docutils literal notranslate"><span class="pre">geom</span></code> object’s cache from the frequency example.</p>
+<p>EulerPC integrates the reaction path in mass-weighted coordinates, starting in
+opposite directions along the transition vector. Here <code class="docutils literal notranslate"><span class="pre">displ_length</span></code> is the
+initial mass-weighted displacement (sqrt(amu) bohr). <code class="docutils literal notranslate"><span class="pre">step_length</span></code> is a
+separate integrator step control; the installed EulerPC measures its target
+integration length in unweighted Cartesian coordinates. Do not confuse either
+with <code class="docutils literal notranslate"><span class="pre">hessian_step</span></code> or a finite-difference gradient displacement.
+<code class="docutils literal notranslate"><span class="pre">max_cycles</span></code> applies per branch. These explicit values are an example, not a
+universal converged IRC protocol. Reduce the integration step and tighten
+thresholds to check path/endpoint stability.</p>
+<p>A branch may terminate through energy-change criteria rather than a small final
+gradient. Inspect the per-branch flags, cycle counts and actual endpoint gradients.
+Reaching <code class="docutils literal notranslate"><span class="pre">max_cycles</span></code> is not validation. <code class="docutils literal notranslate"><span class="pre">downhill=True</span></code> is a different
+single downhill trajectory from a nonstationary starting point; it does not
+replace both branches from a stationary saddle.</p>
+<p>The interface writes pysisyphus trajectories, logs and Hessian/HDF5 data;
+<code class="docutils literal notranslate"><span class="pre">prefix</span></code> and <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> control the IRC files, while some external outputs
+can still be relative to the process working directory. Run in a dedicated
+directory. <code class="docutils literal notranslate"><span class="pre">pysisplot</span> <span class="pre">--irc</span></code> can visualize the saved IRC data; consult the
+installed pysisyphus command help for file arguments and output conventions.</p>
+</section>
+<section id="optimize-and-validate-the-endpoints">
+<h2>Optimize and validate the endpoints<a class="headerlink" href="#optimize-and-validate-the-endpoints" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">run_irc</span></code> returns the last stored geometries without optimizing or
+vibrationally characterizing them. Minimize its native endpoint molecules
+on the same energy surface:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">endpoints</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">direction</span><span class="p">,</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">endpoints</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">relaxed</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">at_geometry</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">relaxed</span><span class="o">.</span><span class="n">converged</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Endpoint optimization did not converge"</span><span class="p">)</span>
+    <span class="n">endpoints</span><span class="p">[</span><span class="n">direction</span><span class="p">]</span> <span class="o">=</span> <span class="n">relaxed</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">direction</span><span class="p">,</span> <span class="n">relaxed</span><span class="o">.</span><span class="n">energy</span><span class="p">,</span> <span class="n">ts</span><span class="o">.</span><span class="n">energy</span> <span class="o">-</span> <span class="n">relaxed</span><span class="o">.</span><span class="n">energy</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Use the projected frequency procedure on <strong>both</strong> relaxed endpoints and check
+that they are minima. Then compare their bonding, structures, atom mapping and
+state character with the intended reactant/product basins. Both should lie
+below the saddle on that same surface; otherwise inspect optimization,
+convergence or state tracking. A single imaginary TS frequency alone does not
+establish a connection to the desired pair of minima.</p>
+<p>Forward/backward labels are arbitrary: the unstable eigenvector can change
+sign. Symmetric reactions may lead to symmetry-equivalent endpoints rather
+than different chemical connectivities. For ammonia inversion the preserved
+N/H atom labels allow comparing the signed N height relative to the ordered H
+plane: opposite signs distinguish the two umbrella minima. Do not require two
+arbitrary, unsuperimposed Cartesian coordinate arrays to be equal when matching
+geometries.</p>
+</section>
+<section id="electronic-excited-states-and-custom-surfaces">
+<h2>Electronic excited states and custom surfaces<a class="headerlink" href="#electronic-excited-states-and-custom-surfaces" title="Link to this heading"></a></h2>
+<p>Use a scalar root-aware callback instead of passing a multiroot EOM method
+directly to the wrappers:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">EOMCCSD</span>
+
+<span class="n">eom_template</span> <span class="o">=</span> <span class="n">EOMCCSD</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+<span class="n">eom_template</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                           <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">3</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">excited_surface</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">eom</span> <span class="o">=</span> <span class="n">eom_template</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+    <span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">eom</span><span class="o">.</span><span class="n">cc</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">eom</span><span class="o">.</span><span class="n">root_converged</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Unconverged target"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">gradient</span>
+
+<span class="n">excited_minimum</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">eom_template</span><span class="o">.</span><span class="n">molecule</span><span class="p">,</span> <span class="n">excited_surface</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here the selected electronic state is returned root 1, seeded by guess index 2.
+The TS/IRC <code class="docutils literal notranslate"><span class="pre">root</span></code> instead selects a Hessian mode. Root-specific callbacks also
+work for corrected EOM/ADC energies if their gradient route and state identity
+are appropriate. Generic <code class="docutils literal notranslate"><span class="pre">at_geometry</span></code> repeats guesses; it does not implement
+universal electronic root tracking across crossings. Inspect amplitudes,
+overlap and neighboring energies along the path. Near degeneracies, a
+single smooth adiabatic surface and ordinary first-order saddle/IRC description
+can fail; the interface does not supply nonadiabatic couplings or crossing
+optimization automatically.</p>
+<p>FNO cutoffs and adaptive selected spaces can change discretely along a path.
+Use the smoothness checks in <a class="reference internal" href="gradients.html"><span class="doc">Analytic gradients and finite differences</span></a> and consistent parent/target
+completion conventions. Numerical differentiation of an FNO-completed energy
+includes the rebuilt low-level correction; it does not make a cutoff-discontinuous
+surface differentiable.</p>
+</section>
+<section id="runnable-end-to-end-examples">
+<h2>Runnable end-to-end examples<a class="headerlink" href="#runnable-end-to-end-examples" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span>--task<span class="w"> </span>minimum<span class="w"> </span>--method<span class="w"> </span>ccsd<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>minimum-run
+python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span>--task<span class="w"> </span>minimum<span class="w"> </span>--method<span class="w"> </span>mp2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>numerical-minimum
+python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span>--task<span class="w"> </span>ts<span class="w"> </span>--method<span class="w"> </span>rhf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>ts-run
+python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span>--task<span class="w"> </span>irc<span class="w"> </span>--method<span class="w"> </span>rhf<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>irc-run
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">--finite-difference</span></code> explicitly replaces analytic gradients by displaced
+energies. <code class="docutils literal notranslate"><span class="pre">--method</span> <span class="pre">crcc23a</span></code> selects the deterministic analytic-A correction.
+The IRC task searches for the ammonia inversion saddle, checks its projected
+frequencies, integrates both branches, relaxes the endpoints and checks their
+frequencies and opposite umbrella signs. <code class="docutils literal notranslate"><span class="pre">summary.json</span></code> records the results.
+These small-basis examples validate wiring and conventions, not quantitative
+reaction energetics. Do not assume a successful RHF path establishes a CC or
+excited-state path without repeating that surface’s calculations.</p>
+</section>
+<section id="validation-of-the-shipped-example">
+<h2>Validation of the shipped example<a class="headerlink" href="#validation-of-the-shipped-example" title="Link to this heading"></a></h2>
+<p>The examples were run with pysisyphus 1.0.0, native DF-RHF/CCSD and the default
+STO-3G / def2-universal-jkfit demonstration setup. CCSD analytic versus
+four-point energy-difference gradients at distorted water differed by about
+6.1e-11 Eh/bohr. The optimized CCSD water had three positive vibrational modes.
+The RHF ammonia saddle had one imaginary mode near -1081.5 cm^-1; both IRC
+branches relaxed to positive-frequency minima near -55.4555641 Eh, below the
+saddle near -55.4378011 Eh, with opposite signed umbrella heights. These are
+sanity checks for the runnable example, not reference-quality reaction data or
+a guarantee of a CCSD IRC from an RHF path.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tests/scf/test_irc_interface.py</span></code> additionally exercises the public wrapper
+on both ammonia branches, native endpoint relaxation, single-branch and
+cycle-limited results, electronic-state selection and invalid inputs.</p>
+<p>The existing direct-method optimization test in
+<code class="docutils literal notranslate"><span class="pre">tests/methods/test_method_gradients.py::test_optimize_geometry_with_a_method</span></code>
+also checks the CCpy-object-to-pysisyphus wrapper. Larger methods, basis sets,
+excited states and arbitrary reactions require their own validation.</p>
+</section>
+<section id="external-documentation-and-version-checks">
+<h2>External documentation and version checks<a class="headerlink" href="#external-documentation-and-version-checks" title="Link to this heading"></a></h2>
+<p>The examples were checked against the locally installed pysisyphus API. Record
+your installed version and inspect signatures when transferring a workflow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysisyphus.irc.EulerPC</span><span class="w"> </span><span class="kn">import</span> <span class="n">EulerPC</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysisyphus.irc.IRC</span><span class="w"> </span><span class="kn">import</span> <span class="n">IRC</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">version</span><span class="p">(</span><span class="s2">"pysisyphus"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">EulerPC</span><span class="o">.</span><span class="fm">__init__</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">IRC</span><span class="o">.</span><span class="fm">__init__</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>See the primary <a class="reference external" href="https://pysisyphus.readthedocs.io/en/master/irc.html">pysisyphus IRC documentation</a> and
+<a class="reference external" href="https://pysisyphus.readthedocs.io/en/latest/api/pysisyphus.html">public Geometry API</a>. Online and
+installed defaults can differ; the examples explicitly specify the important
+path controls. CCpy bridge signatures are in
+<code class="docutils literal notranslate"><span class="pre">ccpy/optimize/pysisyphus_interface.py</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gradients.html" class="btn btn-neutral float-left" title="Analytic gradients and finite differences" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="frequencies.html" class="btn btn-neutral float-right" title="Computing vibrational frequencies" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

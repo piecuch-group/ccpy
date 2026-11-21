@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Initial guesses, symmetry and choosing roots &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FNOs, active spaces and selected determinants" href="spaces.html" />
+    <link rel="prev" title="Excitation, attachment, ionization, ADC and STEOM" href="excited.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Initial guesses, symmetry and choosing roots</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#guess-configuration-is-separate-from-the-final-equation-model">Guess configuration is separate from the final equation model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#request-a-guess-pool-then-choose-entries-from-it">Request a guess pool, then choose entries from it</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#irrep-dictionaries-integer-counts-and-disabled-symmetry">Irrep dictionaries, integer counts and disabled symmetry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#spin-multiplicity">Spin multiplicity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#following-state-character">Following state character</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="frequencies.html">Computing vibrational frequencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Initial guesses, symmetry and choosing roots</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/guesses.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="initial-guesses-symmetry-and-choosing-roots">
+<h1>Initial guesses, symmetry and choosing roots<a class="headerlink" href="#initial-guesses-symmetry-and-choosing-roots" title="Link to this heading"></a></h1>
+<section id="guess-configuration-is-separate-from-the-final-equation-model">
+<h2>Guess configuration is separate from the final equation model<a class="headerlink" href="#guess-configuration-is-separate-from-the-final-equation-model" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">initial_guess</span></code> is shared by EOMCC, ADC and STEOM. It configures a CI-like
+problem used to initialize and identify targets. It does not reduce the
+subsequent full EOM excitation space. In particular, guess <code class="docutils literal notranslate"><span class="pre">nacto/nactu</span></code>
+restrict guess doubles, not all EOM doubles/triples.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">nacto</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A1"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="s2">"B2"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
+    <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">],</span> <span class="n">use_symmetry</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>This example requires a reference with matching point-group labels, such as
+C2v; it cannot be copied onto a C1 reference without changing the labels.
+Use <code class="docutils literal notranslate"><span class="pre">debug=True</span></code> for supported guess diagnostics.</p>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Guess choices</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 38.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Guess</p></th>
+<th class="head"><p>Space</p></th>
+<th class="head"><p>Typical use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">cis</span></code></p></td>
+<td><p>All neutral singles.</p></td>
+<td><p>Primary-dominated EE; default folded EE-ADC(2).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cisd</span></code> / <code class="docutils literal notranslate"><span class="pre">cisd_chol</span></code></p></td>
+<td><p>All neutral singles plus active doubles.</p></td>
+<td><p>Ordinary EE-EOM default; full EE-ADC default; doubles-character targeting.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ipcis</span></code> / <code class="docutils literal notranslate"><span class="pre">ipcisd</span></code></p></td>
+<td><p>1h / 1h plus active 2h1p.</p></td>
+<td><p>Folded IP-ADC / IP-EOM or full IP-ADC.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">eacis</span></code> / <code class="docutils literal notranslate"><span class="pre">eacisd</span></code></p></td>
+<td><p>1p / 1p plus active 2p1h.</p></td>
+<td><p>Folded EA-ADC / EA-EOM or full EA-ADC.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dipcis</span></code></p></td>
+<td><p>Leading 2h configurations.</p></td>
+<td><p>DIP-EOM families.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">deacis</span></code></p></td>
+<td><p>Leading 2p configurations.</p></td>
+<td><p>DEA-EOM families.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sfcis</span></code></p></td>
+<td><p>Leading single spin flips.</p></td>
+<td><p>SF-EOM families.</p></td>
+</tr>
+</tbody>
+</table>
+<p>For native DF methods <code class="docutils literal notranslate"><span class="pre">method=&quot;cisd&quot;</span></code> is mapped to <code class="docutils literal notranslate"><span class="pre">&quot;cisd_chol&quot;</span></code>.
+It is an implementation selection, not a different user-facing root model.
+<code class="docutils literal notranslate"><span class="pre">nacto=None</span></code> and <code class="docutils literal notranslate"><span class="pre">nactu=None</span></code> become zero in the generic mixin, so explicitly
+supply positive counts when seeking active-double character. Open-shell guess
+builders derive spin-specific active counts from the reference multiplicity,
+subject to available dimensions. Consult printed active counts.</p>
+<p>EOMCC guesses normally use the selected <strong>HBar</strong> (and T for DF CISd), not the
+bare SCF Hamiltonian. ADC and STEOM override this behavior and use the <strong>bare</strong>
+Hamiltonian. A bare CISd guess therefore need not have the same energies or
+ordering as an EOMCC CISd guess, even on the same reference.</p>
+</section>
+<section id="request-a-guess-pool-then-choose-entries-from-it">
+<h2>Request a guess pool, then choose entries from it<a class="headerlink" href="#request-a-guess-pool-then-choose-entries-from-it" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">roots_per_irrep={&quot;A1&quot;:</span> <span class="pre">3,</span> <span class="pre">&quot;B2&quot;:</span> <span class="pre">2}</span></code> requests up to three A1 and two B2 guess
+states. For symmetry-blocked guesses the concatenation follows dictionary
+insertion order. Within each block the guess states are energy ordered.
+<code class="docutils literal notranslate"><span class="pre">roots=[0,</span> <span class="pre">2,</span> <span class="pre">4]</span></code> selects entries of that <strong>concatenated guess pool</strong>, not
+root 0/2/4 within every irrep, and not absolute final eigenvalue indices.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>guess index        0    1    2    3    4
+guess irrep       A1   A1   A1   B2   B2
+selected          yes       yes       yes
+returned index     0         1         2
+</pre></div>
+</div>
+<p>After solving, <code class="docutils literal notranslate"><span class="pre">energy(root=1)</span></code> refers to the second returned state, which
+was seeded by guess index 2 in this example. Likewise <code class="docutils literal notranslate"><span class="pre">R[1]</span></code> and
+<code class="docutils literal notranslate"><span class="pre">omega[1]</span></code> are output indices. All these indices are zero based.
+<code class="docutils literal notranslate"><span class="pre">FNOTarget.root</span></code> is different again: it labels the low-level provider’s root
+within an irrep; see <a class="reference internal" href="spaces.html"><span class="doc">FNOs, active spaces and selected determinants</span></a>.</p>
+<p>A constructor <code class="docutils literal notranslate"><span class="pre">roots=[...]</span></code> provides the same guess-index selection for EOM
+and ADC, but <code class="docutils literal notranslate"><span class="pre">initial_guess(roots=...)</span></code> takes precedence. Prefer configuring
+selection in one place. If the guess pool provides fewer states than requested
+because of spin, symmetry or active-space dimension, requesting a missing index
+raises an error. Asking for a larger pool does not guarantee those states exist.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">eom</span><span class="o">.</span><span class="n">initial_guess</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">"cisd"</span><span class="p">,</span> <span class="n">multiplicity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">nacto</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">nactu</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                  <span class="n">roots_per_irrep</span><span class="o">=</span><span class="p">{</span><span class="s2">"A"</span><span class="p">:</span> <span class="mi">6</span><span class="p">},</span> <span class="n">roots</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">eom</span><span class="o">.</span><span class="n">run_guess</span><span class="p">()</span>  <span class="c1"># optional inspection before the expensive EOM solve</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">guess_energy</span><span class="p">,</span> <span class="n">eom</span><span class="o">.</span><span class="n">guess_irreps</span><span class="p">)</span>
+<span class="n">totals</span> <span class="o">=</span> <span class="n">eom</span><span class="o">.</span><span class="n">energy</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">eom</span><span class="o">.</span><span class="n">root_irreps</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For EOM, <code class="docutils literal notranslate"><span class="pre">run_guess()</span></code> can build the ground CC and HBar on demand. The
+subsequent solve may regenerate guesses when no right vectors have yet been
+initialized; it is an inspection step, not a persistent checkpoint.</p>
+</section>
+<section id="irrep-dictionaries-integer-counts-and-disabled-symmetry">
+<h2>Irrep dictionaries, integer counts and disabled symmetry<a class="headerlink" href="#irrep-dictionaries-integer-counts-and-disabled-symmetry" title="Link to this heading"></a></h2>
+<p>An integer <code class="docutils literal notranslate"><span class="pre">roots_per_irrep=4</span></code> asks for the lowest four guess states without
+irrep quotas. With symmetry disabled, a dictionary is treated as a total root
+count rather than as enforced per-irrep quotas. Use a dictionary with
+<code class="docutils literal notranslate"><span class="pre">use_symmetry=True</span></code> when distinct irrep counts matter.</p>
+<p>CIS/CISd, IP-/EA-CISd and DIP-/DEA-CIS are symmetry blocked. IP-CIS, EA-CIS and
+SF-CIS are diagonalized in their full leading space and classified afterward
+by a leading amplitude. Printed <code class="docutils literal notranslate"><span class="pre">guess_irreps</span></code> records the resulting labels.
+Final EOM root symmetry is checked against the guess and mismatches produce
+warnings; this general check is not itself a projector. ADC additionally
+restricts its Davidson action to the requested spatial irrep.</p>
+</section>
+<section id="spin-multiplicity">
+<h2>Spin multiplicity<a class="headerlink" href="#spin-multiplicity" title="Link to this heading"></a></h2>
+<p>For neutral EOM, the default guess multiplicity is the reference multiplicity.
+Set 1 for singlets or 3 for triplets on a closed-shell parent. IP, EA, DIP, DEA
+and SF default to <code class="docutils literal notranslate"><span class="pre">-1</span></code>, meaning no guess spin adaptation. <code class="docutils literal notranslate"><span class="pre">multiplicity</span></code>
+selects the CI guess spin subspace when supported; it does not change the
+molecule’s electron number or reference SCF spin.</p>
+<p>EOM disables the closed-shell amplitude shortcut when the target multiplicity
+is not 1. <code class="docutils literal notranslate"><span class="pre">RHF_symmetry</span></code> is an equation-level spin-block shortcut, not the
+point-group symmetry switch and not an instruction to run RHF SCF.
+A spin-adapted guess does not make a spin-contaminated UHF Hamiltonian spin pure.
+STEOM separately restricts its reference to closed-shell restricted CCSD and its
+target multiplicity to 1 or 3.</p>
+</section>
+<section id="following-state-character">
+<h2>Following state character<a class="headerlink" href="#following-state-character" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">davidson_selection_method=&quot;overlap&quot;</span></code> (default) follows the trial-state
+character in the projected problem; <code class="docutils literal notranslate"><span class="pre">&quot;energy&quot;</span></code> selects the Ritz eigenvalue
+nearest the current energy estimate. Neither guarantees an ordinal final root
+of the exact spectrum. Inspect amplitudes, irreps, <code class="docutils literal notranslate"><span class="pre">rel</span></code> and overlaps when
+states are close, reorder, or have strong double-excitation character.</p>
+<p>For ordinary EOM, <code class="docutils literal notranslate"><span class="pre">davidson_solver=&quot;standard&quot;</span></code> solves roots sequentially;
+<code class="docutils literal notranslate"><span class="pre">&quot;multiroot&quot;</span></code> selects the existing block-Davidson implementation. Sequential
+EOM passes previous vectors to the solver, but that is not the same as a
+universal strict root-deflation projector. Confirm distinct roots rather than
+assuming that an arbitrary set of guesses must converge to distinct states.
+EOM-CC3 uses its omega-dependent nonlinear DIIS solver for either setting.
+ADC exposes sequential Davidson only, with explicit full-space locking in
+full mode and duplicate detection in folded mode. STEOM has its own auxiliary
+and final diagonalization procedures.</p>
+<p>For satellite or doubles-dominated targets:</p>
+<ol class="arabic simple">
+<li><p>Choose a model that includes the relevant R sectors.</p></li>
+<li><p>Enlarge the CISd active space and request enough guess states.</p></li>
+<li><p>Select the desired guess indices explicitly.</p></li>
+<li><p>For ADC use <code class="docutils literal notranslate"><span class="pre">formulation=&quot;full&quot;</span></code>; for a neutral SD STEOM projection use
+<code class="docutils literal notranslate"><span class="pre">STEOMCCSDT</span></code> rather than ordinary singles-only STEOM.</p></li>
+<li><p>Verify final character and convergence. FNO density selection must follow
+the same physical target in full and reduced spaces.</p></li>
+</ol>
+<p>Changing <code class="docutils literal notranslate"><span class="pre">initial_guess</span></code> clears the existing right-state setup. Geometry
+reconstruction copies guess settings, but generic EOM finite differences do
+not implement a universal cross-geometry overlap tracker. Near crossings,
+check the state identity explicitly; a fixed guess index is not proof that
+the same physical state was followed.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="excited.html" class="btn btn-neutral float-left" title="Excitation, attachment, ionization, ADC and STEOM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="spaces.html" class="btn btn-neutral float-right" title="FNOs, active spaces and selected determinants" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

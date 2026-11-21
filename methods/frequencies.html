@@ -1,0 +1,331 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Computing vibrational frequencies &mdash; CCpy  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Solver controls, diagnostics and custom calculations" href="options.html" />
+    <link rel="prev" title="Geometry optimization, transition states and IRC validation" href="geometry.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CCpy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">The methods API: a calculation guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="setup.html">Molecules, references and composing calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ground.html">Ground states and energy corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="excited.html">Excitation, attachment, ionization, ADC and STEOM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guesses.html">Initial guesses, symmetry and choosing roots</a></li>
+<li class="toctree-l2"><a class="reference internal" href="spaces.html">FNOs, active spaces and selected determinants</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cim.html">Cluster-in-molecule local correlation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties.html">Left states, densities, response and gradients</a></li>
+<li class="toctree-l2"><a class="reference internal" href="multipoles.html">Multipole moments and harmonic IR intensities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gradients.html">Analytic gradients and finite differences</a></li>
+<li class="toctree-l2"><a class="reference internal" href="geometry.html">Geometry optimization, transition states and IRC validation</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Computing vibrational frequencies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#native-frequency-and-ir-helpers">Native frequency and IR helpers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#a-complete-optimized-geometry-example">A complete optimized-geometry example</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-the-returned-arrays">Reading the returned arrays</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#inspect-a-mode-displacement">Inspect a mode displacement</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#displacement-size-cost-and-accuracy">Displacement size, cost and accuracy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#isotopes-and-other-electronic-surfaces">Isotopes and other electronic surfaces</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-shipped-example">Run the shipped example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="options.html">Solver controls, diagnostics and custom calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="catalog.html">Complete methods API catalog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#a-complete-first-calculation">A complete first calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#what-is-shared">What is shared</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#native-df-versus-materialized-equations">Native DF versus materialized equations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#runnable-recipes-and-documentation-maintenance">Runnable recipes and documentation maintenance</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../fno.html">Frozen natural orbitals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../adc.html">Density-fitted ADC(2)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../steomcc.html">Spin-integrated STEOM-CCSD</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../legacy.html">Legacy Driver interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../contact_information.html">CCpy Development Team</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CCpy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">The methods API: a calculation guide</a></li>
+      <li class="breadcrumb-item active">Computing vibrational frequencies</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/methods/frequencies.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="computing-vibrational-frequencies">
+<h1>Computing vibrational frequencies<a class="headerlink" href="#computing-vibrational-frequencies" title="Link to this heading"></a></h1>
+<p>Harmonic vibrational frequencies come from the <strong>mass-weighted molecular
+Hessian</strong>, with translations and rotations projected out. CCpy provides
+Cartesian energies/gradients and the finite-difference Hessian through
+<code class="docutils literal notranslate"><span class="pre">make_calculator</span></code>; pysisyphus performs the mass weighting, projection and
+normal-mode analysis. There is no separate method-object <code class="docutils literal notranslate"><span class="pre">frequencies()</span></code> call or analytic
+molecular Hessian exposed by this interface. CCpy also supplies native
+<code class="docutils literal notranslate"><span class="pre">fd_hessian</span></code>, <code class="docutils literal notranslate"><span class="pre">harmonic_analysis</span></code> and <code class="docutils literal notranslate"><span class="pre">vibrational_analysis</span></code> helpers,
+including IR intensities when dipoles are supplied; see <a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a>.</p>
+<section id="native-frequency-and-ir-helpers">
+<h2>Native frequency and IR helpers<a class="headerlink" href="#native-frequency-and-ir-helpers" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ccpy.gradients.hessian.vibrational_analysis(molecule,</span> <span class="pre">energy=callback)</span></code>
+computes an energy-only Hessian using second differences.
+<code class="docutils literal notranslate"><span class="pre">vibrational_analysis(molecule,</span> <span class="pre">gradient=callback)</span></code> instead differences the
+gradient, accepting <code class="docutils literal notranslate"><span class="pre">g</span></code> or <code class="docutils literal notranslate"><span class="pre">(E,g)</span></code>. With <code class="docutils literal notranslate"><span class="pre">dipole=True</span></code> the callback must
+return <code class="docutils literal notranslate"><span class="pre">(g,mu)</span></code> or <code class="docutils literal notranslate"><span class="pre">(E,g,mu)</span></code> and native analysis additionally reports IR
+intensities. These are distinct callback contracts; see <a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a> for
+a complete example and finite-field alternatives.</p>
+<p>The native helper’s default <code class="docutils literal notranslate"><span class="pre">step</span></code> is 2.5e-3 bohr, while the pysisyphus
+calculator below defaults to <code class="docutils literal notranslate"><span class="pre">hessian_step=5e-3</span></code>. Native results are a dictionary,
+with modes shaped <code class="docutils literal notranslate"><span class="pre">(nvib,natoms,3)</span></code>, reduced masses, force constants and a
+positive-real-mode ZPE; pysisyphus returns the arrays described below. Match mass
+tables and numerical steps when comparing them.</p>
+</section>
+<section id="a-complete-optimized-geometry-example">
+<h2>A complete optimized-geometry example<a class="headerlink" href="#a-complete-optimized-geometry-example" title="Link to this heading"></a></h2>
+<p>The following computes a CCSD minimum and its harmonic frequencies using native
+DF integrals, analytic CCSD gradients and a numerically differentiated Hessian:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Molecule</span><span class="p">,</span> <span class="n">RHF</span><span class="p">,</span> <span class="n">CCSD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.integrals.atom_data</span><span class="w"> </span><span class="kn">import</span> <span class="n">Z_TO_ATOM_SYMBOL</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ccpy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize_geometry</span><span class="p">,</span> <span class="n">make_calculator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysisyphus.Geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Geometry</span>
+
+<span class="n">mol</span> <span class="o">=</span> <span class="n">Molecule</span><span class="p">(</span><span class="s2">"O 0 0 .12; H 0 .80 -.47; H 0 -.78 -.45"</span><span class="p">,</span> <span class="s2">"sto-3g"</span><span class="p">,</span>
+               <span class="n">auxiliary_basis</span><span class="o">=</span><span class="s2">"def2-universal-jkfit"</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">template</span> <span class="o">=</span> <span class="n">CCSD</span><span class="p">(</span><span class="n">RHF</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">e_tol</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">,</span> <span class="n">d_tol</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">),</span>
+                <span class="n">nfrozen</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">amp_convergence</span><span class="o">=</span><span class="mf">1.e-10</span><span class="p">,</span> <span class="n">energy_convergence</span><span class="o">=</span><span class="mf">1.e-12</span><span class="p">)</span>
+<span class="n">minimum</span> <span class="o">=</span> <span class="n">optimize_geometry</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">thresh</span><span class="o">=</span><span class="s2">"gau_tight"</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">minimum</span><span class="o">.</span><span class="n">converged</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Optimize the geometry before characterizing its vibrations"</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">energy_and_gradient</span><span class="p">(</span><span class="n">molecule</span><span class="p">):</span>
+    <span class="n">calculation</span> <span class="o">=</span> <span class="n">template</span><span class="o">.</span><span class="n">at_geometry</span><span class="p">(</span><span class="n">molecule</span><span class="p">)</span>
+    <span class="n">energy</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">calculation</span><span class="o">.</span><span class="n">energy_and_gradient</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">calculation</span><span class="o">.</span><span class="n">converged</span> <span class="ow">and</span> <span class="n">calculation</span><span class="o">.</span><span class="n">reference</span><span class="o">.</span><span class="n">scf</span><span class="o">.</span><span class="n">converged</span>
+            <span class="ow">and</span> <span class="n">calculation</span><span class="o">.</span><span class="n">left</span><span class="o">.</span><span class="n">converged</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"Unconverged electronic calculation"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">energy</span><span class="p">),</span> <span class="n">gradient</span>
+
+<span class="n">optimized</span> <span class="o">=</span> <span class="n">minimum</span><span class="o">.</span><span class="n">molecule</span>
+<span class="n">atoms</span> <span class="o">=</span> <span class="p">[</span><span class="n">Z_TO_ATOM_SYMBOL</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">z</span><span class="p">)]</span> <span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">optimized</span><span class="o">.</span><span class="n">atomic_charges</span><span class="p">]</span>
+<span class="n">xyz_bohr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xyz</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">xyz</span> <span class="ow">in</span> <span class="n">optimized</span><span class="o">.</span><span class="n">atoms</span><span class="p">])</span>
+<span class="n">geom</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">xyz_bohr</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">coord_type</span><span class="o">=</span><span class="s2">"cart"</span><span class="p">)</span>
+<span class="n">geom</span><span class="o">.</span><span class="n">set_calculator</span><span class="p">(</span><span class="n">make_calculator</span><span class="p">(</span><span class="n">optimized</span><span class="p">,</span> <span class="n">energy_and_gradient</span><span class="p">,</span>
+                                   <span class="n">hessian_step</span><span class="o">=</span><span class="mf">5.e-3</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+<span class="n">hessian</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">cart_hessian</span>  <span class="c1"># shape (3N,3N), Eh/bohr^2; cached on geom</span>
+<span class="n">frequencies</span><span class="p">,</span> <span class="n">eigenvalues</span><span class="p">,</span> <span class="n">mw_modes</span><span class="p">,</span> <span class="n">cart_modes</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_normal_modes</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"Harmonic frequencies (cm^-1):"</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="s2">"frequencies_cm-1.txt"</span><span class="p">,</span> <span class="n">frequencies</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"cartesian_hessian.npy"</span><span class="p">,</span> <span class="n">hessian</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">"cartesian_normal_modes.npy"</span><span class="p">,</span> <span class="n">cart_modes</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>STO-3G here keeps the demonstration small; choose an appropriate basis and
+converge the electronic model for scientific use. Build with <code class="docutils literal notranslate"><span class="pre">symmetry=False</span></code>
+so displaced geometries retain their frame and atom order. Input geometry text
+defaults to angstrom, but stored coordinates and pysisyphus arrays are bohr.
+Use the same electronic method, frozen core, correction variant and state at
+the optimization and Hessian geometries unless deliberately defining a
+mixed-level protocol.</p>
+</section>
+<section id="reading-the-returned-arrays">
+<h2>Reading the returned arrays<a class="headerlink" href="#reading-the-returned-arrays" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">get_normal_modes()</span></code> returns four arrays:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frequencies</span></code>: signed vibrational wavenumbers in cm^-1. Negative values
+denote imaginary frequencies; they are not negative real vibrational energies.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eigenvalues</span></code>: eigenvalues of the projected mass-weighted Hessian, before
+conversion to wavenumbers. These are not the raw Cartesian Hessian eigenvalues.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mw_modes</span></code>: mass-weighted Cartesian mode vectors in columns.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cart_modes</span></code>: Cartesian displacement vectors in columns, each normalized
+to unit Euclidean norm by the external routine. Shape is <code class="docutils literal notranslate"><span class="pre">(3N,nvib)</span></code>.</p></li>
+</ul>
+<p>An isolated nonlinear molecule has 3N-6 vibrational modes, and a linear molecule
+has 3N-5. Atomic and degenerate geometries require appropriate special handling.
+Water therefore has three modes. Do not manually discard the first six values
+from <code class="docutils literal notranslate"><span class="pre">frequencies</span></code>: rigid motions have already been projected out.
+The raw <code class="docutils literal notranslate"><span class="pre">hessian</span></code> still has all 3N Cartesian directions.</p>
+<p>The normal modes solve the projected version of</p>
+<div class="math notranslate nohighlight">
+\[H_{\mathrm{mw}}=M^{-1/2}H_{\mathrm{cart}}M^{-1/2}.\]</div>
+<p>The routine performs the unit conversion; do not reinterpret raw Cartesian
+eigenvalues as frequencies or apply a second mass weighting. In particular,
+<code class="docutils literal notranslate"><span class="pre">optimize_transition_state(...).hessian_eigenvalues</span></code> are unweighted Cartesian
+values and cannot be used directly as cm^-1 frequencies.</p>
+<p>For a minimum, expect no significant imaginary vibrational mode. For a
+first-order transition state, expect exactly one, with displacement along the
+intended reaction coordinate. An unconverged geometry, loose electronic
+thresholds, an unsuitable displacement, root switching or a nonsmooth FNO
+selection can produce misleading negative modes. There is no universal
+frequency cutoff that distinguishes noise from a physical instability.</p>
+</section>
+<section id="inspect-a-mode-displacement">
+<h2>Inspect a mode displacement<a class="headerlink" href="#inspect-a-mode-displacement" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">k</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># mode column; inspect frequencies[k] first</span>
+<span class="n">displacement</span> <span class="o">=</span> <span class="n">cart_modes</span><span class="p">[:,</span> <span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">amplitude_bohr</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">plus</span> <span class="o">=</span> <span class="n">optimized</span><span class="o">.</span><span class="n">with_geometry</span><span class="p">(</span><span class="n">xyz_bohr</span> <span class="o">+</span> <span class="n">amplitude_bohr</span> <span class="o">*</span> <span class="n">displacement</span><span class="p">,</span>
+                               <span class="n">unit</span><span class="o">=</span><span class="s2">"bohr"</span><span class="p">)</span>
+<span class="n">minus</span> <span class="o">=</span> <span class="n">optimized</span><span class="o">.</span><span class="n">with_geometry</span><span class="p">(</span><span class="n">xyz_bohr</span> <span class="o">-</span> <span class="n">amplitude_bohr</span> <span class="o">*</span> <span class="n">displacement</span><span class="p">,</span>
+                                <span class="n">unit</span><span class="o">=</span><span class="s2">"bohr"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>These are geometries displaced in opposite directions along the normalized
+mode for visualization or follow-up calculations. The arbitrary amplitude is
+not a thermal or zero-point normal-coordinate amplitude. For a TS, inspect the
+imaginary mode and then follow both IRC branches; see <a class="reference internal" href="geometry.html"><span class="doc">Geometry optimization, transition states and IRC validation</span></a>.</p>
+</section>
+<section id="displacement-size-cost-and-accuracy">
+<h2>Displacement size, cost and accuracy<a class="headerlink" href="#displacement-size-cost-and-accuracy" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">hessian_step</span></code> (default 5e-3 bohr) controls the two-point central difference
+of gradients used to build the Hessian. It is independent of the optimizer’s
+step size and the <code class="docutils literal notranslate"><span class="pre">fd_step</span></code> / <code class="docutils literal notranslate"><span class="pre">fd_npoints</span></code> controls used when the gradient
+itself comes from displaced energies. For N atoms a complete Cartesian Hessian
+requires 6N displaced gradients, plus a central energy/force request as needed.
+When analytic gradients are unavailable, the resulting nested finite
+differences are substantially more expensive.</p>
+<p>Compare, for example, Hessians built using steps 5e-3 and 2.5e-3 bohr on the
+<strong>same</strong> optimized geometry with equally tight electronic convergence. Create a
+fresh Geometry/calculator for the second step: changing a variable after
+<code class="docutils literal notranslate"><span class="pre">geom.cart_hessian</span></code> was cached does not recompute the Hessian. Check stability
+of weak modes, not just large stretching frequencies. Symmetrization of the
+computed Hessian does not remove finite-difference or electronic noise.</p>
+<p><code class="docutils literal notranslate"><span class="pre">geom.get_normal_modes(cart_hessian=H)</span></code> can analyze an explicitly supplied
+Cartesian Hessian without recomputing it. To reuse the saved one:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">saved_hessian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">"cartesian_hessian.npy"</span><span class="p">)</span>
+<span class="n">frequencies_again</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">geom</span><span class="o">.</span><span class="n">get_normal_modes</span><span class="p">(</span><span class="n">cart_hessian</span><span class="o">=</span><span class="n">saved_hessian</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Verify geometry, frame, atom order, shape, units and electronic surface before
+reusing a Hessian. A Hessian from another geometry does not characterize the
+current stationary point.</p>
+</section>
+<section id="isotopes-and-other-electronic-surfaces">
+<h2>Isotopes and other electronic surfaces<a class="headerlink" href="#isotopes-and-other-electronic-surfaces" title="Link to this heading"></a></h2>
+<p>pysisyphus selects its default atomic masses from its mass table. To request
+an isotope, construct another Geometry with zero-based atom-index/mass pairs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">deuterated</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">atoms</span><span class="p">,</span> <span class="n">xyz_bohr</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">coord_type</span><span class="o">=</span><span class="s2">"cart"</span><span class="p">,</span>
+                      <span class="n">isotopes</span><span class="o">=</span><span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)])</span>
+<span class="n">isotope_frequencies</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">deuterated</span><span class="o">.</span><span class="n">get_normal_modes</span><span class="p">(</span><span class="n">cart_hessian</span><span class="o">=</span><span class="n">hessian</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>An integer requests an isotope mass number; a floating-point value supplies a
+mass directly in atomic mass units. Within the Born-Oppenheimer harmonic model,
+isotopic substitution changes the mass weighting, so the same electronic
+Cartesian Hessian can be reused. Recompute the projection/modes with the new
+masses; do not rescale all frequencies by one global factor.</p>
+<p>For an excited state, make the scalar callback call
+<code class="docutils literal notranslate"><span class="pre">energy_and_gradient(root=selected_returned_root)</span></code>. Select and follow the same
+physical root at all displaced geometries. For FNO or selected-space methods,
+verify smoothness of the truncated space and completed energy as described in
+<a class="reference internal" href="gradients.html"><span class="doc">Analytic gradients and finite differences</span></a>. The calculator uses the callback’s actual gradient route; a
+DF energy method does not automatically have an analytic gradient.</p>
+<p>Harmonic frequencies alone are not intensities. The native
+<code class="docutils literal notranslate"><span class="pre">vibrational_analysis(...,</span> <span class="pre">dipole=True)</span></code> path now supplies dipole derivatives
+and double-harmonic IR intensities; see <a class="reference internal" href="multipoles.html"><span class="doc">Multipole moments and harmonic IR intensities</span></a>. This does not provide
+Raman activities, anharmonic corrections, empirical scaling or a complete
+temperature/pressure-dependent thermochemistry calculation. Native harmonic
+analysis reports a positive-real-mode ZPE; additional thermochemistry needs
+an appropriate treatment.</p>
+</section>
+<section id="run-the-shipped-example">
+<h2>Run the shipped example<a class="headerlink" href="#run-the-shipped-example" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>examples/methods_api/geometry_workflows.py<span class="w"> </span>--task<span class="w"> </span>minimum<span class="w"> </span>--method<span class="w"> </span>ccsd<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--basis<span class="w"> </span>sto-3g<span class="w"> </span>--out-dir<span class="w"> </span>water-frequencies
+</pre></div>
+</div>
+<p>The example optimizes water and includes projected frequencies in
+<code class="docutils literal notranslate"><span class="pre">water-frequencies/summary.json</span></code>. Its <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">ts</span></code> and <code class="docutils literal notranslate"><span class="pre">--task</span> <span class="pre">irc</span></code> modes
+also characterize the ammonia saddle; the IRC task characterizes the relaxed
+endpoints as well. The default CCSD water demonstration gave three positive
+modes near 2043, 3575 and 3815 cm^-1. These values verify the small-basis workflow,
+not agreement with experimental fundamentals.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="geometry.html" class="btn btn-neutral float-left" title="Geometry optimization, transition states and IRC validation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="options.html" class="btn btn-neutral float-right" title="Solver controls, diagnostics and custom calculations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Karthik Gururangan and Piotr Piecuch. Project structure based on the Computational Molecular Science Python Cookiecutter version 1.5.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
