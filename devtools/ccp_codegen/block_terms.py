@@ -12,6 +12,10 @@ Sparse algorithm (keeps the dense N^8 build + N^10 contraction scaling):
           dense pieces:   I_q(:,:) += c * t2(..s..) * H(:,:,..s..)        (loop over s)
           sparse pieces:  I_q(:,:) += c * t3 * H0(:,:,s1,s2)               (T3 view bucket q)
       for each T4 row in the bucket:  resid += sign * sum_rows I_q(x,y) * t3 (T3 view bucket p)
+Two-index blocks against a sparse T3 choose per q bucket at run time: when the bucket's T3 sources
+are fewer than the entries of I_q, each I_q(x,y) a source needs is evaluated on its own (cost per
+source instead of per I_q entry), which is what a sparse P space in a large basis needs. Their
+integrals are read in natural layout, so the entry points make no reordered copies for them.
 A "view" lists every T3 row once per placement of the key letters inside each spin block,
 key columns first, with the antisymmetry sign folded into the amplitude.
 """
@@ -176,6 +180,11 @@ def antisym_pairs(opname):
 
 
 FRESH = "uvwzrstgh"
+# per-bucket build of two-index blocks: None decides at run time; "point" (IX only at the entries
+# the sources read) / "dense" (whole IX) force one path (tests exercise both, since small test
+# systems always pick the dense build)
+BLOCK_CHOICE = None
+MAXLK = 512   # block-constant lookups per fused block loop
 T4N = {"aaaa": "t4a", "aaab": "t4b", "aabb": "t4c", "abbb": "t4d", "bbbb": "t4e"}
 T3N = {"aaa": "t3a", "aab": "t3b", "abb": "t3c", "bbb": "t3d"}
 T2N = {"aa": "t2a", "ab": "t2b", "bb": "t2c"}
@@ -284,6 +293,8 @@ class BlockTerm:
         self.ispin = [ls[x] for x in self.internal]
         self.tspin = letter_spins(f"T.{c.target}", "abcd"[:nt] + "ijkl"[:nt])
         self.qbase = [x for x in self.isub if x not in "xy"]
+        # two-index blocks against a sparse T3: integrals in natural layout, per-source evaluation
+        self.natural = len(self.internal) == 2 and len(c.t3) == 3
         self.instances = self.expand()
         for _, facs in self.instances:
             for o, _ in facs:
@@ -381,10 +392,12 @@ class BlockTerm:
     def stored(self, opn, letters, first):
         """Name of `opn` stored with the letters `first` leading (block axes), rest natural."""
         perm = [letters.index(x) for x in first] + [p for p, x in enumerate(letters) if x not in first]
+        if self.natural:
+            perm = sorted(perm)
         base = opname_f(opn)
         name = base if perm == sorted(perm) else f"{base}_{''.join(map(str, perm))}"
         self.layouts[name] = (opn, tuple(perm))
-        return name, [letters[p] for p in perm[len(first):]]
+        return name, [x for x in letters if x not in first] if self.natural else [letters[p] for p in perm[len(first):]]
 
     def placements(self, sp, letters, key):
         """Key positions of a T4 factor: every choice of positions per block."""
@@ -398,22 +411,25 @@ class BlockTerm:
 
     # ---- emission
     def passes(self):
-        """(q columns, pass) for every coset class: the base pass (dense and T3 pieces) and one
-        pass per placement of each T4 piece."""
+        """(q columns, pass) for every coset class. A pass holds every piece of the intermediate
+        as (coef, factors, placement): dense and T3 pieces once (placement None), T4 pieces once
+        per placement, so IX is complete before its one contraction."""
         nt = len(self.c.target)
-        base = [(cf, f) for cf, f in self.instances if not any(o.startswith("T.") and len(o) == 6 for o, _ in f)]
-        t4 = [(cf, f) for cf, f in self.instances if (cf, f) not in base]
         out = []
         for q, perm, sign in self.classes():
             qcols = ["abcd".index(x) + 1 if x in "abcd" else "ijkl".index(x) + 1 + nt for x in q]
             qcols, q = (list(t) for t in zip(*sorted(zip(qcols, q))))
-            if base:
-                out.append((tuple(qcols), dict(term=self, q=q, perm=perm, sign=sign, insts=base, pl=None)))
-            for cf, f in t4:
-                (to, tl), = [(o, l) for o, l in f if o.startswith("T.") and len(o) == 6]
+            insts = []
+            for cf, f in self.instances:
+                t4 = [(o, l) for o, l in f if o.startswith("T.") and len(o) == 6]
+                if not t4:
+                    insts.append((cf, f, None))
+                    continue
+                (to, tl), = t4
                 tl = "".join(perm.get(x, x) for x in tl)
-                for pl in self.placements(to.split(".")[1], tl, set(q)):
-                    out.append((tuple(qcols), dict(term=self, q=q, perm=perm, sign=sign, insts=[(cf, f)], pl=pl)))
+                insts += [(cf, f, pl) for pl in self.placements(to.split(".")[1], tl, set(q))]
+            if insts:
+                out.append((tuple(qcols), dict(term=self, q=q, perm=perm, sign=sign, insts=insts)))
         return out
 
     def source_key(self, facs, pl):
@@ -429,10 +445,30 @@ class BlockTerm:
                 chain.append(".true." if t_ > 0 else ".false.")
         return f"b{T4N[sp]}", f"n4{sp}", tuple(cols), tuple(dims), tuple(chain)
 
+    def href(self, name, hl, rest, args, point):
+        """Reference to the stored integral `name` (letters hl) with the summed letters rest -> args:
+        the IX slice (dense build) or the entry at (xx, yy) (point evaluation)."""
+        sub = dict(zip(rest, args))
+        if not self.natural:
+            col = ":" if len(self.internal) == 1 else ":,:"
+            return f"{name}({col},{','.join(args)})"
+        if point:
+            return f"{name}({','.join({'x': 'xx', 'y': 'yy'}[x] if x in self.internal else sub[x] for x in hl)})"
+        ref = f"{name}({','.join(':' if x in self.internal else sub[x] for x in hl)})"
+        return ref if [x for x in hl if x in self.internal] == self.internal else f"transpose({ref})"
+
+    def lookup(self, expr):
+        """A piece's lookup depends only on the q letters: within a fused block loop it is
+        computed once per block into lk(n) (memo from emit_fused)."""
+        memo = getattr(self, "memo", None)
+        if memo is None:
+            return expr
+        return f"lk({memo.setdefault(expr, len(memo) + 1)})"
+
     def ix_dims(self):
         return ",".join(DIM[s] for s in self.ispin)
 
-    def emit_body(self, w, q, qcols, perm, sign, insts, pl, sk, first, last):
+    def emit_body(self, w, q, qcols, perm, sign, insts, first, last):
         """Body of one pass for block kdx: IX from the instances, then IX x partner into resid."""
         col = ":" if len(self.internal) == 1 else ":,:"
         nt = len(self.c.target)
@@ -440,22 +476,69 @@ class BlockTerm:
         I3, I6 = IND + "   ", IND + "      "
         w(I3 + f"idet = {first}")
         w(I3 + " ".join(f"{x} = {ex}(idet,{cc});" for x, cc in zip(q, qcols)))
-        w(I3 + "IX = 0.0d0")
-        for cf, facs in insts:
-            self.emit_instance(w, I3, cf, facs, perm, pl, sk, col)
-        w(I3 + f"do idet = {first}, {last}")
         p = [x for x in "abcd"[:nt] + "ijkl"[:nt] if x not in q]
         pcols = ["abcd".index(x) + 1 if x in "abcd" else "ijkl".index(x) + 1 + nt for x in p]
-        w(I6 + " ".join(f"{x} = {ex}(idet,{cc});" for x, cc in zip(p, pcols)))
-        w(I6 + "val = 0.0d0")
+        passign = " ".join(f"{x} = {ex}(idet,{cc});" for x, cc in zip(p, pcols))
         tl = "".join(perm.get(x, x) for x in self.tsub)
+        tot = sign * self.scale()
+        upd = f"resid(idet) = resid(idet) {'+' if tot > 0 else '-'} {abs(tot):.16g}d0 * val"
+        if self.natural:
+            v = self.view(self.c.t3, tl, set(p))
+            layout = [(list(range(nk)), list(range(nk, len(cols))))
+                      for (_, _, cols), nk in zip(blocks_of(self.c.t3), v.nkey)]
+            keys, reads, terms = sparse_lookup(self.c.t3, tl, set(p), layout)
+            acc = {}
+            for s_, mp in terms:
+                args = tuple(mp.get(x, x) for x in self.internal)
+                acc[args] = acc.get(args, 0) + s_
+            acc = {a_: n_ for a_, n_ in acc.items() if n_}
+            look = f"idx = {view_find(v.name, keys)}"
+            reads_assign = "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads))
+            # IX is needed only at the (x, y) its sources carry: collect those entries, then build
+            # IX there (sparse) or, when they cover most of IX, as whole slices (dense)
+            w(I3 + "nneed = 0")
+            w(I3 + f"do idet = {first}, {last}")
+            w(I6 + passign)
+            w(I6 + look)
+            w(I6 + "pidx(idet) = idx")
+            w(I6 + "if (idx/=0) then")
+            w(I6 + f"do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
+            w(I6 + "   " + reads_assign)
+            for args in acc:
+                e = f"{args[0]},{args[1]}"
+                w(I6 + f"   if (.not. mark({e})) then; mark({e}) = .true.; nneed = nneed + 1; "
+                       f"need(1,nneed) = {args[0]}; need(2,nneed) = {args[1]}; end if")
+            w(I6 + "end do")
+            w(I6 + "end if")
+            w(I3 + "end do")
+            cond = {"point": ".true.", "dense": ".false.",
+                    None: f"2*nneed < size(IX)"}[BLOCK_CHOICE]
+            w(I3 + f"if ({cond}) then")
+            w(I3 + "do nn = 1, nneed")
+            w(I6 + "xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0")
+            for cf, facs, pl, sk in insts:
+                self.emit_instance(w, I6, cf, facs, perm, pl, sk, col, point=True)
+            w(I6 + "IX(xx,yy) = ixv")
+            w(I3 + "end do")
+            w(I3 + "else")
+        w(I3 + "IX = 0.0d0")
+        for cf, facs, pl, sk in insts:
+            self.emit_instance(w, I3, cf, facs, perm, pl, sk, col)
+        if self.natural:
+            w(I3 + "end if")
+            w(I3 + "do nn = 1, nneed")
+            w(I6 + "mark(need(1,nn),need(2,nn)) = .false.")
+            w(I3 + "end do")
+        w(I3 + f"do idet = {first}, {last}")
+        w(I6 + passign)
+        w(I6 + "val = 0.0d0")
         sg = 1
         if len(self.c.t3) == 3:   # sparse T3 partner through a view
             v = self.view(self.c.t3, tl, set(p))
             layout = [(list(range(nk)), list(range(nk, len(cols))))
                       for (_, _, cols), nk in zip(blocks_of(self.c.t3), v.nkey)]
             keys, reads, terms = sparse_lookup(self.c.t3, tl, set(p), layout)
-            w(I6 + f"idx = {view_find(v.name, keys)}")
+            w(I6 + ("idx = pidx(idet)" if self.natural else f"idx = {view_find(v.name, keys)}"))
             w(I6 + "if (idx/=0) then")
             w(I6 + f"do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
             w(I6 + "   " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
@@ -472,12 +555,16 @@ class BlockTerm:
             w(I6 + f"do x = 1, {DIM[self.ispin[0]]}")
             w(I6 + f"   val = val + IX(x) * {T2N[self.c.t3]}({','.join(tl)})")
             w(I6 + "end do")
-        tot = sign * sg * self.scale()
-        w(I6 + f"resid(idet) = resid(idet) {'+' if tot > 0 else '-'} {abs(tot):.16g}d0 * val")
+        assert sg == 1
+        w(I6 + upd)
         w(I3 + "end do")
 
-    def emit_instance(self, w, I3, cf, facs, perm, pl, sk, col):
+    def emit_instance(self, w, I3, cf, facs, perm, pl, sk, col, point=False):
+        """One piece of IX: the whole IX(col) block, or (point) its entry at (xx, yy) into ixv,
+        with its own lookup variables so it can run inside the partner loop."""
         sub = lambda s_: "".join(perm.get(x, x) for x in s_)
+        idx, jdet, jj = ("idx2", "jdet2", "jj2") if point else ("idx", "jdet", "jj")
+        lhs = "ixv" if point else f"IX({col})"
         sp_f = [(o, sub(l)) for o, l in facs if o.startswith("T.") and len(o.split(".")[1]) in (3, 4)]
         if sp_f:   # sparse piece: H0 * T3 (view) or H0 * T4 (sorted buffer, placement pl)
             (to, tl), = sp_f
@@ -489,23 +576,23 @@ class BlockTerm:
                 layout = [(list(range(nk)), list(range(nk, len(cols))))
                           for (_, _, cols), nk in zip(blocks_of(sp), v.nkey)]
                 keys, reads, terms = sparse_lookup(sp, tl, set(q), layout)
-                look = f"idx = {view_find(v.name, keys)}"
-                rng = f"do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1"
+                look = f"{idx} = {self.lookup(view_find(v.name, keys))}"
+                rng = f"do {jdet} = off_{v.name}({idx}), off_{v.name}({idx}+1)-1"
                 pre = []
-                rcols = [f"{v.name}_excits(jdet,{5 + t_})" for t_ in range(len(reads))]
-                amp = f"{v.name}_amps(jdet)"
+                rcols = [f"{v.name}_excits({jdet},{5 + t_})" for t_ in range(len(reads))]
+                amp = f"{v.name}_amps({jdet})"
             else:
                 keys, reads, terms = sparse_lookup(sp, tl, set(q), pl)
                 b = f"b{T4N[sp]}"
                 ix = f"sidx({sk})"
-                look = f"idx = pspace_find({ix}%key, {ix}%nblock, pspace_key((/{','.join(keys)}/), {len(keys)}, {ix}%dims, {ix}%chain))"
-                rng = f"do jj = {ix}%off(idx), {ix}%off(idx+1)-1"
-                pre = [f"jdet = {ix}%perm(jj)"]
+                look = f"{idx} = {self.lookup(f'pspace_find({ix}%key, {ix}%nblock, pspace_key((/{chr(44).join(keys)}/), {len(keys)}, {ix}%dims, {ix}%chain))')}"
+                rng = f"do {jj} = {ix}%off({idx}), {ix}%off({idx}+1)-1"
+                pre = [f"{jdet} = {ix}%perm({jj})"]
                 rc = []
                 for (kind, s, bcols), (kp, rp) in zip(blocks_of(sp), pl):
                     rc += [bcols[p] + 1 for p in rp]
-                rcols = [f"{b}_excits(jdet,{c_})" for c_ in rc]
-                amp = f"{b}_amps(jdet)"
+                rcols = [f"{b}_excits({jdet},{c_})" for c_ in rc]
+                amp = f"{b}_amps({jdet})"
             assert set(hl) == set(self.internal) | set(reads), (hl, reads)
             name, rest = self.stored(ho, hl, self.internal)
             acc = {}
@@ -522,12 +609,13 @@ class BlockTerm:
                 key = ",".join(args)
                 acc[key] = acc.get(key, 0) + s_
             w(I3 + look)
-            w(I3 + "if (idx/=0) then")
+            w(I3 + f"if ({idx}/=0) then")
             w(I3 + rng)
             w(I3 + "   " + "; ".join(pre + [f"{x} = {rc_}" for x, rc_ in zip(reads, rcols)]))
             for args, cnt in acc.items():
                 if cnt:
-                    w(I3 + f"   IX({col}) = IX({col}) + ({cf * cnt:.16g}d0 * {amp}) * {name}({col},{args})")
+                    ref = self.href(name, hl, rest, args.split(","), point)
+                    w(I3 + f"   {lhs} = {lhs} + ({cf * cnt:.16g}d0 * {amp}) * {ref}")
             w(I3 + "end do")
             w(I3 + "end if")
             return
@@ -540,7 +628,8 @@ class BlockTerm:
         name, rest = self.stored(ho, hl, self.internal)
         kind = letter_spins(ho, hl)[s[0]]
         w(I3 + f"do {s[0]} = 1, {DIM[kind]}")
-        w(I3 + f"   IX({col}) = IX({col}) + ({cf:.16g}d0 * {T2N[to_.split('.')[1]]}({','.join(tl)})) * {name}({col},{','.join(rest)})")
+        ref = self.href(name, hl, rest, rest, point)
+        w(I3 + f"   {lhs} = {lhs} + ({cf:.16g}d0 * {T2N[to_.split('.')[1]]}({','.join(tl)})) * {ref}")
         w(I3 + "end do")
 
 
@@ -550,18 +639,41 @@ def view_find(name, keys):
 
 
 def emit_fused(w, run, qcols, nb, first, last):
-    """Passes of one target sort (same IX shape) in one parallel region over the q blocks."""
-    w(IND + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)")
+    """Passes of one target sort (same IX shape) in one parallel region over the q blocks. The
+    pieces' lookups (keys from the q letters, the same in every pass of the region) are computed
+    once per block into lk."""
+    assert len({tuple(p["q"]) for p in run}) == 1, [p["q"] for p in run]
+    body, memo = [], {}
+    for p in run:
+        t = p["term"]
+        body.append(IND + "   " + f"! {t.c.coef:+.6g} * {t.c.iname}({t.isub}) * t{t.c.t3}({t.tsub}), q = ({','.join(p['q'])}), sign {p['sign']:+d}")
+        t.memo = memo
+        try:
+            t.emit_body(body.append, p["q"], qcols, p["perm"], p["sign"], p["insts"], first, last)
+        finally:
+            t.memo = None
+    assert len(memo) <= MAXLK, len(memo)
+    w(IND + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,"
+      + "xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)")
     w(IND + f"allocate(IX({run[0]['term'].ix_dims()}))")
+    natural = any(p["term"].natural for p in run)
+    if natural:   # entries of IX the bucket's sources read (sparse build); mark is reset after each pass
+        w(IND + f"allocate(mark({run[0]['term'].ix_dims()}), need(2,size(IX)))")
+        w(IND + "mark = .false.")
     w(IND + "!$omp do schedule(dynamic,8)")
     w(IND + f"do kdx = 1, {nb}")
     w(IND + "   " + f"if ({last} < {first}) cycle")
-    for p in run:
-        t = p["term"]
-        w(IND + "   " + f"! {t.c.coef:+.6g} * {t.c.iname}({t.isub}) * t{t.c.t3}({t.tsub}), q = ({','.join(p['q'])}), sign {p['sign']:+d}")
-        t.emit_body(w, p["q"], qcols, p["perm"], p["sign"], p["insts"], p["pl"], p.get("sidx"), first, last)
+    if memo:
+        w(IND + "   " + f"idet = {first}")
+        w(IND + "   " + " ".join(f"{x} = {T4N[run[0]['term'].c.target]}_excits(idet,{cc});" for x, cc in zip(run[0]["q"], qcols)))
+        for expr, n in memo.items():
+            w(IND + "   " + f"lk({n}) = {expr}")
+    for line in body:
+        w(line)
     w(IND + "end do")
     w(IND + "!$omp end do")
+    if natural:
+        w(IND + "deallocate(mark, need)")
     w(IND + "deallocate(IX)")
     w(IND + "!$omp end parallel")
 
@@ -594,8 +706,8 @@ def emit_grouped(terms, tsp):
         # source key is indexed once per routine (sidx), not re-sorted per pass.
         runs = {}
         for p in ps:
-            if p["pl"] is not None:
-                p["sidx"] = srcs.setdefault(p["term"].source_key(p["insts"][0][1], p["pl"]), len(srcs) + 1)
+            p["insts"] = [(cf, f, pl, None if pl is None else
+                           srcs.setdefault(p["term"].source_key(f, pl), len(srcs) + 1)) for cf, f, pl in p["insts"]]
             runs.setdefault(p["term"].ix_dims(), []).append(p)
         for run in runs.values():
             emit_fused(w, run, list(qcols), nb, first, last)
@@ -721,8 +833,14 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_v
       IND + "real(kind=8), allocatable :: IX(:)")
     if any(len(t.internal) == 2 for t in terms) and any(len(t.internal) == 1 for t in terms):
         raise ValueError("mixed block ranks in one routine")
-    w(IND + "real(kind=8) :: val")
-    w(IND + "integer :: a, b, c, d, i, j, k, l, x, y, u, v, w, z, r, s, t, g, h")
+    w(IND + "real(kind=8) :: val, ixv")
+    w(IND + "integer :: a, b, c, d, i, j, k, l, x, y, u, v, w, z, r, s, t, g, h, xx, yy, idx2, jdet2, jj2")
+    w(IND + "integer(kind=8) :: nsrc")
+    w(IND + "logical, allocatable :: mark(:,:)")
+    w(IND + "integer, allocatable :: need(:,:)")
+    w(IND + "integer :: nneed, nn")
+    w(IND + f"integer :: lk({MAXLK})")
+    w(IND + "integer, allocatable :: pidx(:)")
     w(IND + "integer :: r1, r2, r3, r4, r5, r6, idet, jdet, jj, kdx, idx, nloc")
     w(IND + "type(pspace_index), allocatable :: sidx(:)")
     out = "\n".join(L) + "\n"
@@ -731,7 +849,9 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_v
         w2 = f"{T4N[sp]}"
         out += IND + f"allocate({b}_amps(n4{sp}),{b}_excits(n4{sp},8))\n"
         out += IND + f"{b}_amps(:) = {w2}_amps(:)\n" + IND + f"{b}_excits(:,:) = {w2}_excits(:,:)\n"
+    out += IND + f"allocate(pidx(n4{tsp}))\n"   # partner lookup per target row (two-index blocks)
     out += emit_view_builds(views) + "\n" + "\n".join(bodies)
+    out += IND + "deallocate(pidx)\n"
     for v in views:
         out += IND + f"deallocate({v}_amps,{v}_excits,key_{v},off_{v})\n"
     for sp in sources:

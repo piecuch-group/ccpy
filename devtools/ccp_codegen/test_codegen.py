@@ -403,15 +403,22 @@ def dense_reference_blocks(func, ns, only=None, pattern=r"einsum\('[a-z]+,[a-z]+
     return ns["out"]
 
 
-@pytest.fixture(scope="module")
-def t4blk(tmp_path_factory):
-    texts, meta = [], {}
-    for f in T4_FUNCS:
-        txt, args, counts = block_routine(f, f"{f[7:10]}_p_t3blocks", kinds=("t3",))
-        texts.append(txt)
-        meta[f] = args
-    src = "module gen_t4blk\n  use omp_lib\n  use pspace_sort\n  implicit none\ncontains\n" + "\n".join(texts) + "end module gen_t4blk\n"
-    mod = build("gen_t4blk", src, [f"{f[7:10]}_p_t3blocks" for f in T4_FUNCS], tmp_path_factory.mktemp("gen_t4blk"))
+@pytest.fixture(scope="module", params=[None, "point"])
+def t4blk(request, tmp_path_factory):
+    """b3 routines with the run-time bucket choice, and with every bucket forced to the sparse IX build."""
+    import block_terms
+    block_terms.BLOCK_CHOICE = request.param
+    try:
+        texts, meta = [], {}
+        for f in T4_FUNCS:
+            txt, args, counts = block_routine(f, f"{f[7:10]}_p_t3blocks", kinds=("t3",))
+            texts.append(txt)
+            meta[f] = args
+    finally:
+        block_terms.BLOCK_CHOICE = None
+    modname = f"gen_t4blk_{request.param or 'auto'}"
+    src = f"module {modname}\n  use omp_lib\n  use pspace_sort\n  implicit none\ncontains\n" + "\n".join(texts) + f"end module {modname}\n"
+    mod = build(modname, src, [f"{f[7:10]}_p_t3blocks" for f in T4_FUNCS], tmp_path_factory.mktemp(modname))
     return mod, meta
 
 

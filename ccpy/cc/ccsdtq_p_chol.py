@@ -33,6 +33,12 @@ def update(T: ClusterOperator,
     do_t4 = {key: not np.array_equal(t4_excitations[key][0, :], np.ones(8))
              for key in ("aaaa", "aaab", "aabb", "abbb", "bbbb")}
 
+    # Last iteration's o*v^3 Hbar blocks are rebuilt below and not read before that.
+    for block, names in ((X.aa, ("vovv", "vvov")), (X.ab, ("vovv", "ovvv", "vvov", "vvvo")),
+                         (X.bb, ("vovv", "vvov"))):
+        for name in names:
+            setattr(block, name, None)
+
     # update T1 and T2
     T, dT = update_t1_and_t2_residual(T, dT, H, X, shift, flag_RHF, t3_excitations)
     T, dT = update_t2a(T, dT, X, H, shift, t3_excitations, t4_excitations)
@@ -63,6 +69,7 @@ def update(T: ClusterOperator,
     X.ab.vovo = X.ab.vovo.transpose(1, 2, 0, 3)
     X.ab.ovov = X.ab.ovov.transpose(0, 3, 1, 2)
     X.bb.voov = X.bb.voov.transpose(1, 3, 0, 2)
+    X = _fortran_order(X, flag_RHF, False)
 
     # update T3
     if do_t3["aaa"]:
@@ -75,7 +82,7 @@ def update(T: ClusterOperator,
         t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
         T.bbb = T.aaa.copy()
         dT.bbb = dT.aaa.copy()
-        t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+        t3_excitations["bbb"] = t3_excitations["aaa"].copy(order="F")
     else:
         if do_t3["abb"]:
             T, dT, t3_excitations = update_t3c(T, dT, X, H, shift, t3_excitations, t4_excitations, R["abb"])
@@ -97,6 +104,7 @@ def update(T: ClusterOperator,
     X.ab.vovo = X.ab.vovo.transpose(2, 0, 1, 3)
     X.ab.ovov = X.ab.ovov.transpose(0, 2, 3, 1)
     X.bb.voov = X.bb.voov.transpose(2, 0, 3, 1)
+    X = _fortran_order(X, flag_RHF, True)
 
     # add VT3 intermediates to two-body part of HBar
     X = add_VT3_intermediates(T, X, H, t3_excitations)
@@ -114,7 +122,7 @@ def update(T: ClusterOperator,
         t4_excitations["abbb"] = t4_excitations["aaab"][:, np.array([3, 0, 1, 2, 7, 4, 5, 6])]
         T.bbbb = T.aaaa.copy()
         dT.bbbb = dT.aaaa.copy()
-        t4_excitations["bbbb"] = t4_excitations["aaaa"].copy()
+        t4_excitations["bbbb"] = t4_excitations["aaaa"].copy(order="F")
     else:
         if do_t4["abbb"]:
             T, dT, t4_excitations = update_t4d(T, dT, X, H, shift, t3_excitations, t4_excitations, R["abbb"])
@@ -122,6 +130,25 @@ def update(T: ClusterOperator,
             T, dT, t4_excitations = update_t4e(T, dT, X, H, shift, t3_excitations, t4_excitations, R["bbbb"])
 
     return T, dT
+
+
+def _fortran_order(X, flag_RHF, bb_vvov_owned):
+    """Store the 4-index Hbar blocks the native T3/T4 routines read in Fortran order, one at a
+    time, so f2py does not copy every o*v^3 argument at every call (T3 and T4 use different
+    layouts, hence once per phase). add_vt3_p updates bb.vvov in place, so under RHF it needs
+    its own buffer (bb_vvov_owned)."""
+    for block, names in ((X.aa, ("vvov", "voov", "oooo")),
+                         (X.ab, ("vvov", "vvvo", "voov", "ovvo", "vovo", "ovov", "oooo"))):
+        for name in names:
+            setattr(block, name, np.asfortranarray(getattr(block, name)))
+    if flag_RHF:
+        X.bb.voov = X.aa.voov
+        X.bb.oooo = X.aa.oooo
+        X.bb.vvov = X.aa.vvov.copy(order="F") if bb_vvov_owned else X.aa.vvov
+    else:
+        for name in ("vvov", "voov", "oooo"):
+            setattr(X.bb, name, np.asfortranarray(getattr(X.bb, name)))
+    return X
 
 
 def update_t2a(T, dT, X, H, shift, t3_excitations, t4_excitations):

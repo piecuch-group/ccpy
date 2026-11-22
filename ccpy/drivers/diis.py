@@ -21,22 +21,27 @@ class DIIS:
         else:
             self.T_list = np.zeros((self.diis_size, self.ndim), dtype=self.data_type)
             self.T_residuum_list = np.zeros((self.diis_size, self.ndim), dtype=self.data_type)
+        # residual overlaps, updated one row per push so each stored vector is read once per push
+        self.B = np.zeros((self.diis_size, self.diis_size), dtype=self.data_type)
 
     def cleanup(self):
         if self.out_of_core:
             remove_file(self.file_name)
             
     def push(self, T, T_residuum, iteration):
-            self.T_list[iteration % self.diis_size, :] = T.flatten()
-            self.T_residuum_list[iteration % self.diis_size, :] = T_residuum.flatten()
+            k = iteration % self.diis_size
+            self.T_list[k, :] = T.flatten()
+            r = T_residuum.flatten()
+            self.T_residuum_list[k, :] = r
+            for j in range(self.diis_size):
+                rj = r if j == k else self.T_residuum_list[j, :]
+                # B[i, j] = <r_i|r_j> for i <= j, mirrored (not conjugated) below the diagonal
+                self.B[k, j] = self.B[j, k] = np.vdot(r, rj) if k <= j else np.vdot(rj, r)
 
     def extrapolate(self):
         B_dim = self.diis_size + 1
         B = -1.0 * np.ones((B_dim, B_dim), self.data_type)
-        for i in range(self.diis_size):
-            for j in range(i, self.diis_size):
-                B[i, j] = np.dot(self.T_residuum_list[i, :].T.conj(), self.T_residuum_list[j, :])
-                B[j, i] = B[i, j]
+        B[:-1, :-1] = self.B
         B[-1, -1] = 0.0
 
         rhs = np.zeros(B_dim, dtype=self.data_type)

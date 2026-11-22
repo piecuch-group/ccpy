@@ -61,8 +61,14 @@ module ccsdtq_p_t4c_p_b2
                   real(kind=8), allocatable :: bt4d_amps(:)
                   integer, allocatable :: bt4d_excits(:,:)
                   real(kind=8), allocatable :: IX(:)
-                  real(kind=8) :: val
-                  integer :: a, b, c, d, i, j, k, l, x, y, u, v, w, z, r, s, t, g, h
+                  real(kind=8) :: val, ixv
+                  integer :: a, b, c, d, i, j, k, l, x, y, u, v, w, z, r, s, t, g, h, xx, yy, idx2, jdet2, jj2
+                  integer(kind=8) :: nsrc
+                  logical, allocatable :: mark(:,:)
+                  integer, allocatable :: need(:,:)
+                  integer :: nneed, nn
+                  integer :: lk(512)
+                  integer, allocatable :: pidx(:)
                   integer :: r1, r2, r3, r4, r5, r6, idet, jdet, jj, kdx, idx, nloc
                   type(pspace_index), allocatable :: sidx(:)
                   allocate(bt4b_amps(n4aaab),bt4b_excits(n4aaab,8))
@@ -74,6 +80,7 @@ module ccsdtq_p_t4c_p_b2
                   allocate(bt4d_amps(n4abbb),bt4d_excits(n4abbb,8))
                   bt4d_amps(:) = t4d_amps(:)
                   bt4d_excits(:,:) = t4d_excits(:,:)
+                  allocate(pidx(n4aabb))
 
 
                   ! index of each T4 source buffer by the key columns of its placements (112 distinct)
@@ -190,15 +197,34 @@ module ccsdtq_p_t4c_p_b2
                   call index_pspace(bt4b_excits, n4aaab, 5, (/2,3,4,6,7/), (/nua,nua,nub,noa,noa/), (/.false.,.true.,.false.,.false.,.true./), sidx(110))
                   call index_pspace(bt4c_excits, n4aabb, 5, (/1,2,3,5,6/), (/nua,nua,nub,noa,noa/), (/.false.,.true.,.false.,.false.,.true./), sidx(111))
                   call index_pspace(bt4c_excits, n4aabb, 5, (/1,2,4,5,6/), (/nua,nua,nub,noa,noa/), (/.false.,.true.,.false.,.false.,.true./), sidx(112))
-                  !!!! 23 passes on T4 sorted by columns (1,3,5,7,8)
+                  !!!! 7 passes on T4 sorted by columns (1,3,5,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,5,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (a,c,i,k,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -293,311 +319,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,i,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,c,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -616,15 +450,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (1,4,5,7,8)
+                  !!!! 7 passes on T4 sorted by columns (1,4,5,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,4,5,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (a,d,i,k,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -719,311 +572,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,i,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,d,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -1042,15 +703,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (2,3,5,7,8)
+                  !!!! 7 passes on T4 sorted by columns (2,3,5,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,5,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (b,c,i,k,l), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -1145,311 +825,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,j,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,i,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,c,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -1468,15 +956,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (2,4,5,7,8)
+                  !!!! 7 passes on T4 sorted by columns (2,4,5,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,4,5,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (b,d,i,k,l), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -1571,311 +1078,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,j,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,d,i,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -1894,15 +1209,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (1,3,6,7,8)
+                  !!!! 7 passes on T4 sorted by columns (1,3,6,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,6,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (a,c,j,k,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -1997,311 +1331,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,c,j,k,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,c,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -2320,15 +1462,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (1,4,6,7,8)
+                  !!!! 7 passes on T4 sorted by columns (1,4,6,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,4,6,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (a,d,j,k,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -2423,311 +1584,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(b,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (a,d,j,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/a,d,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -2746,15 +1715,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (2,3,6,7,8)
+                  !!!! 7 passes on T4 sorted by columns (2,3,6,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,6,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (b,c,j,k,l), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -2849,311 +1837,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,d,i,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,c,j,k,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,c,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -3172,15 +1968,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 23 passes on T4 sorted by columns (2,4,6,7,8)
+                  !!!! 7 passes on T4 sorted by columns (2,4,6,7,8)
                   tdims(1:5) = (/nua,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,4,6,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     lk(2) = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     lk(3) = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     lk(4) = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     lk(5) = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     lk(6) = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     lk(7) = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     lk(8) = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     lk(9) = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     lk(10) = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     lk(11) = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     lk(12) = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     lk(13) = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     lk(14) = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     lk(15) = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     lk(16) = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     lk(17) = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
                      ! -1 * W(cxkbjl) * tab(adix), q = (b,d,j,k,l), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -3275,311 +2090,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(1)%key, sidx(1)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(1)%dims, sidx(1)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(1)%off(idx), sidx(1)%off(idx+1)-1
                         jdet = sidx(1)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(2)%key, sidx(2)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(2)%dims, sidx(2)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(2)%off(idx), sidx(2)%off(idx+1)-1
                         jdet = sidx(2)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(3)%key, sidx(3)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(3)%dims, sidx(3)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(3)%off(idx), sidx(3)%off(idx+1)-1
                         jdet = sidx(3)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(4)%key, sidx(4)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(4)%dims, sidx(4)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(4)%off(idx), sidx(4)%off(idx+1)-1
                         jdet = sidx(4)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(5)%key, sidx(5)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(5)%dims, sidx(5)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(5)%off(idx), sidx(5)%off(idx+1)-1
                         jdet = sidx(5)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(6)%key, sidx(6)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(6)%dims, sidx(6)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(6)%off(idx), sidx(6)%off(idx+1)-1
                         jdet = sidx(6)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(7)%key, sidx(7)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(7)%dims, sidx(7)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(7)%off(idx), sidx(7)%off(idx+1)-1
                         jdet = sidx(7)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(8)%key, sidx(8)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(8)%dims, sidx(8)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(8)%off(idx), sidx(8)%off(idx+1)-1
                         jdet = sidx(8)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(9)%key, sidx(9)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(9)%dims, sidx(9)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(9)%off(idx), sidx(9)%off(idx+1)-1
                         jdet = sidx(9)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(10)%key, sidx(10)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(10)%dims, sidx(10)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(10)%off(idx), sidx(10)%off(idx+1)-1
                         jdet = sidx(10)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(11)%key, sidx(11)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(11)%dims, sidx(11)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(11)%off(idx), sidx(11)%off(idx+1)-1
                         jdet = sidx(11)%perm(jj); v = bt4d_excits(jdet,3); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(12)%key, sidx(12)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(12)%dims, sidx(12)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(12)%off(idx), sidx(12)%off(idx+1)-1
                         jdet = sidx(12)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(13)%key, sidx(13)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(13)%dims, sidx(13)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(13)%off(idx), sidx(13)%off(idx+1)-1
                         jdet = sidx(13)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(14)%key, sidx(14)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(14)%dims, sidx(14)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(14)%off(idx), sidx(14)%off(idx+1)-1
                         jdet = sidx(14)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(15)%key, sidx(15)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(15)%dims, sidx(15)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(15)%off(idx), sidx(15)%off(idx+1)-1
                         jdet = sidx(15)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(16)%key, sidx(16)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(16)%dims, sidx(16)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(16)%off(idx), sidx(16)%off(idx+1)-1
                         jdet = sidx(16)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2b(a,c,i,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3C_vovooo(bxcjlk) * tab(adix), q = (b,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(17)%key, sidx(17)%nblock, pspace_key((/b,d,j,k,l/), 5, sidx(17)%dims, sidx(17)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(17)%off(idx), sidx(17)%off(idx+1)-1
                         jdet = sidx(17)%perm(jj); v = bt4d_excits(jdet,2); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
@@ -3598,15 +2221,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (1,3,5,6,7)
+                  !!!! 8 passes on T4 sorted by columns (1,3,5,6,7)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,5,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (a,c,i,j,k), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -3716,311 +2358,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,c,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -4039,15 +2489,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (1,4,5,6,7)
+                  !!!! 8 passes on T4 sorted by columns (1,4,5,6,7)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,4,5,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (a,d,i,j,k), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -4157,311 +2626,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,d,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -4480,15 +2757,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (2,3,5,6,7)
+                  !!!! 8 passes on T4 sorted by columns (2,3,5,6,7)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,5,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (b,c,i,j,k), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -4598,311 +2894,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,c,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -4921,15 +3025,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (2,4,5,6,7)
+                  !!!! 8 passes on T4 sorted by columns (2,4,5,6,7)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,4,5,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (b,d,i,j,k), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -5039,311 +3162,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,d,i,j,k/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -5362,15 +3293,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (1,3,5,6,8)
+                  !!!! 8 passes on T4 sorted by columns (1,3,5,6,8)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,5,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (a,c,i,j,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -5480,311 +3430,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,c,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,c,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -5803,15 +3561,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (1,4,5,6,8)
+                  !!!! 8 passes on T4 sorted by columns (1,4,5,6,8)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,4,5,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (a,d,i,j,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -5921,311 +3698,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(b,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (a,d,i,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/a,d,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -6244,15 +3829,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (2,3,5,6,8)
+                  !!!! 8 passes on T4 sorted by columns (2,3,5,6,8)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,5,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (b,c,i,j,l), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -6362,311 +3966,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,d,x,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,c,i,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,c,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -6685,15 +4097,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 24 passes on T4 sorted by columns (2,4,5,6,8)
+                  !!!! 8 passes on T4 sorted by columns (2,4,5,6,8)
                   tdims(1:5) = (/nua,nub,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,4,5,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     lk(2) = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     lk(3) = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     lk(4) = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     lk(5) = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     lk(6) = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     lk(7) = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     lk(8) = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     lk(9) = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     lk(10) = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     lk(11) = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     lk(12) = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     lk(13) = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     lk(14) = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     lk(15) = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     lk(16) = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     lk(17) = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
                      ! -1 * W(axidjl) * tab(bcxk), q = (b,d,i,j,l), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -6803,311 +4234,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(18)%key, sidx(18)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(18)%dims, sidx(18)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(18)%off(idx), sidx(18)%off(idx+1)-1
                         jdet = sidx(18)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(19)%key, sidx(19)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(19)%dims, sidx(19)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(19)%off(idx), sidx(19)%off(idx+1)-1
                         jdet = sidx(19)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(20)%key, sidx(20)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(20)%dims, sidx(20)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(20)%off(idx), sidx(20)%off(idx+1)-1
                         jdet = sidx(20)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(21)%key, sidx(21)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(21)%dims, sidx(21)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(21)%off(idx), sidx(21)%off(idx+1)-1
                         jdet = sidx(21)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(22)%key, sidx(22)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(22)%dims, sidx(22)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(22)%off(idx), sidx(22)%off(idx+1)-1
                         jdet = sidx(22)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(23)%key, sidx(23)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(23)%dims, sidx(23)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(23)%off(idx), sidx(23)%off(idx+1)-1
                         jdet = sidx(23)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(24)%key, sidx(24)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(24)%dims, sidx(24)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(24)%off(idx), sidx(24)%off(idx+1)-1
                         jdet = sidx(24)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(25)%key, sidx(25)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(25)%dims, sidx(25)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(25)%off(idx), sidx(25)%off(idx+1)-1
                         jdet = sidx(25)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(26)%key, sidx(26)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(26)%dims, sidx(26)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(26)%off(idx), sidx(26)%off(idx+1)-1
                         jdet = sidx(26)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(27)%key, sidx(27)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(27)%dims, sidx(27)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(27)%off(idx), sidx(27)%off(idx+1)-1
                         jdet = sidx(27)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(28)%key, sidx(28)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(28)%dims, sidx(28)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(28)%off(idx), sidx(28)%off(idx+1)-1
                         jdet = sidx(28)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(29)%key, sidx(29)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(29)%dims, sidx(29)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(29)%off(idx), sidx(29)%off(idx+1)-1
                         jdet = sidx(29)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(30)%key, sidx(30)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(30)%dims, sidx(30)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(30)%off(idx), sidx(30)%off(idx+1)-1
                         jdet = sidx(30)%perm(jj); v = bt4c_excits(jdet,2); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(31)%key, sidx(31)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(31)%dims, sidx(31)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(31)%off(idx), sidx(31)%off(idx+1)-1
                         jdet = sidx(31)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(32)%key, sidx(32)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(32)%dims, sidx(32)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(32)%off(idx), sidx(32)%off(idx+1)-1
                         jdet = sidx(32)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(33)%key, sidx(33)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(33)%dims, sidx(33)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(33)%off(idx), sidx(33)%off(idx+1)-1
                         jdet = sidx(33)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); c = t4c_excits(idet,3); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2b(a,c,x,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.5 * I3B_vovooo(bxcjik) * tab(adxl), q = (b,d,i,j,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(34)%key, sidx(34)%nblock, pspace_key((/b,d,i,j,l/), 5, sidx(34)%dims, sidx(34)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(34)%off(idx), sidx(34)%off(idx+1)-1
                         jdet = sidx(34)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7)
@@ -7126,15 +4365,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 17 passes on T4 sorted by columns (1,3,4,7,8)
+                  !!!! 7 passes on T4 sorted by columns (1,3,4,7,8)
                   tdims(1:5) = (/nua,nub,nub,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,4,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(35)%key, sidx(35)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(35)%dims, sidx(35)%chain))
+                     lk(2) = pspace_find(sidx(36)%key, sidx(36)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(36)%dims, sidx(36)%chain))
+                     lk(3) = pspace_find(sidx(37)%key, sidx(37)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(37)%dims, sidx(37)%chain))
+                     lk(4) = pspace_find(sidx(38)%key, sidx(38)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(38)%dims, sidx(38)%chain))
+                     lk(5) = pspace_find(sidx(39)%key, sidx(39)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(39)%dims, sidx(39)%chain))
+                     lk(6) = pspace_find(sidx(40)%key, sidx(40)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(40)%dims, sidx(40)%chain))
+                     lk(7) = pspace_find(sidx(41)%key, sidx(41)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(41)%dims, sidx(41)%chain))
+                     lk(8) = pspace_find(sidx(42)%key, sidx(42)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(42)%dims, sidx(42)%chain))
+                     lk(9) = pspace_find(sidx(43)%key, sidx(43)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(43)%dims, sidx(43)%chain))
+                     lk(10) = pspace_find(sidx(44)%key, sidx(44)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(44)%dims, sidx(44)%chain))
+                     lk(11) = pspace_find(sidx(45)%key, sidx(45)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(45)%dims, sidx(45)%chain))
                      ! -0.5 * W(cxkbdl) * taa(axij), q = (a,c,d,k,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -7229,197 +4481,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(35)%key, sidx(35)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(35)%dims, sidx(35)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(35)%off(idx), sidx(35)%off(idx+1)-1
                         jdet = sidx(35)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(36)%key, sidx(36)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(36)%dims, sidx(36)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(36)%off(idx), sidx(36)%off(idx+1)-1
                         jdet = sidx(36)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(37)%key, sidx(37)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(37)%dims, sidx(37)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(37)%off(idx), sidx(37)%off(idx+1)-1
                         jdet = sidx(37)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(38)%key, sidx(38)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(38)%dims, sidx(38)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(38)%off(idx), sidx(38)%off(idx+1)-1
                         jdet = sidx(38)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(39)%key, sidx(39)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(39)%dims, sidx(39)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(39)%off(idx), sidx(39)%off(idx+1)-1
                         jdet = sidx(39)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(40)%key, sidx(40)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(40)%dims, sidx(40)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(40)%off(idx), sidx(40)%off(idx+1)-1
                         jdet = sidx(40)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(41)%key, sidx(41)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(41)%dims, sidx(41)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(41)%off(idx), sidx(41)%off(idx+1)-1
                         jdet = sidx(41)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(42)%key, sidx(42)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(42)%dims, sidx(42)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(42)%off(idx), sidx(42)%off(idx+1)-1
                         jdet = sidx(42)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(43)%key, sidx(43)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(43)%dims, sidx(43)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(43)%off(idx), sidx(43)%off(idx+1)-1
                         jdet = sidx(43)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(44)%key, sidx(44)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(44)%dims, sidx(44)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(44)%off(idx), sidx(44)%off(idx+1)-1
                         jdet = sidx(44)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(b,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (a,c,d,k,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(45)%key, sidx(45)%nblock, pspace_key((/a,c,d,k,l/), 5, sidx(45)%dims, sidx(45)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(45)%off(idx), sidx(45)%off(idx+1)-1
                         jdet = sidx(45)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
@@ -7438,15 +4570,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 17 passes on T4 sorted by columns (2,3,4,7,8)
+                  !!!! 7 passes on T4 sorted by columns (2,3,4,7,8)
                   tdims(1:5) = (/nua,nub,nub,nob,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,4,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(35)%key, sidx(35)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(35)%dims, sidx(35)%chain))
+                     lk(2) = pspace_find(sidx(36)%key, sidx(36)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(36)%dims, sidx(36)%chain))
+                     lk(3) = pspace_find(sidx(37)%key, sidx(37)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(37)%dims, sidx(37)%chain))
+                     lk(4) = pspace_find(sidx(38)%key, sidx(38)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(38)%dims, sidx(38)%chain))
+                     lk(5) = pspace_find(sidx(39)%key, sidx(39)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(39)%dims, sidx(39)%chain))
+                     lk(6) = pspace_find(sidx(40)%key, sidx(40)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(40)%dims, sidx(40)%chain))
+                     lk(7) = pspace_find(sidx(41)%key, sidx(41)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(41)%dims, sidx(41)%chain))
+                     lk(8) = pspace_find(sidx(42)%key, sidx(42)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(42)%dims, sidx(42)%chain))
+                     lk(9) = pspace_find(sidx(43)%key, sidx(43)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(43)%dims, sidx(43)%chain))
+                     lk(10) = pspace_find(sidx(44)%key, sidx(44)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(44)%dims, sidx(44)%chain))
+                     lk(11) = pspace_find(sidx(45)%key, sidx(45)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(45)%dims, sidx(45)%chain))
                      ! -0.5 * W(cxkbdl) * taa(axij), q = (b,c,d,k,l), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -7541,197 +4686,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(35)%key, sidx(35)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(35)%dims, sidx(35)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(35)%off(idx), sidx(35)%off(idx+1)-1
                         jdet = sidx(35)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(36)%key, sidx(36)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(36)%dims, sidx(36)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(36)%off(idx), sidx(36)%off(idx+1)-1
                         jdet = sidx(36)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(37)%key, sidx(37)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(37)%dims, sidx(37)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(37)%off(idx), sidx(37)%off(idx+1)-1
                         jdet = sidx(37)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(38)%key, sidx(38)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(38)%dims, sidx(38)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(38)%off(idx), sidx(38)%off(idx+1)-1
                         jdet = sidx(38)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(39)%key, sidx(39)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(39)%dims, sidx(39)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(39)%off(idx), sidx(39)%off(idx+1)-1
                         jdet = sidx(39)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(40)%key, sidx(40)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(40)%dims, sidx(40)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(40)%off(idx), sidx(40)%off(idx+1)-1
                         jdet = sidx(40)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(41)%key, sidx(41)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(41)%dims, sidx(41)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(41)%off(idx), sidx(41)%off(idx+1)-1
                         jdet = sidx(41)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(42)%key, sidx(42)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(42)%dims, sidx(42)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(42)%off(idx), sidx(42)%off(idx+1)-1
                         jdet = sidx(42)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(43)%key, sidx(43)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(43)%dims, sidx(43)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(43)%off(idx), sidx(43)%off(idx+1)-1
                         jdet = sidx(43)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(44)%key, sidx(44)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(44)%dims, sidx(44)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(44)%off(idx), sidx(44)%off(idx+1)-1
                         jdet = sidx(44)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2a(a,x,j,i)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3C_vvvvoo(acdxkl) * taa(bxji), q = (b,c,d,k,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(45)%key, sidx(45)%nblock, pspace_key((/b,c,d,k,l/), 5, sidx(45)%dims, sidx(45)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(45)%off(idx), sidx(45)%off(idx+1)-1
                         jdet = sidx(45)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,5); v = bt4d_excits(jdet,6)
@@ -7750,15 +4775,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 19 passes on T4 sorted by columns (3,4,5,7,8)
+                  !!!! 9 passes on T4 sorted by columns (3,4,5,7,8)
                   tdims(1:5) = (/nub,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/3,4,5,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(46)%key, sidx(46)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(46)%dims, sidx(46)%chain))
+                     lk(2) = pspace_find(sidx(47)%key, sidx(47)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(47)%dims, sidx(47)%chain))
+                     lk(3) = pspace_find(sidx(48)%key, sidx(48)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(48)%dims, sidx(48)%chain))
+                     lk(4) = pspace_find(sidx(49)%key, sidx(49)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(49)%dims, sidx(49)%chain))
+                     lk(5) = pspace_find(sidx(50)%key, sidx(50)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(50)%dims, sidx(50)%chain))
+                     lk(6) = pspace_find(sidx(51)%key, sidx(51)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(51)%dims, sidx(51)%chain))
+                     lk(7) = pspace_find(sidx(52)%key, sidx(52)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(52)%dims, sidx(52)%chain))
+                     lk(8) = pspace_find(sidx(53)%key, sidx(53)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(53)%dims, sidx(53)%chain))
+                     lk(9) = pspace_find(sidx(54)%key, sidx(54)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(54)%dims, sidx(54)%chain))
+                     lk(10) = pspace_find(sidx(55)%key, sidx(55)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(55)%dims, sidx(55)%chain))
+                     lk(11) = pspace_find(sidx(56)%key, sidx(56)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(56)%dims, sidx(56)%chain))
                      ! -0.5 * W(xckdjl) * taa(abix), q = (c,d,i,k,l), sign -1
                      idet = toff(kdx)
                      c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -7883,197 +4921,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(46)%key, sidx(46)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(46)%dims, sidx(46)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(46)%off(idx), sidx(46)%off(idx+1)-1
                         jdet = sidx(46)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(47)%key, sidx(47)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(47)%dims, sidx(47)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(47)%off(idx), sidx(47)%off(idx+1)-1
                         jdet = sidx(47)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(48)%key, sidx(48)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(48)%dims, sidx(48)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(48)%off(idx), sidx(48)%off(idx+1)-1
                         jdet = sidx(48)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(49)%key, sidx(49)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(49)%dims, sidx(49)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(49)%off(idx), sidx(49)%off(idx+1)-1
                         jdet = sidx(49)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(50)%key, sidx(50)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(50)%dims, sidx(50)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(50)%off(idx), sidx(50)%off(idx+1)-1
                         jdet = sidx(50)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(51)%key, sidx(51)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(51)%dims, sidx(51)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(51)%off(idx), sidx(51)%off(idx+1)-1
                         jdet = sidx(51)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(52)%key, sidx(52)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(52)%dims, sidx(52)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(52)%off(idx), sidx(52)%off(idx+1)-1
                         jdet = sidx(52)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(53)%key, sidx(53)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(53)%dims, sidx(53)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(53)%off(idx), sidx(53)%off(idx+1)-1
                         jdet = sidx(53)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(54)%key, sidx(54)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(54)%dims, sidx(54)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(54)%off(idx), sidx(54)%off(idx+1)-1
                         jdet = sidx(54)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(55)%key, sidx(55)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(55)%dims, sidx(55)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(55)%off(idx), sidx(55)%off(idx+1)-1
                         jdet = sidx(55)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); j = t4c_excits(idet,6);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,j)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,i,k,l), sign +1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(56)%key, sidx(56)%nblock, pspace_key((/c,d,i,k,l/), 5, sidx(56)%dims, sidx(56)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(56)%off(idx), sidx(56)%off(idx+1)-1
                         jdet = sidx(56)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6)
@@ -8092,15 +5010,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 19 passes on T4 sorted by columns (3,4,6,7,8)
+                  !!!! 9 passes on T4 sorted by columns (3,4,6,7,8)
                   tdims(1:5) = (/nub,nub,noa,nob,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/3,4,6,7,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(noa))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(46)%key, sidx(46)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(46)%dims, sidx(46)%chain))
+                     lk(2) = pspace_find(sidx(47)%key, sidx(47)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(47)%dims, sidx(47)%chain))
+                     lk(3) = pspace_find(sidx(48)%key, sidx(48)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(48)%dims, sidx(48)%chain))
+                     lk(4) = pspace_find(sidx(49)%key, sidx(49)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(49)%dims, sidx(49)%chain))
+                     lk(5) = pspace_find(sidx(50)%key, sidx(50)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(50)%dims, sidx(50)%chain))
+                     lk(6) = pspace_find(sidx(51)%key, sidx(51)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(51)%dims, sidx(51)%chain))
+                     lk(7) = pspace_find(sidx(52)%key, sidx(52)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(52)%dims, sidx(52)%chain))
+                     lk(8) = pspace_find(sidx(53)%key, sidx(53)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(53)%dims, sidx(53)%chain))
+                     lk(9) = pspace_find(sidx(54)%key, sidx(54)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(54)%dims, sidx(54)%chain))
+                     lk(10) = pspace_find(sidx(55)%key, sidx(55)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(55)%dims, sidx(55)%chain))
+                     lk(11) = pspace_find(sidx(56)%key, sidx(56)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(56)%dims, sidx(56)%chain))
                      ! -0.5 * W(xckdjl) * taa(abix), q = (c,d,j,k,l), sign +1
                      idet = toff(kdx)
                      c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
@@ -8225,197 +5156,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(46)%key, sidx(46)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(46)%dims, sidx(46)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(46)%off(idx), sidx(46)%off(idx+1)-1
                         jdet = sidx(46)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(47)%key, sidx(47)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(47)%dims, sidx(47)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(47)%off(idx), sidx(47)%off(idx+1)-1
                         jdet = sidx(47)%perm(jj); v = bt4c_excits(jdet,1); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2A_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(48)%key, sidx(48)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(48)%dims, sidx(48)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(48)%off(idx), sidx(48)%off(idx+1)-1
                         jdet = sidx(48)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(49)%key, sidx(49)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(49)%dims, sidx(49)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(49)%off(idx), sidx(49)%off(idx+1)-1
                         jdet = sidx(49)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(50)%key, sidx(50)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(50)%dims, sidx(50)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(50)%off(idx), sidx(50)%off(idx+1)-1
                         jdet = sidx(50)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(51)%key, sidx(51)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(51)%dims, sidx(51)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(51)%off(idx), sidx(51)%off(idx+1)-1
                         jdet = sidx(51)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(52)%key, sidx(52)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(52)%dims, sidx(52)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(52)%off(idx), sidx(52)%off(idx+1)-1
                         jdet = sidx(52)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(53)%key, sidx(53)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(53)%dims, sidx(53)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(53)%off(idx), sidx(53)%off(idx+1)-1
                         jdet = sidx(53)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(54)%key, sidx(54)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(54)%dims, sidx(54)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(54)%off(idx), sidx(54)%off(idx+1)-1
                         jdet = sidx(54)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(55)%key, sidx(55)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(55)%dims, sidx(55)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(55)%off(idx), sidx(55)%off(idx+1)-1
                         jdet = sidx(55)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2B_oovv(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5);
-                        val = 0.0d0
-                        do x = 1, noa
-                           val = val + IX(x) * t2a(a,b,x,i)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3C_ovvooo(xcdikl) * taa(abxj), q = (c,d,j,k,l), sign -1
-                     idet = toff(kdx)
-                     c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(56)%key, sidx(56)%nblock, pspace_key((/c,d,j,k,l/), 5, sidx(56)%dims, sidx(56)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(56)%off(idx), sidx(56)%off(idx+1)-1
                         jdet = sidx(56)%perm(jj); v = bt4d_excits(jdet,1); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6)
@@ -8434,15 +5245,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 17 passes on T4 sorted by columns (1,2,5,6,7)
+                  !!!! 7 passes on T4 sorted by columns (1,2,5,6,7)
                   tdims(1:5) = (/nua,nua,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,5,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(57)%key, sidx(57)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(57)%dims, sidx(57)%chain))
+                     lk(2) = pspace_find(sidx(58)%key, sidx(58)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(58)%dims, sidx(58)%chain))
+                     lk(3) = pspace_find(sidx(59)%key, sidx(59)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(59)%dims, sidx(59)%chain))
+                     lk(4) = pspace_find(sidx(60)%key, sidx(60)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(60)%dims, sidx(60)%chain))
+                     lk(5) = pspace_find(sidx(61)%key, sidx(61)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(61)%dims, sidx(61)%chain))
+                     lk(6) = pspace_find(sidx(62)%key, sidx(62)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(62)%dims, sidx(62)%chain))
+                     lk(7) = pspace_find(sidx(63)%key, sidx(63)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(63)%dims, sidx(63)%chain))
+                     lk(8) = pspace_find(sidx(64)%key, sidx(64)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(64)%dims, sidx(64)%chain))
+                     lk(9) = pspace_find(sidx(65)%key, sidx(65)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(65)%dims, sidx(65)%chain))
+                     lk(10) = pspace_find(sidx(66)%key, sidx(66)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(66)%dims, sidx(66)%chain))
+                     lk(11) = pspace_find(sidx(67)%key, sidx(67)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(67)%dims, sidx(67)%chain))
                      ! -0.5 * W(axibjl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -8537,197 +5361,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(57)%key, sidx(57)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(57)%dims, sidx(57)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(57)%off(idx), sidx(57)%off(idx+1)-1
                         jdet = sidx(57)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(58)%key, sidx(58)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(58)%dims, sidx(58)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(58)%off(idx), sidx(58)%off(idx+1)-1
                         jdet = sidx(58)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(59)%key, sidx(59)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(59)%dims, sidx(59)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(59)%off(idx), sidx(59)%off(idx+1)-1
                         jdet = sidx(59)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(60)%key, sidx(60)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(60)%dims, sidx(60)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(60)%off(idx), sidx(60)%off(idx+1)-1
                         jdet = sidx(60)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(61)%key, sidx(61)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(61)%dims, sidx(61)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(61)%off(idx), sidx(61)%off(idx+1)-1
                         jdet = sidx(61)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(62)%key, sidx(62)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(62)%dims, sidx(62)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(62)%off(idx), sidx(62)%off(idx+1)-1
                         jdet = sidx(62)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(63)%key, sidx(63)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(63)%dims, sidx(63)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(63)%off(idx), sidx(63)%off(idx+1)-1
                         jdet = sidx(63)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(64)%key, sidx(64)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(64)%dims, sidx(64)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(64)%off(idx), sidx(64)%off(idx+1)-1
                         jdet = sidx(64)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(65)%key, sidx(65)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(65)%dims, sidx(65)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(65)%off(idx), sidx(65)%off(idx+1)-1
                         jdet = sidx(65)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(66)%key, sidx(66)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(66)%dims, sidx(66)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(66)%off(idx), sidx(66)%off(idx+1)-1
                         jdet = sidx(66)%perm(jj); v = bt4c_excits(jdet,3); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,l,x)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(67)%key, sidx(67)%nblock, pspace_key((/a,b,i,j,k/), 5, sidx(67)%dims, sidx(67)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(67)%off(idx), sidx(67)%off(idx+1)-1
                         jdet = sidx(67)%perm(jj); v = bt4c_excits(jdet,3); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
@@ -8746,15 +5450,28 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 17 passes on T4 sorted by columns (1,2,5,6,8)
+                  !!!! 7 passes on T4 sorted by columns (1,2,5,6,8)
                   tdims(1:5) = (/nua,nua,noa,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.true.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,5,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nob))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(57)%key, sidx(57)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(57)%dims, sidx(57)%chain))
+                     lk(2) = pspace_find(sidx(58)%key, sidx(58)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(58)%dims, sidx(58)%chain))
+                     lk(3) = pspace_find(sidx(59)%key, sidx(59)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(59)%dims, sidx(59)%chain))
+                     lk(4) = pspace_find(sidx(60)%key, sidx(60)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(60)%dims, sidx(60)%chain))
+                     lk(5) = pspace_find(sidx(61)%key, sidx(61)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(61)%dims, sidx(61)%chain))
+                     lk(6) = pspace_find(sidx(62)%key, sidx(62)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(62)%dims, sidx(62)%chain))
+                     lk(7) = pspace_find(sidx(63)%key, sidx(63)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(63)%dims, sidx(63)%chain))
+                     lk(8) = pspace_find(sidx(64)%key, sidx(64)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(64)%dims, sidx(64)%chain))
+                     lk(9) = pspace_find(sidx(65)%key, sidx(65)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(65)%dims, sidx(65)%chain))
+                     lk(10) = pspace_find(sidx(66)%key, sidx(66)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(66)%dims, sidx(66)%chain))
+                     lk(11) = pspace_find(sidx(67)%key, sidx(67)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(67)%dims, sidx(67)%chain))
                      ! -0.5 * W(axibjl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -8849,197 +5566,77 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(57)%key, sidx(57)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(57)%dims, sidx(57)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(57)%off(idx), sidx(57)%off(idx+1)-1
                         jdet = sidx(57)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(58)%key, sidx(58)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(58)%dims, sidx(58)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(58)%off(idx), sidx(58)%off(idx+1)-1
                         jdet = sidx(58)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(59)%key, sidx(59)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(59)%dims, sidx(59)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(59)%off(idx), sidx(59)%off(idx+1)-1
                         jdet = sidx(59)%perm(jj); v = bt4b_excits(jdet,3); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(60)%key, sidx(60)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(60)%dims, sidx(60)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(60)%off(idx), sidx(60)%off(idx+1)-1
                         jdet = sidx(60)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(61)%key, sidx(61)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(61)%dims, sidx(61)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(61)%off(idx), sidx(61)%off(idx+1)-1
                         jdet = sidx(61)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(62)%key, sidx(62)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(62)%dims, sidx(62)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(62)%off(idx), sidx(62)%off(idx+1)-1
                         jdet = sidx(62)%perm(jj); v = bt4b_excits(jdet,2); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(63)%key, sidx(63)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(63)%dims, sidx(63)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(63)%off(idx), sidx(63)%off(idx+1)-1
                         jdet = sidx(63)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(64)%key, sidx(64)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(64)%dims, sidx(64)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(64)%off(idx), sidx(64)%off(idx+1)-1
                         jdet = sidx(64)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(65)%key, sidx(65)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(65)%dims, sidx(65)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(65)%off(idx), sidx(65)%off(idx+1)-1
                         jdet = sidx(65)%perm(jj); v = bt4b_excits(jdet,1); w = bt4b_excits(jdet,4); u = bt4b_excits(jdet,5)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(66)%key, sidx(66)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(66)%dims, sidx(66)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(66)%off(idx), sidx(66)%off(idx+1)-1
                         jdet = sidx(66)%perm(jj); v = bt4c_excits(jdet,3); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2C_oovv_1023(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); d = t4c_excits(idet,4); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nob
-                           val = val + IX(x) * t2c(c,d,k,x)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! -0.125 * I3B_vvoooo(abxijl) * tbb(cdkx), q = (a,b,i,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); i = t4c_excits(idet,5); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(67)%key, sidx(67)%nblock, pspace_key((/a,b,i,j,l/), 5, sidx(67)%dims, sidx(67)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(67)%off(idx), sidx(67)%off(idx+1)-1
                         jdet = sidx(67)%perm(jj); v = bt4c_excits(jdet,3); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7)
@@ -9058,15 +5655,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,3,5,7)
+                  !!!! 4 passes on T4 sorted by columns (1,2,3,5,7)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,3,5,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,c,i,k), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
@@ -9116,311 +5732,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,i,k/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -9439,15 +5863,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,4,5,7)
+                  !!!! 4 passes on T4 sorted by columns (1,2,4,5,7)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,4,5,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,d,i,k), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
@@ -9497,311 +5940,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,i,k/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -9820,15 +6071,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,3,5,8)
+                  !!!! 4 passes on T4 sorted by columns (1,2,3,5,8)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,3,5,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,c,i,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
@@ -9878,311 +6148,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,i,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,i,l/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -10201,15 +6279,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,4,5,8)
+                  !!!! 4 passes on T4 sorted by columns (1,2,4,5,8)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,4,5,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,d,i,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
@@ -10259,311 +6356,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,i,l/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -10582,15 +6487,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,3,6,7)
+                  !!!! 4 passes on T4 sorted by columns (1,2,3,6,7)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,3,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,c,j,k), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -10640,311 +6564,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,j,k/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -10963,15 +6695,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,4,6,7)
+                  !!!! 4 passes on T4 sorted by columns (1,2,4,6,7)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,4,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,d,j,k), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -11021,311 +6772,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,j,k/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -11344,15 +6903,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,3,6,8)
+                  !!!! 4 passes on T4 sorted by columns (1,2,3,6,8)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,3,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,c,j,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -11402,311 +6980,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,d,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,c,j,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,c,j,l/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -11725,15 +7111,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 20 passes on T4 sorted by columns (1,2,4,6,8)
+                  !!!! 4 passes on T4 sorted by columns (1,2,4,6,8)
                   tdims(1:5) = (/nua,nua,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,4,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nua))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     lk(2) = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     lk(3) = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     lk(4) = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     lk(5) = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     lk(6) = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     lk(7) = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     lk(8) = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     lk(9) = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     lk(10) = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     lk(11) = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     lk(12) = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     lk(13) = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     lk(14) = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     lk(15) = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     lk(16) = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     lk(17) = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(84)%dims, sidx(84)%chain))
                      ! +0.25 * W(abxdjl) * tab(xcik), q = (a,b,d,j,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -11783,311 +7188,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(68)%key, sidx(68)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(68)%dims, sidx(68)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(68)%off(idx), sidx(68)%off(idx+1)-1
                         jdet = sidx(68)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(69)%key, sidx(69)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(69)%dims, sidx(69)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(69)%off(idx), sidx(69)%off(idx+1)-1
                         jdet = sidx(69)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(70)%key, sidx(70)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(70)%dims, sidx(70)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(70)%off(idx), sidx(70)%off(idx+1)-1
                         jdet = sidx(70)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(71)%key, sidx(71)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(71)%dims, sidx(71)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(71)%off(idx), sidx(71)%off(idx+1)-1
                         jdet = sidx(71)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(72)%key, sidx(72)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(72)%dims, sidx(72)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(72)%off(idx), sidx(72)%off(idx+1)-1
                         jdet = sidx(72)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(73)%key, sidx(73)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(73)%dims, sidx(73)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(73)%off(idx), sidx(73)%off(idx+1)-1
                         jdet = sidx(73)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(74)%key, sidx(74)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(74)%dims, sidx(74)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(74)%off(idx), sidx(74)%off(idx+1)-1
                         jdet = sidx(74)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(75)%key, sidx(75)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(75)%dims, sidx(75)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(75)%off(idx), sidx(75)%off(idx+1)-1
                         jdet = sidx(75)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(76)%key, sidx(76)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(76)%dims, sidx(76)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(76)%off(idx), sidx(76)%off(idx+1)-1
                         jdet = sidx(76)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,6)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2A_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(77)%key, sidx(77)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(77)%dims, sidx(77)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(77)%off(idx), sidx(77)%off(idx+1)-1
                         jdet = sidx(77)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(78)%key, sidx(78)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(78)%dims, sidx(78)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(78)%off(idx), sidx(78)%off(idx+1)-1
                         jdet = sidx(78)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(79)%key, sidx(79)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(79)%dims, sidx(79)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(79)%off(idx), sidx(79)%off(idx+1)-1
                         jdet = sidx(79)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(80)%key, sidx(80)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(80)%dims, sidx(80)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(80)%off(idx), sidx(80)%off(idx+1)-1
                         jdet = sidx(80)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(81)%key, sidx(81)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(81)%dims, sidx(81)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(81)%off(idx), sidx(81)%off(idx+1)-1
                         jdet = sidx(81)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(82)%key, sidx(82)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(82)%dims, sidx(82)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(82)%off(idx), sidx(82)%off(idx+1)-1
                         jdet = sidx(82)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(83)%key, sidx(83)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(83)%dims, sidx(83)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(83)%off(idx), sidx(83)%off(idx+1)-1
                         jdet = sidx(83)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_2013(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nua
-                           val = val + IX(x) * t2b(x,c,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3B_vvvvoo(abcxjk) * tab(xdil), q = (a,b,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(84)%key, sidx(84)%nblock, pspace_key((/a,b,d,j,l/), 5, sidx(84)%dims, sidx(84)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(84)%off(idx), sidx(84)%off(idx+1)-1
                         jdet = sidx(84)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
@@ -12106,15 +7319,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (1,3,4,5,7)
+                  !!!! 2 passes on T4 sorted by columns (1,3,4,5,7)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,4,5,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (a,c,d,i,k), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
@@ -12134,311 +7366,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,k), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,i,k/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -12457,15 +7497,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (2,3,4,5,7)
+                  !!!! 2 passes on T4 sorted by columns (2,3,4,5,7)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,4,5,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (b,c,d,i,k), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
@@ -12485,311 +7544,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,k), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,i,k/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -12808,15 +7675,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (1,3,4,5,8)
+                  !!!! 2 passes on T4 sorted by columns (1,3,4,5,8)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,4,5,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (a,c,d,i,l), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
@@ -12836,311 +7722,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,i,l), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,i,l/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -13159,15 +7853,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (2,3,4,5,8)
+                  !!!! 2 passes on T4 sorted by columns (2,3,4,5,8)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,4,5,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (b,c,d,i,l), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
@@ -13187,311 +7900,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,j,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,i,l), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,i,l/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -13510,15 +8031,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (1,3,4,6,7)
+                  !!!! 2 passes on T4 sorted by columns (1,3,4,6,7)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,4,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (a,c,d,j,k), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -13538,311 +8078,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,k), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,j,k/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -13861,15 +8209,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (2,3,4,6,7)
+                  !!!! 2 passes on T4 sorted by columns (2,3,4,6,7)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,4,6,7/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (b,c,d,j,k), sign +1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
@@ -13889,311 +8256,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,l)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,k), sign +1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); k = t4c_excits(idet,7);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,j,k/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -14212,15 +8387,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (1,3,4,6,8)
+                  !!!! 2 passes on T4 sorted by columns (1,3,4,6,8)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,3,4,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (a,c,d,j,l), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -14240,311 +8434,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        b = t4c_excits(idet,2); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(b,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (a,c,d,j,l), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/a,c,d,j,l/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -14563,15 +8565,34 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 18 passes on T4 sorted by columns (2,3,4,6,8)
+                  !!!! 2 passes on T4 sorted by columns (2,3,4,6,8)
                   tdims(1:5) = (/nua,nub,nub,noa,nob/)
                   tchain(1:5) = (/.false.,.false.,.true.,.false.,.false./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/2,3,4,6,8/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
+                     lk(1) = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     lk(2) = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     lk(3) = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     lk(4) = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     lk(5) = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     lk(6) = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     lk(7) = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     lk(8) = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     lk(9) = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     lk(10) = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     lk(11) = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     lk(12) = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     lk(13) = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     lk(14) = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     lk(15) = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     lk(16) = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     lk(17) = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(101)%dims, sidx(101)%chain))
                      ! +0.25 * W(cdxbjk) * tab(axil), q = (b,c,d,j,l), sign -1
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
@@ -14591,311 +8612,119 @@ module ccsdtq_p_t4c_p_b2
                      idet = toff(kdx)
                      b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(85)%key, sidx(85)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(85)%dims, sidx(85)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(85)%off(idx), sidx(85)%off(idx+1)-1
                         jdet = sidx(85)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(86)%key, sidx(86)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(86)%dims, sidx(86)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(86)%off(idx), sidx(86)%off(idx+1)-1
                         jdet = sidx(86)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(87)%key, sidx(87)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(87)%dims, sidx(87)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(87)%off(idx), sidx(87)%off(idx+1)-1
                         jdet = sidx(87)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(88)%key, sidx(88)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(88)%dims, sidx(88)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(88)%off(idx), sidx(88)%off(idx+1)-1
                         jdet = sidx(88)%perm(jj); w = bt4c_excits(jdet,2); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(89)%key, sidx(89)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(89)%dims, sidx(89)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(89)%off(idx), sidx(89)%off(idx+1)-1
                         jdet = sidx(89)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(90)%key, sidx(90)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(90)%dims, sidx(90)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(90)%off(idx), sidx(90)%off(idx+1)-1
                         jdet = sidx(90)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,6); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(91)%key, sidx(91)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(91)%dims, sidx(91)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(91)%off(idx), sidx(91)%off(idx+1)-1
                         jdet = sidx(91)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(92)%key, sidx(92)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(92)%dims, sidx(92)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(92)%off(idx), sidx(92)%off(idx+1)-1
                         jdet = sidx(92)%perm(jj); w = bt4c_excits(jdet,1); u = bt4c_excits(jdet,5); v = bt4c_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(93)%key, sidx(93)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(93)%dims, sidx(93)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(93)%off(idx), sidx(93)%off(idx+1)-1
                         jdet = sidx(93)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(94)%key, sidx(94)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(94)%dims, sidx(94)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(94)%off(idx), sidx(94)%off(idx+1)-1
                         jdet = sidx(94)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(95)%key, sidx(95)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(95)%dims, sidx(95)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(95)%off(idx), sidx(95)%off(idx+1)-1
                         jdet = sidx(95)%perm(jj); w = bt4d_excits(jdet,4); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(96)%key, sidx(96)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(96)%dims, sidx(96)%chain))
+                     idx = lk(12)
                      if (idx/=0) then
                      do jj = sidx(96)%off(idx), sidx(96)%off(idx+1)-1
                         jdet = sidx(96)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(97)%key, sidx(97)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(97)%dims, sidx(97)%chain))
+                     idx = lk(13)
                      if (idx/=0) then
                      do jj = sidx(97)%off(idx), sidx(97)%off(idx+1)-1
                         jdet = sidx(97)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(98)%key, sidx(98)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(98)%dims, sidx(98)%chain))
+                     idx = lk(14)
                      if (idx/=0) then
                      do jj = sidx(98)%off(idx), sidx(98)%off(idx+1)-1
                         jdet = sidx(98)%perm(jj); w = bt4d_excits(jdet,3); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(99)%key, sidx(99)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(99)%dims, sidx(99)%chain))
+                     idx = lk(15)
                      if (idx/=0) then
                      do jj = sidx(99)%off(idx), sidx(99)%off(idx+1)-1
                         jdet = sidx(99)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,7); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(100)%key, sidx(100)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(100)%dims, sidx(100)%chain))
+                     idx = lk(16)
                      if (idx/=0) then
                      do jj = sidx(100)%off(idx), sidx(100)%off(idx+1)-1
                         jdet = sidx(100)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4d_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        a = t4c_excits(idet,1); i = t4c_excits(idet,5); k = t4c_excits(idet,7);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2b(a,x,i,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.5 * I3C_vvvoov(bcdjkx) * tab(axil), q = (b,c,d,j,l), sign -1
-                     idet = toff(kdx)
-                     b = t4c_excits(idet,2); c = t4c_excits(idet,3); d = t4c_excits(idet,4); j = t4c_excits(idet,6); l = t4c_excits(idet,8);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(101)%key, sidx(101)%nblock, pspace_key((/b,c,d,j,l/), 5, sidx(101)%dims, sidx(101)%chain))
+                     idx = lk(17)
                      if (idx/=0) then
                      do jj = sidx(101)%off(idx), sidx(101)%off(idx+1)-1
                         jdet = sidx(101)%perm(jj); w = bt4d_excits(jdet,2); u = bt4d_excits(jdet,6); v = bt4d_excits(jdet,7)
@@ -14914,210 +8743,103 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 11 passes on T4 sorted by columns (1,2,3,5,6)
+                  !!!! 1 passes on T4 sorted by columns (1,2,3,5,6)
                   tdims(1:5) = (/nua,nua,nub,noa,noa/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,3,5,6/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
+                     lk(1) = pspace_find(sidx(102)%key, sidx(102)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(102)%dims, sidx(102)%chain))
+                     lk(2) = pspace_find(sidx(103)%key, sidx(103)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(103)%dims, sidx(103)%chain))
+                     lk(3) = pspace_find(sidx(104)%key, sidx(104)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(104)%dims, sidx(104)%chain))
+                     lk(4) = pspace_find(sidx(105)%key, sidx(105)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(105)%dims, sidx(105)%chain))
+                     lk(5) = pspace_find(sidx(106)%key, sidx(106)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(106)%dims, sidx(106)%chain))
+                     lk(6) = pspace_find(sidx(107)%key, sidx(107)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(107)%dims, sidx(107)%chain))
+                     lk(7) = pspace_find(sidx(108)%key, sidx(108)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(108)%dims, sidx(108)%chain))
+                     lk(8) = pspace_find(sidx(109)%key, sidx(109)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(109)%dims, sidx(109)%chain))
+                     lk(9) = pspace_find(sidx(110)%key, sidx(110)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(110)%dims, sidx(110)%chain))
+                     lk(10) = pspace_find(sidx(111)%key, sidx(111)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(111)%dims, sidx(111)%chain))
+                     lk(11) = pspace_find(sidx(112)%key, sidx(112)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(112)%dims, sidx(112)%chain))
                      ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(102)%key, sidx(102)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(102)%dims, sidx(102)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(102)%off(idx), sidx(102)%off(idx+1)-1
                         jdet = sidx(102)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(103)%key, sidx(103)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(103)%dims, sidx(103)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(103)%off(idx), sidx(103)%off(idx+1)-1
                         jdet = sidx(103)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(104)%key, sidx(104)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(104)%dims, sidx(104)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(104)%off(idx), sidx(104)%off(idx+1)-1
                         jdet = sidx(104)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(105)%key, sidx(105)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(105)%dims, sidx(105)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(105)%off(idx), sidx(105)%off(idx+1)-1
                         jdet = sidx(105)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(106)%key, sidx(106)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(106)%dims, sidx(106)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(106)%off(idx), sidx(106)%off(idx+1)-1
                         jdet = sidx(106)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(107)%key, sidx(107)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(107)%dims, sidx(107)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(107)%off(idx), sidx(107)%off(idx+1)-1
                         jdet = sidx(107)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(108)%key, sidx(108)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(108)%dims, sidx(108)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(108)%off(idx), sidx(108)%off(idx+1)-1
                         jdet = sidx(108)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(109)%key, sidx(109)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(109)%dims, sidx(109)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(109)%off(idx), sidx(109)%off(idx+1)-1
                         jdet = sidx(109)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(110)%key, sidx(110)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(110)%dims, sidx(110)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(110)%off(idx), sidx(110)%off(idx+1)-1
                         jdet = sidx(110)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(111)%key, sidx(111)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(111)%dims, sidx(111)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(111)%off(idx), sidx(111)%off(idx+1)-1
                         jdet = sidx(111)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        d = t4c_excits(idet,4); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,d,l,k)
-                        end do
-                        resid(idet) = resid(idet) - 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,c,i,j), sign -1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); c = t4c_excits(idet,3); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(112)%key, sidx(112)%nblock, pspace_key((/a,b,c,i,j/), 5, sidx(112)%dims, sidx(112)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(112)%off(idx), sidx(112)%off(idx+1)-1
                         jdet = sidx(112)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7); v = bt4c_excits(jdet,8)
@@ -15136,210 +8858,103 @@ module ccsdtq_p_t4c_p_b2
                   !$omp end do
                   deallocate(IX)
                   !$omp end parallel
-                  !!!! 11 passes on T4 sorted by columns (1,2,4,5,6)
+                  !!!! 1 passes on T4 sorted by columns (1,2,4,5,6)
                   tdims(1:5) = (/nua,nua,nub,noa,noa/)
                   tchain(1:5) = (/.false.,.true.,.false.,.false.,.true./)
                   call sort_pspace(t4c_excits, t4c_amps, n4aabb, 5, (/1,2,4,5,6/), tdims, tchain, tnblk, tkey, toff, resid)
-                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx)
+                  !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)
                   allocate(IX(nub))
                   !$omp do schedule(dynamic,8)
                   do kdx = 1, tnblk
                      if (toff(kdx+1)-1 < toff(kdx)) cycle
+                     idet = toff(kdx)
+                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
+                     lk(1) = pspace_find(sidx(102)%key, sidx(102)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(102)%dims, sidx(102)%chain))
+                     lk(2) = pspace_find(sidx(103)%key, sidx(103)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(103)%dims, sidx(103)%chain))
+                     lk(3) = pspace_find(sidx(104)%key, sidx(104)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(104)%dims, sidx(104)%chain))
+                     lk(4) = pspace_find(sidx(105)%key, sidx(105)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(105)%dims, sidx(105)%chain))
+                     lk(5) = pspace_find(sidx(106)%key, sidx(106)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(106)%dims, sidx(106)%chain))
+                     lk(6) = pspace_find(sidx(107)%key, sidx(107)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(107)%dims, sidx(107)%chain))
+                     lk(7) = pspace_find(sidx(108)%key, sidx(108)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(108)%dims, sidx(108)%chain))
+                     lk(8) = pspace_find(sidx(109)%key, sidx(109)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(109)%dims, sidx(109)%chain))
+                     lk(9) = pspace_find(sidx(110)%key, sidx(110)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(110)%dims, sidx(110)%chain))
+                     lk(10) = pspace_find(sidx(111)%key, sidx(111)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(111)%dims, sidx(111)%chain))
+                     lk(11) = pspace_find(sidx(112)%key, sidx(112)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(112)%dims, sidx(112)%chain))
                      ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
                      idet = toff(kdx)
                      a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
                      IX = 0.0d0
-                     idx = pspace_find(sidx(102)%key, sidx(102)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(102)%dims, sidx(102)%chain))
+                     idx = lk(1)
                      if (idx/=0) then
                      do jj = sidx(102)%off(idx), sidx(102)%off(idx+1)-1
                         jdet = sidx(102)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(103)%key, sidx(103)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(103)%dims, sidx(103)%chain))
+                     idx = lk(2)
                      if (idx/=0) then
                      do jj = sidx(103)%off(idx), sidx(103)%off(idx+1)-1
                         jdet = sidx(103)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(104)%key, sidx(104)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(104)%dims, sidx(104)%chain))
+                     idx = lk(3)
                      if (idx/=0) then
                      do jj = sidx(104)%off(idx), sidx(104)%off(idx+1)-1
                         jdet = sidx(104)%perm(jj); w = bt4b_excits(jdet,3); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(105)%key, sidx(105)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(105)%dims, sidx(105)%chain))
+                     idx = lk(4)
                      if (idx/=0) then
                      do jj = sidx(105)%off(idx), sidx(105)%off(idx+1)-1
                         jdet = sidx(105)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(106)%key, sidx(106)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(106)%dims, sidx(106)%chain))
+                     idx = lk(5)
                      if (idx/=0) then
                      do jj = sidx(106)%off(idx), sidx(106)%off(idx+1)-1
                         jdet = sidx(106)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(107)%key, sidx(107)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(107)%dims, sidx(107)%chain))
+                     idx = lk(6)
                      if (idx/=0) then
                      do jj = sidx(107)%off(idx), sidx(107)%off(idx+1)-1
                         jdet = sidx(107)%perm(jj); w = bt4b_excits(jdet,2); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(108)%key, sidx(108)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(108)%dims, sidx(108)%chain))
+                     idx = lk(7)
                      if (idx/=0) then
                      do jj = sidx(108)%off(idx), sidx(108)%off(idx+1)-1
                         jdet = sidx(108)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,7); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(109)%key, sidx(109)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(109)%dims, sidx(109)%chain))
+                     idx = lk(8)
                      if (idx/=0) then
                      do jj = sidx(109)%off(idx), sidx(109)%off(idx+1)-1
                         jdet = sidx(109)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,6); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(110)%key, sidx(110)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(110)%dims, sidx(110)%chain))
+                     idx = lk(9)
                      if (idx/=0) then
                      do jj = sidx(110)%off(idx), sidx(110)%off(idx+1)-1
                         jdet = sidx(110)%perm(jj); w = bt4b_excits(jdet,1); u = bt4b_excits(jdet,5); v = bt4b_excits(jdet,8)
                         IX(:) = IX(:) + (-1d0 * bt4b_amps(jdet)) * V2B_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(111)%key, sidx(111)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(111)%dims, sidx(111)%chain))
+                     idx = lk(10)
                      if (idx/=0) then
                      do jj = sidx(111)%off(idx), sidx(111)%off(idx+1)-1
                         jdet = sidx(111)%perm(jj); w = bt4c_excits(jdet,4); u = bt4c_excits(jdet,7); v = bt4c_excits(jdet,8)
                         IX(:) = IX(:) + (1d0 * bt4c_amps(jdet)) * V2C_oovv_3012(:,u,v,w)
                      end do
                      end if
-                     do idet = toff(kdx), toff(kdx+1)-1
-                        c = t4c_excits(idet,3); k = t4c_excits(idet,7); l = t4c_excits(idet,8);
-                        val = 0.0d0
-                        do x = 1, nub
-                           val = val + IX(x) * t2c(x,c,l,k)
-                        end do
-                        resid(idet) = resid(idet) + 1d0 * val
-                     end do
-                     ! +0.125 * I3B_vvvoov(abdijx) * tbb(xclk), q = (a,b,d,i,j), sign +1
-                     idet = toff(kdx)
-                     a = t4c_excits(idet,1); b = t4c_excits(idet,2); d = t4c_excits(idet,4); i = t4c_excits(idet,5); j = t4c_excits(idet,6);
-                     IX = 0.0d0
-                     idx = pspace_find(sidx(112)%key, sidx(112)%nblock, pspace_key((/a,b,d,i,j/), 5, sidx(112)%dims, sidx(112)%chain))
+                     idx = lk(11)
                      if (idx/=0) then
                      do jj = sidx(112)%off(idx), sidx(112)%off(idx+1)-1
                         jdet = sidx(112)%perm(jj); w = bt4c_excits(jdet,3); u = bt4c_excits(jdet,7); v = bt4c_excits(jdet,8)
@@ -15359,6 +8974,7 @@ module ccsdtq_p_t4c_p_b2
                   deallocate(IX)
                   !$omp end parallel
                   deallocate(sidx)
+                  deallocate(pidx)
                   deallocate(bt4b_amps,bt4b_excits)
                   deallocate(bt4c_amps,bt4c_excits)
                   deallocate(bt4d_amps,bt4d_excits)

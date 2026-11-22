@@ -113,9 +113,31 @@ def update(T: ClusterOperator,
        t3_excitations["abb"] = t3_excitations["aab"][:, np.array([2, 0, 1, 5, 3, 4])]
        T.bbb = T.aaa.copy()
        dT.bbb = dT.aaa.copy()
-       t3_excitations["bbb"] = t3_excitations["aaa"].copy()
+       t3_excitations["bbb"] = t3_excitations["aaa"].copy(order="F")
 
     return T, dT
+
+def chol_product_f(P, Q):
+    """out[p, q, r, s] = sum_x P[x, p, r] Q[x, q, s] in Fortran order, built one s slice at a time:
+    np.einsum returns a transposed view of a C-order product, which the native routines would copy."""
+    nx, n_p, n_r = P.shape
+    n_q, n_s = Q.shape[1:]
+    out = np.empty((n_p, n_q, n_r, n_s), order="F")
+    Pm = np.ascontiguousarray(P).reshape(nx, n_p * n_r)
+    for s in range(n_s):
+        out[:, :, :, s] = (Q[:, :, s].T @ Pm).reshape(n_q, n_p, n_r).transpose(1, 0, 2)
+    return out
+
+
+def antisymmetrize_last_pair(x):
+    """x[..., e, f] <- x[..., e, f] - x[..., f, e] in place, without a full-size temporary."""
+    for e in range(x.shape[-1]):
+        upper = x[..., e, e + 1:].copy()
+        x[..., e, e + 1:] -= x[..., e + 1:, e]
+        x[..., e + 1:, e] -= upper
+        x[..., e, e] = 0.0
+    return x
+
 
 def update_t1_and_t2_residual(T, dT, H, X, shift, flag_RHF, t3_excitations, D=None):
     """Update T1 and build the raw T2 residual (vvvv included, T3/T4 terms and denominators not),
@@ -318,12 +340,14 @@ def update_t2a(T, dT, X, H, shift, t3_excitations, residual_only=False):
                     - np.einsum("xni,xme->mnie", X.chol.a.oo, X.chol.a.ov, optimize=True)
     )
     # Exchange is an index permutation of the same Coulomb product.
-    coulomb = np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.a.ov, optimize=True)
-    h2a_vovv = np.asfortranarray(coulomb - coulomb.swapaxes(2, 3))
+    coulomb = chol_product_f(X.chol.a.vv, X.chol.a.ov)
     if X.chol.a.ov is X.chol.b.ov:  # RHF factors shared by update()
-        h2b_vovv = np.asfortranarray(coulomb)
+        h2b_vovv = coulomb
+        h2a_vovv = antisymmetrize_last_pair(coulomb.copy(order="F"))
     else:
-        h2b_vovv = np.asfortranarray(np.einsum("xae,xmf->amef", X.chol.a.vv, X.chol.b.ov, optimize=True))
+        h2a_vovv = antisymmetrize_last_pair(coulomb)
+        h2b_vovv = chol_product_f(X.chol.a.vv, X.chol.b.ov)
+    del coulomb
     # save some voov intermediates for T2B update
     X.aa.voov = h2a_voov
     X.ab.voov = h2b_voov
@@ -402,9 +426,8 @@ def update_t2b(T, dT, X, H, shift, t3_excitations, residual_only=False):
         h2b_ovvv = np.asfortranarray(X.ab.vovv.transpose(1, 0, 3, 2))
         h2c_vovv = X.aa.vovv  # read-only throughout the remaining update
     else:
-        h2b_ovvv = np.asfortranarray(np.einsum("xmf,xae->mafe", X.chol.a.ov, X.chol.b.vv, optimize=True))
-        coulomb = np.einsum("xae,xmf->amef", X.chol.b.vv, X.chol.b.ov, optimize=True)
-        h2c_vovv = np.asfortranarray(coulomb - coulomb.swapaxes(2, 3))
+        h2b_ovvv = chol_product_f(X.chol.a.ov, X.chol.b.vv)
+        h2c_vovv = antisymmetrize_last_pair(chol_product_f(X.chol.b.vv, X.chol.b.ov))
     # save intermediates
     X.ab.ovvv = h2b_ovvv
     X.ab.oovo = h2b_oovo
