@@ -26,7 +26,7 @@ module pspace_sort
       public :: get_index_table, get_index_table2, get_index_table3, get_index_table4
       public :: sort2, sort3, sort3_excits, sort3_excits_cm, sort4, sort4t, sort4_lt
       public :: argsort, argsort_r8_descend
-      public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace, pspace_find_sorted
+      public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace, pspace_find_sorted, km_gemm
       public :: release_sort_workspace, keep_largest
       public :: pspace_index, index_pspace
 
@@ -653,6 +653,15 @@ module pspace_sort
               end do
               deallocate(perm2, counts)
       end subroutine radix_sort
+
+      subroutine km_gemm(m, n, k, alpha, a, b, c)
+      ! c(m,n) = alpha * a(m,k) b(k,n); a is passed by its first element (a contiguous slice of a
+      ! larger array), so the generated kernels need no BLAS of their own
+              integer, intent(in) :: m, n, k
+              real(kind=8), intent(in) :: alpha, a(m,k), b(k,n)
+              real(kind=8), intent(out) :: c(m,n)
+              c = alpha * matmul(a, b)
+      end subroutine km_gemm
 
       pure integer function pspace_find_sorted(block_key, nblock, vals, ncol, dims, chain)
       ! sign * pspace_find of vals sorted ascending inside each chained run of columns, sign the

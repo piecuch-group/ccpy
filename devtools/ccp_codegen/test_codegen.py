@@ -403,10 +403,10 @@ def dense_reference_blocks(func, ns, only=None, pattern=r"einsum\('[a-z]+,[a-z]+
     return ns["out"]
 
 
-@pytest.fixture(scope="module", params=[None, "point", "batched"])
+@pytest.fixture(scope="module", params=[None, "point", "dense", "batched"])
 def t4blk(request, tmp_path_factory):
-    """b3 routines with the run-time bucket choice, with every bucket forced to the sparse IX build,
-    and with the key-major readers split into many small class batches."""
+    """b3 routines with the run-time bucket choice, with every bucket forced to the sparse IX build or
+    to the GEMM build, and with the key-major readers split into many small class batches."""
     import block_terms
     block_terms.BLOCK_CHOICE = None if request.param == "batched" else request.param
     readers = block_terms.KEYMAJOR_READERS

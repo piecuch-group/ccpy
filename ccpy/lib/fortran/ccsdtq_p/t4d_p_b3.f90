@@ -7,12 +7,15 @@ module ccsdtq_p_t4d_p_b3
               subroutine t4d_p_b3(resid,&
                                       t4d_amps, t4d_excits, t3b_amps, t3b_excits,&
                                       t3c_amps, t3c_excits, t3d_amps, t3d_excits,&
-                                      t2b, t2c, H2C_ooov, V2C_oovv,&
-                                      H2B_ooov, H2B_oovo, V2B_oovv, H2C_vovv,&
-                                      H2B_vovv, H2B_ovvv, H2A_ooov, H2A_vovv,&
-                                      V2A_oovv, n4abbb, n3aab, n3abb,&
-                                      n3bbb, noa, nua, nob,&
-                                      nub)
+                                      t2b, t2c, H2C_ooov_0132, H2C_ooov,&
+                                      V2C_oovv, H2B_ooov_0132, H2B_oovo_0123, H2B_ooov,&
+                                      H2B_oovo, V2B_oovv, H2C_ooov_1302, H2C_vovv_1320,&
+                                      H2B_ooov_1302, H2B_vovv_1320, H2C_vovv, H2B_vovv,&
+                                      H2B_ooov_0312, H2B_ovvv_0321, H2B_ovvv, H2B_vovv_1230,&
+                                      H2B_oovo_1203, H2B_oovo_0213, H2A_ooov_1302, H2B_ovvv_0231,&
+                                      H2A_vovv_1320, H2A_ooov, H2A_vovv, V2A_oovv,&
+                                      n4abbb, n3aab, n3abb, n3bbb,&
+                                      noa, nua, nob, nub)
                   integer, intent(in) :: n4abbb, n3aab, n3abb, n3bbb, noa, nua, nob, nub
                   real(kind=8), intent(inout) :: resid(n4abbb)
                   !f2py intent(in,out) :: resid(0:n4abbb-1)
@@ -28,14 +31,29 @@ module ccsdtq_p_t4d_p_b3
                   integer, intent(in) :: t3d_excits(n3bbb,6)
                   real(kind=8), intent(in) :: t2b(nua,nub,noa,nob)
                   real(kind=8), intent(in) :: t2c(nub,nub,nob,nob)
+                  real(kind=8), intent(in) :: H2C_ooov_0132(nob,nob,nub,nob)
                   real(kind=8), intent(in) :: H2C_ooov(nob,nob,nob,nub)
                   real(kind=8), intent(in) :: V2C_oovv(nob,nob,nub,nub)
+                  real(kind=8), intent(in) :: H2B_ooov_0132(noa,nob,nub,noa)
+                  real(kind=8), intent(in) :: H2B_oovo_0123(noa,nob,nua,nob)
                   real(kind=8), intent(in) :: H2B_ooov(noa,nob,noa,nub)
                   real(kind=8), intent(in) :: H2B_oovo(noa,nob,nua,nob)
                   real(kind=8), intent(in) :: V2B_oovv(noa,nob,nua,nub)
+                  real(kind=8), intent(in) :: H2C_ooov_1302(nob,nub,nob,nob)
+                  real(kind=8), intent(in) :: H2C_vovv_1320(nob,nub,nub,nub)
+                  real(kind=8), intent(in) :: H2B_ooov_1302(nob,nub,noa,noa)
+                  real(kind=8), intent(in) :: H2B_vovv_1320(nob,nub,nua,nua)
                   real(kind=8), intent(in) :: H2C_vovv(nub,nob,nub,nub)
                   real(kind=8), intent(in) :: H2B_vovv(nua,nob,nua,nub)
+                  real(kind=8), intent(in) :: H2B_ooov_0312(noa,nub,nob,noa)
+                  real(kind=8), intent(in) :: H2B_ovvv_0321(noa,nub,nua,nub)
                   real(kind=8), intent(in) :: H2B_ovvv(noa,nub,nua,nub)
+                  real(kind=8), intent(in) :: H2B_vovv_1230(nob,nua,nub,nua)
+                  real(kind=8), intent(in) :: H2B_oovo_1203(nob,nua,noa,nob)
+                  real(kind=8), intent(in) :: H2B_oovo_0213(noa,nua,nob,nob)
+                  real(kind=8), intent(in) :: H2A_ooov_1302(noa,nua,noa,noa)
+                  real(kind=8), intent(in) :: H2B_ovvv_0231(noa,nua,nub,nub)
+                  real(kind=8), intent(in) :: H2A_vovv_1320(noa,nua,nua,nua)
                   real(kind=8), intent(in) :: H2A_ooov(noa,noa,noa,nua)
                   real(kind=8), intent(in) :: H2A_vovv(nua,noa,nua,nua)
                   real(kind=8), intent(in) :: V2A_oovv(noa,noa,nua,nua)
@@ -122,6 +140,9 @@ module ccsdtq_p_t4d_p_b3
                   integer, allocatable :: RQ(:,:), rp(:)
                   type(pspace_index) :: rind
                   integer :: icls, ird, jr, kc0, kc1, kbat, nrd, ird0, sgn
+                  integer, allocatable :: kmnn(:), kmslot(:), kmdk(:), kmcnt(:), kmord(:)
+                  real(kind=8), allocatable :: kmRB(:,:), kmG(:,:), kmC(:,:)
+                  integer :: kch0, kch1, ndk, kmi, kms, kmk, kmn
                   allocate(pidx(n4abbb))
                   ! view vbbb31: every t3d row once per key placement, key columns first
                   allocate(vbbb31_amps(3*n3bbb),vbbb31_excits(3*n3bbb,6))
@@ -279,125 +300,269 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nua,noa,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(nob,nob), mark(nob,nob), need(2,nob*nob))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,l/), 4, vdims_vbbb31, vchain_vbbb31))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (2)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,k/), 4, vdims_vbbb31, vchain_vbbb31))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (3)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,j/), 4, vdims_vbbb31, vchain_vbbb31))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(nob*nob,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(nob,nob), need(2,nob*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,l/), 4, vdims_vbbb31, vchain_vbbb31))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,k/), 4, vdims_vbbb31, vchain_vbbb31))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,j/), 4, vdims_vbbb31, vchain_vbbb31))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        a = RQ(ird,1); i = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vabb1012, nblk_vabb1012, (/a,i,k,l/), 4, vdims_vabb1012, vchain_vabb1012)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nub
-                              ixv = ixv + (-1d0 * t2b(a,u,i,k)) * H2C_ooov(xx,yy,l,u)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vabb1012(idx2), off_vabb1012(idx2+1)-1
-                              u = vabb1012_excits(jdet2,5); v = vabb1012_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vabb1012_amps(jdet2))) * V2C_oovv(xx,yy,u,v)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= nob*nob) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2C_ooov(xx,yy,k,u)
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += -1 * H2C_ooov(xylu) * t2b(auik), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,u,i,k)) * H2C_ooov(:,:,l,u)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vabb1012(idx), off_vabb1012(idx+1)-1
-                           u = vabb1012_excits(jdet,5); v = vabb1012_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb1012_amps(jdet))) * V2C_oovv(:,:,u,v)
-                        end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,i,k,l,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); i = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2b(a,u,i,k)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nob, kmn, nub, -1d0, H2C_ooov_0132(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2C_ooov(xyku) * t2b(auil), one GEMM per value of k
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,i,k,l,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); i = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2b(a,u,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nob, kmn, nub, 1d0, H2C_ooov_0132(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(a,u,i,l)) * H2C_ooov(:,:,k,u)
-                        end do
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(nob,nob), mark(nob,nob), need(2,nob*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,l/), 4, vdims_vbbb31, vchain_vbbb31))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                       y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,k/), 4, vdims_vbbb31, vchain_vbbb31))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                       y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vbbb31, nblk_vbbb31, pspace_key((/b,c,d,j/), 4, vdims_vbbb31, vchain_vbbb31))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                       y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           a = RQ(ird,1); i = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vabb1012, nblk_vabb1012, (/a,i,k,l/), 4, vdims_vabb1012, vchain_vabb1012)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nub
+                                 ixv = ixv + (-1d0 * t2b(a,u,i,k)) * H2C_ooov(xx,yy,l,u)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vabb1012(idx2), off_vabb1012(idx2+1)-1
+                                 u = vabb1012_excits(jdet2,5); v = vabb1012_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vabb1012_amps(jdet2))) * V2C_oovv(xx,yy,u,v)
+                              end do
+                              end if
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2C_ooov(xx,yy,k,u)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/nob,nob/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
-                              end do
-                           case (2)
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (3)
-                              do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
-                                 y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
-                                 val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
-                              end do
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vabb1012(idx), off_vabb1012(idx+1)-1
+                              u = vabb1012_excits(jdet,5); v = vabb1012_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb1012_amps(jdet))) * V2C_oovv(:,:,u,v)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 0.5d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
+                                 end do
+                              case (2)
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (3)
+                                 do jdet = off_vbbb31(idx), off_vbbb31(idx+1)-1
+                                    y = vbbb31_excits(jdet,5); x = vbbb31_excits(jdet,6)
+                                    val = val + vbbb31_amps(jdet) * ((-1)*IX(x,y) + (+1)*IX(y,x))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 0.5d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -486,373 +651,682 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nub,nob,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(nob,nob), mark(nob,nob), need(2,nob*nob))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (2)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (3)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (4)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (5)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (6)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (7)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (8)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (9)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (10)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (11)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (12)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (13)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (14)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (15)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (16)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (17)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           case (18)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
-                              idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                                 if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(nob*nob,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(nob,nob), need(2,nob*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (10)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (11)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (12)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (13)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (14)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (15)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (16)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (17)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              case (18)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                 idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        b = RQ(ird,1); j = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vbbb13, nblk_vbbb13, (/b,j,k,l/), 4, vdims_vbbb13, vchain_vbbb13)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nub
-                              ixv = ixv + (2d0 * t2c(b,u,j,k)) * H2C_ooov(xx,yy,l,u)
-                           end do
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2c(b,u,k,l)) * H2C_ooov(xx,yy,j,u)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vbbb13(idx2), off_vbbb13(idx2+1)-1
-                              u = vbbb13_excits(jdet2,5); v = vbbb13_excits(jdet2,6)
-                              ixv = ixv + (-1d0 * (sgn*vbbb13_amps(jdet2))) * V2C_oovv(xx,yy,u,v)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= nob*nob) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           IX(xx,yy) = ixv
                         end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (2d0 * t2c(b,u,j,k)) * H2C_ooov(:,:,l,u)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(b,u,k,l)) * H2C_ooov(:,:,j,u)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vbbb13(idx), off_vbbb13(idx+1)-1
-                           u = vbbb13_excits(jdet,5); v = vbbb13_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (-1d0 * (sgn*vbbb13_amps(jdet))) * V2C_oovv(:,:,u,v)
-                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += +2 * H2C_ooov(xylu) * t2c(bujk), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,b,j,l,k,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    b = RQ(ird,1); j = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(b,u,j,k)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nob, kmn, nub, 2d0, H2C_ooov_0132(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2C_ooov(xyju) * t2c(bukl), one GEMM per value of j
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,b,j,l,k,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    b = RQ(ird,1); j = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(b,u,k,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nob, kmn, nub, 1d0, H2C_ooov_0132(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(nob,nob), mark(nob,nob), need(2,nob*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (10)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (11)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (12)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (13)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (14)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (15)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (16)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,c,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (17)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,d,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 case (18)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5);
+                                    idx = pspace_find(key_vabb1210, nblk_vabb1210, pspace_key((/a,b,c,i/), 4, vdims_vabb1210, vchain_vabb1210))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                       y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                       if (.not. mark(y,x)) then; mark(y,x) = .true.; nneed = nneed + 1; need(1,nneed) = y; need(2,nneed) = x; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           b = RQ(ird,1); j = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vbbb13, nblk_vbbb13, (/b,j,k,l/), 4, vdims_vbbb13, vchain_vbbb13)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nub
+                                 ixv = ixv + (2d0 * t2c(b,u,j,k)) * H2C_ooov(xx,yy,l,u)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2c(b,u,k,l)) * H2C_ooov(xx,yy,j,u)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vbbb13(idx2), off_vbbb13(idx2+1)-1
+                                 u = vbbb13_excits(jdet2,5); v = vbbb13_excits(jdet2,6)
+                                 ixv = ixv + (-1d0 * (sgn*vbbb13_amps(jdet2))) * V2C_oovv(xx,yy,u,v)
+                              end do
+                              end if
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/nob,nob/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (2)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (3)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (4)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (5)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (6)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (7)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (8)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (9)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (10)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (11)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (12)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (13)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (14)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (15)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (16)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           case (17)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                              val = -val
-                           case (18)
-                              do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
-                                 y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
-                                 val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
-                              end do
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vbbb13(idx), off_vbbb13(idx+1)-1
+                              u = vbbb13_excits(jdet,5); v = vbbb13_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (-1d0 * (sgn*vbbb13_amps(jdet))) * V2C_oovv(:,:,u,v)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 0.08333333333333333d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (2)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (3)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (4)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (5)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (6)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (7)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (8)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (9)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (10)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (11)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (12)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (13)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (14)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (15)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (16)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              case (17)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                                 val = -val
+                              case (18)
+                                 do jdet = off_vabb1210(idx), off_vabb1210(idx+1)-1
+                                    y = vabb1210_excits(jdet,5); x = vabb1210_excits(jdet,6)
+                                    val = val + vabb1210_amps(jdet) * ((+1)*IX(x,y) + (-1)*IX(y,x))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 0.08333333333333333d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -905,222 +1379,460 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nub,noa,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(noa,nob), mark(noa,nob), need(2,noa*nob))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,l/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,k/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,j/), 4, vdims_vabb1201, vchain_vabb1201))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(noa*nob,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(noa,nob), need(2,noa*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        d = RQ(ird,1); i = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vabb0112, nblk_vabb0112, (/d,i,j,l/), 4, vdims_vabb0112, vchain_vabb0112)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nub
-                              ixv = ixv + (-1d0 * t2c(d,u,j,l)) * H2B_ooov(xx,yy,i,u)
-                           end do
-                           do u = 1, nua
-                              ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_oovo(xx,yy,u,j)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vabb0112(idx2), off_vabb0112(idx2+1)-1
-                              u = vabb0112_excits(jdet2,5); v = vabb0112_excits(jdet2,6)
-                              ixv = ixv + (-1d0 * (sgn*vabb0112_amps(jdet2))) * V2B_oovv(xx,yy,u,v)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= noa*nob) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           do u = 1, nua
-                              ixv = ixv + (-1d0 * t2b(u,d,i,j)) * H2B_oovo(xx,yy,u,l)
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += -1 * H2B_ooov(xyiu) * t2c(dujl), one GEMM per value of i
+                           allocate(kmcnt(noa+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(d,u,j,l)) * H2B_ooov(:,:,i,u)
-                        end do
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(u,d,i,l)) * H2B_oovo(:,:,u,j)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vabb0112(idx), off_vabb0112(idx+1)-1
-                           u = vabb0112_excits(jdet,5); v = vabb0112_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (-1d0 * (sgn*vabb0112_amps(jdet))) * V2B_oovv(:,:,u,v)
-                        end do
+                           kmcnt(1) = 1
+                           do kms = 1, noa
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = noa, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,i,j,l,u)
+                           allocate(kmG(nub,MAXC), kmC(noa*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, noa
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); i = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(d,u,j,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nob, kmn, nub, -1d0, H2B_ooov_0132(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_oovo(xyuj) * t2b(udil), one GEMM per value of j
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,i,j,l,u)
+                           allocate(kmG(nua,MAXC), kmC(noa*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); i = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,d,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nob, kmn, nua, 1d0, H2B_oovo_0123(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_oovo(xyul) * t2b(udij), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,i,j,l,u)
+                           allocate(kmG(nua,MAXC), kmC(noa*nob,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); i = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,d,i,j)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nob, kmn, nua, -1d0, H2B_oovo_0123(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(u,d,i,j)) * H2B_oovo(:,:,u,l)
-                        end do
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(noa,nob), mark(noa,nob), need(2,noa*nob))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,l/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,k/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,c,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,d,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1201, nblk_vabb1201, pspace_key((/a,b,c,j/), 4, vdims_vabb1201, vchain_vabb1201))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                       x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           d = RQ(ird,1); i = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vabb0112, nblk_vabb0112, (/d,i,j,l/), 4, vdims_vabb0112, vchain_vabb0112)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nub
+                                 ixv = ixv + (-1d0 * t2c(d,u,j,l)) * H2B_ooov(xx,yy,i,u)
+                              end do
+                              do u = 1, nua
+                                 ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_oovo(xx,yy,u,j)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vabb0112(idx2), off_vabb0112(idx2+1)-1
+                                 u = vabb0112_excits(jdet2,5); v = vabb0112_excits(jdet2,6)
+                                 ixv = ixv + (-1d0 * (sgn*vabb0112_amps(jdet2))) * V2B_oovv(xx,yy,u,v)
+                              end do
+                              end if
+                              do u = 1, nua
+                                 ixv = ixv + (-1d0 * t2b(u,d,i,j)) * H2B_oovo(xx,yy,u,l)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/noa,nob/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (2)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (3)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (4)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (5)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (6)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (7)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (8)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (9)
-                              do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
-                                 x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
-                                 val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vabb0112(idx), off_vabb0112(idx+1)-1
+                              u = vabb0112_excits(jdet,5); v = vabb0112_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (-1d0 * (sgn*vabb0112_amps(jdet))) * V2B_oovv(:,:,u,v)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 1d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (2)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (3)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (4)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (5)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (6)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (7)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (8)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (9)
+                                 do jdet = off_vabb1201(idx), off_vabb1201(idx+1)-1
+                                    x = vabb1201_excits(jdet,5); y = vabb1201_excits(jdet,6)
+                                    val = val + vabb1201_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -1173,244 +1885,519 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nua,nub,noa,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(nob,nub), mark(nob,nub), need(2,nob*nub))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(nob*nub,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(nob,nub), need(2,nob*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vabb1111, nblk_vabb1111, (/a,d,i,l/), 4, vdims_vabb1111, vchain_vabb1111)
-                        lk(2) = pspace_find_sorted(key_vaab1111, nblk_vaab1111, (/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nob
-                              ixv = ixv + (-1d0 * t2b(a,d,i,u)) * H2C_ooov(u,xx,l,yy)
-                           end do
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2C_vovv(d,xx,u,yy)
-                           end do
-                           do u = 1, noa
-                              ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2B_ooov(u,xx,i,yy)
-                           end do
-                           do u = 1, nua
-                              ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_vovv(a,xx,u,yy)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vabb1111(idx2), off_vabb1111(idx2+1)-1
-                              v = vabb1111_excits(jdet2,5); u = vabb1111_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vabb1111_amps(jdet2))) * V2C_oovv(u,xx,v,yy)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= nob*nub) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           idx2 = lk(2)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vaab1111(idx2), off_vaab1111(idx2+1)-1
-                              v = vaab1111_excits(jdet2,5); u = vaab1111_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vaab1111_amps(jdet2))) * V2B_oovv(u,xx,v,yy)
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += -1 * H2C_ooov(uxly) * t2b(adiu), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nob,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2b(a,d,i,u)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nob, -1d0, H2C_ooov_1302(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2C_vovv(dxuy) * t2b(auil), one GEMM per value of d
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2b(a,u,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nub, 1d0, H2C_vovv_1320(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_ooov(uxiy) * t2b(adul), one GEMM per value of i
+                           allocate(kmcnt(noa+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, noa
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = noa, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(noa,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, noa
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, noa
+                                       kmG(u,kmi) = t2b(a,d,u,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, noa, -1d0, H2B_ooov_1302(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_vovv(axuy) * t2b(udil), one GEMM per value of a
+                           allocate(kmcnt(nua+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nua
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nua, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nua,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nua
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,d,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nua, 1d0, H2B_vovv_1320(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                        end if
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(nob,nub), mark(nob,nub), need(2,nob*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,k,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,l/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/c,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,d,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vbbb22, nblk_vbbb22, pspace_key((/b,c,j,k/), 4, vdims_vbbb22, vchain_vbbb22))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                       y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
                            end if
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,d,i,u)) * H2C_ooov(u,:,l,:)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(a,u,i,l)) * H2C_vovv(d,:,u,:)
-                        end do
-                        do u = 1, noa
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,d,u,l)) * H2B_ooov(u,:,i,:)
-                        end do
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(u,d,i,l)) * H2B_vovv(a,:,u,:)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                           v = vabb1111_excits(jdet,5); u = vabb1111_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb1111_amps(jdet))) * V2C_oovv(u,:,v,:)
-                        end do
-                        end if
-                        idx = lk(2)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                           v = vaab1111_excits(jdet,5); u = vaab1111_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vaab1111_amps(jdet))) * V2B_oovv(u,:,v,:)
-                        end do
-                        end if
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                           ird = rind%perm(rind%off(kdx))
+                           a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vabb1111, nblk_vabb1111, (/a,d,i,l/), 4, vdims_vabb1111, vchain_vabb1111)
+                           lk(2) = pspace_find_sorted(key_vaab1111, nblk_vaab1111, (/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nob
+                                 ixv = ixv + (-1d0 * t2b(a,d,i,u)) * H2C_ooov(u,xx,l,yy)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2C_vovv(d,xx,u,yy)
+                              end do
+                              do u = 1, noa
+                                 ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2B_ooov(u,xx,i,yy)
+                              end do
+                              do u = 1, nua
+                                 ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_vovv(a,xx,u,yy)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vabb1111(idx2), off_vabb1111(idx2+1)-1
+                                 v = vabb1111_excits(jdet2,5); u = vabb1111_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vabb1111_amps(jdet2))) * V2C_oovv(u,xx,v,yy)
+                              end do
+                              end if
+                              idx2 = lk(2)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vaab1111(idx2), off_vaab1111(idx2+1)-1
+                                 v = vaab1111_excits(jdet2,5); u = vaab1111_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vaab1111_amps(jdet2))) * V2B_oovv(u,xx,v,yy)
+                              end do
+                              end if
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/nob,nub/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (2)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (3)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (4)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (5)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (6)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (7)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (8)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (9)
-                              do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
-                                 y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
-                                 val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                              v = vabb1111_excits(jdet,5); u = vabb1111_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb1111_amps(jdet))) * V2C_oovv(u,:,v,:)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 1d0 * val
+                           idx = lk(2)
+                           if (idx/=0) then
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                              v = vaab1111_excits(jdet,5); u = vaab1111_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vaab1111_amps(jdet))) * V2B_oovv(u,:,v,:)
+                           end do
                            end if
+                           end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (2)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (3)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (4)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (5)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (6)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (7)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (8)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (9)
+                                 do jdet = off_vbbb22(idx), off_vbbb22(idx+1)-1
+                                    y = vbbb22_excits(jdet,5); x = vbbb22_excits(jdet,6)
+                                    val = val + vbbb22_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -1463,227 +2450,502 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nub,nub,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(nob,nub), mark(nob,nub), need(2,nob*nub))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(nob*nub,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(nob,nub), need(2,nob*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vabb0202, nblk_vabb0202, (/c,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nob
-                              ixv = ixv + (1d0 * t2c(c,d,l,u)) * H2C_ooov(u,xx,k,yy)
-                           end do
-                           do u = 1, nub
-                              ixv = ixv + (-1d0 * t2c(d,u,k,l)) * H2C_vovv(c,xx,u,yy)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vabb0202(idx2), off_vabb0202(idx2+1)-1
-                              v = vabb0202_excits(jdet2,5); u = vabb0202_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vabb0202_amps(jdet2))) * V2B_oovv(u,xx,v,yy)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= nob*nub) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2c(c,u,k,l)) * H2C_vovv(d,xx,u,yy)
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += +1 * H2C_ooov(uxky) * t2c(cdlu), one GEMM per value of k
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           do u = 1, nob
-                              ixv = ixv + (-1d0 * t2c(c,d,k,u)) * H2C_ooov(u,xx,l,yy)
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(c,d,l,u)) * H2C_ooov(u,:,k,:)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(d,u,k,l)) * H2C_vovv(c,:,u,:)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                           v = vabb0202_excits(jdet,5); u = vabb0202_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb0202_amps(jdet))) * V2B_oovv(u,:,v,:)
-                        end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,c,l,k,u)
+                           allocate(kmG(nob,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2c(c,d,l,u)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nob, 1d0, H2C_ooov_1302(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2C_vovv(cxuy) * t2c(dukl), one GEMM per value of c
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,c,l,k,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(d,u,k,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nub, -1d0, H2C_vovv_1320(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2C_vovv(dxuy) * t2c(cukl), one GEMM per value of d
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,c,l,k,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(c,u,k,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nub, 1d0, H2C_vovv_1320(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2C_ooov(uxly) * t2c(cdku), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,d,c,l,k,u)
+                           allocate(kmG(nob,MAXC), kmC(nob*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2c(c,d,k,u)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nub, kmn, nob, -1d0, H2C_ooov_1302(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(c,u,k,l)) * H2C_vovv(d,:,u,:)
-                        end do
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(c,d,k,u)) * H2C_ooov(u,:,l,:)
-                        end do
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(nob,nub), mark(nob,nub), need(2,nob*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,l/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,k/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,d,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,c,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb1111, nblk_vabb1111, pspace_key((/a,b,i,j/), 4, vdims_vabb1111, vchain_vabb1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                       y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           d = RQ(ird,1); c = RQ(ird,2); l = RQ(ird,3); k = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vabb0202, nblk_vabb0202, (/c,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nob
+                                 ixv = ixv + (1d0 * t2c(c,d,l,u)) * H2C_ooov(u,xx,k,yy)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (-1d0 * t2c(d,u,k,l)) * H2C_vovv(c,xx,u,yy)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vabb0202(idx2), off_vabb0202(idx2+1)-1
+                                 v = vabb0202_excits(jdet2,5); u = vabb0202_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vabb0202_amps(jdet2))) * V2B_oovv(u,xx,v,yy)
+                              end do
+                              end if
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2c(c,u,k,l)) * H2C_vovv(d,xx,u,yy)
+                              end do
+                              do u = 1, nob
+                                 ixv = ixv + (-1d0 * t2c(c,d,k,u)) * H2C_ooov(u,xx,l,yy)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/nob,nub/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (2)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (3)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (4)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (5)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (6)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (7)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (8)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (9)
-                              do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
-                                 y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
-                                 val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                              v = vabb0202_excits(jdet,5); u = vabb0202_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb0202_amps(jdet))) * V2B_oovv(u,:,v,:)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 1d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (2)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (3)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (4)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (5)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (6)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (7)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (8)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (9)
+                                 do jdet = off_vabb1111(idx), off_vabb1111(idx+1)-1
+                                    y = vabb1111_excits(jdet,5); x = vabb1111_excits(jdet,6)
+                                    val = val + vabb1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -1736,222 +2998,460 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nub,nub,noa,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(noa,nub), mark(noa,nub), need(2,noa*nub))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(noa*nub,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(noa,nub), need(2,noa*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        b = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vabb0211, nblk_vabb0211, (/b,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nob
-                              ixv = ixv + (1d0 * t2c(b,d,l,u)) * H2B_ooov(xx,u,i,yy)
-                           end do
-                           do u = 1, nua
-                              ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_ovvv(xx,b,u,yy)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vabb0211(idx2), off_vabb0211(idx2+1)-1
-                              v = vabb0211_excits(jdet2,5); u = vabb0211_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vabb0211_amps(jdet2))) * V2B_oovv(xx,u,v,yy)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= noa*nub) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           do u = 1, nua
-                              ixv = ixv + (-1d0 * t2b(u,b,i,l)) * H2B_ovvv(xx,d,u,yy)
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += +1 * H2B_ooov(xuiy) * t2c(bdlu), one GEMM per value of i
+                           allocate(kmcnt(noa+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(b,d,l,u)) * H2B_ooov(:,u,i,:)
-                        end do
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(u,d,i,l)) * H2B_ovvv(:,b,u,:)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                           v = vabb0211_excits(jdet,5); u = vabb0211_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb0211_amps(jdet))) * V2B_oovv(:,u,v,:)
-                        end do
+                           kmcnt(1) = 1
+                           do kms = 1, noa
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = noa, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,b,d,i,l,u)
+                           allocate(kmG(nob,MAXC), kmC(noa*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, noa
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    b = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2c(b,d,l,u)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nub, kmn, nob, 1d0, H2B_ooov_0312(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_ovvv(xbuy) * t2b(udil), one GEMM per value of b
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,b,d,i,l,u)
+                           allocate(kmG(nua,MAXC), kmC(noa*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    b = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,d,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nub, kmn, nua, 1d0, H2B_ovvv_0321(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_ovvv(xduy) * t2b(ubil), one GEMM per value of d
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,b,d,i,l,u)
+                           allocate(kmG(nua,MAXC), kmC(noa*nub,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    b = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,b,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nub, kmn, nua, -1d0, H2B_ovvv_0321(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(u,b,i,l)) * H2B_ovvv(:,d,u,:)
-                        end do
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(noa,nub), mark(noa,nub), need(2,noa*nub))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,k,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,l/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,d,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,c,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb1102, nblk_vabb1102, pspace_key((/a,b,j,k/), 4, vdims_vabb1102, vchain_vabb1102))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                       y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           b = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vabb0211, nblk_vabb0211, (/b,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nob
+                                 ixv = ixv + (1d0 * t2c(b,d,l,u)) * H2B_ooov(xx,u,i,yy)
+                              end do
+                              do u = 1, nua
+                                 ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2B_ovvv(xx,b,u,yy)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vabb0211(idx2), off_vabb0211(idx2+1)-1
+                                 v = vabb0211_excits(jdet2,5); u = vabb0211_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vabb0211_amps(jdet2))) * V2B_oovv(xx,u,v,yy)
+                              end do
+                              end if
+                              do u = 1, nua
+                                 ixv = ixv + (-1d0 * t2b(u,b,i,l)) * H2B_ovvv(xx,d,u,yy)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/noa,nub/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (2)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (3)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (4)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (5)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (6)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (7)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (8)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (9)
-                              do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
-                                 y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
-                                 val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                              v = vabb0211_excits(jdet,5); u = vabb0211_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vabb0211_amps(jdet))) * V2B_oovv(:,u,v,:)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + -1d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (2)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (3)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (4)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (5)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (6)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (7)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (8)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (9)
+                                 do jdet = off_vabb1102(idx), off_vabb1102(idx+1)-1
+                                    y = vabb1102_excits(jdet,5); x = vabb1102_excits(jdet,6)
+                                    val = val + vabb1102_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + -1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -2004,205 +3504,443 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nua,nub,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(nob,nua), mark(nob,nua), need(2,nob*nua))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
-                        end do
-                        ird = rind%perm(rind%off(kdx))
-                        a = RQ(ird,1); d = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nub
-                              ixv = ixv + (-1d0 * t2c(d,u,j,l)) * H2B_vovv(a,xx,yy,u)
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(nob*nua,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(nob,nua), need(2,nob*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
                            end do
-                           do u = 1, noa
-                              ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2B_oovo(u,xx,yy,j)
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
                            end do
-                           do u = 1, noa
-                              ixv = ixv + (1d0 * t2b(a,d,u,j)) * H2B_oovo(u,xx,yy,l)
+                        end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= nob*nua) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
+                           end if
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += -1 * H2B_vovv(axyu) * t2c(dujl), one GEMM per value of a
+                           allocate(kmcnt(nua+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(d,u,j,l)) * H2B_vovv(a,:,:,u)
-                        end do
-                        do u = 1, noa
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,d,u,l)) * H2B_oovo(u,:,:,j)
-                        end do
-                        do u = 1, noa
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(a,d,u,j)) * H2B_oovo(u,:,:,l)
-                        end do
+                           kmcnt(1) = 1
+                           do kms = 1, nua
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nua, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,j,l,u)
+                           allocate(kmG(nub,MAXC), kmC(nob*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nua
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(d,u,j,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nua, kmn, nub, -1d0, H2B_vovv_1230(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_oovo(uxyj) * t2b(adul), one GEMM per value of j
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,j,l,u)
+                           allocate(kmG(noa,MAXC), kmC(nob*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, noa
+                                       kmG(u,kmi) = t2b(a,d,u,l)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nua, kmn, noa, -1d0, H2B_oovo_1203(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_oovo(uxyl) * t2b(aduj), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,j,l,u)
+                           allocate(kmG(noa,MAXC), kmC(nob*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, noa
+                                       kmG(u,kmi) = t2b(a,d,u,j)
+                                    end do
+                                 end do
+                                 call km_gemm(nob*nua, kmn, noa, 1d0, H2B_oovo_1203(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
-                           if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(nob,nua), mark(nob,nua), need(2,nob*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,l/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,k/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/c,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,d,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vabb0211, nblk_vabb0211, pspace_key((/b,c,i,j/), 4, vdims_vabb0211, vchain_vabb0211))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                       y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
                               end do
-                              val = -val
-                           case (2)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (3)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (4)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (5)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (6)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (7)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (8)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                           case (9)
-                              do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
-                                 y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
-                                 val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
-                              end do
-                              val = -val
-                           end select
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + -1d0 * val
+                           ird = rind%perm(rind%off(kdx))
+                           a = RQ(ird,1); d = RQ(ird,2); j = RQ(ird,3); l = RQ(ird,4);
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nub
+                                 ixv = ixv + (-1d0 * t2c(d,u,j,l)) * H2B_vovv(a,xx,yy,u)
+                              end do
+                              do u = 1, noa
+                                 ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2B_oovo(u,xx,yy,j)
+                              end do
+                              do u = 1, noa
+                                 ixv = ixv + (1d0 * t2b(a,d,u,j)) * H2B_oovo(u,xx,yy,l)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/nob,nua/))
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (2)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (3)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (4)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (5)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (6)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (7)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (8)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                              case (9)
+                                 do jdet = off_vabb0211(idx), off_vabb0211(idx+1)-1
+                                    y = vabb0211_excits(jdet,5); x = vabb0211_excits(jdet,6)
+                                    val = val + vabb0211_amps(jdet) * ((-1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + -1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -2255,227 +3993,502 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nua,nub,noa,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(noa,nua), mark(noa,nua), need(2,noa*nua))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(noa*nua,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(noa,nua), need(2,noa*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
+                           end do
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
                         end do
-                        ird = rind%perm(rind%off(kdx))
-                        a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
-                        lk(1) = pspace_find_sorted(key_vaab1111, nblk_vaab1111, (/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111)
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nob
-                              ixv = ixv + (-1d0 * t2b(a,d,i,u)) * H2B_oovo(xx,u,yy,l)
-                           end do
-                           do u = 1, noa
-                              ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2A_ooov(u,xx,i,yy)
-                           end do
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2B_ovvv(xx,d,yy,u)
-                           end do
-                           do u = 1, nua
-                              ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2A_vovv(a,xx,u,yy)
-                           end do
-                           idx2 = lk(1)
-                           if (idx2/=0) then
-                              sgn = sign(1, idx2); idx2 = abs(idx2)
-                           do jdet2 = off_vaab1111(idx2), off_vaab1111(idx2+1)-1
-                              v = vaab1111_excits(jdet2,5); u = vaab1111_excits(jdet2,6)
-                              ixv = ixv + (1d0 * (sgn*vaab1111_amps(jdet2))) * V2A_oovv(u,xx,v,yy)
-                           end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= noa*nua) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
                            end if
-                           IX(xx,yy) = ixv
                         end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,d,i,u)) * H2B_oovo(:,u,:,l)
-                        end do
-                        do u = 1, noa
-                           IX(:,:) = IX(:,:) + (-1d0 * t2b(a,d,u,l)) * H2A_ooov(u,:,i,:)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(a,u,i,l)) * H2B_ovvv(:,d,:,u)
-                        end do
-                        do u = 1, nua
-                           IX(:,:) = IX(:,:) + (1d0 * t2b(u,d,i,l)) * H2A_vovv(a,:,u,:)
-                        end do
-                        idx = lk(1)
-                        if (idx/=0) then
-                           sgn = sign(1, idx); idx = abs(idx)
-                        do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                           v = vaab1111_excits(jdet,5); u = vaab1111_excits(jdet,6)
-                           IX(:,:) = IX(:,:) + (1d0 * (sgn*vaab1111_amps(jdet))) * V2A_oovv(u,:,v,:)
-                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += -1 * H2B_oovo(xuyl) * t2b(adiu), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nob,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2b(a,d,i,u)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nob, -1d0, H2B_oovo_0213(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2A_ooov(uxiy) * t2b(adul), one GEMM per value of i
+                           allocate(kmcnt(noa+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, noa
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = noa, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(noa,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, noa
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, noa
+                                       kmG(u,kmi) = t2b(a,d,u,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, noa, -1d0, H2A_ooov_1302(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_ovvv(xdyu) * t2b(auil), one GEMM per value of d
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nub,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2b(a,u,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nub, 1d0, H2B_ovvv_0231(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2A_vovv(axuy) * t2b(udil), one GEMM per value of a
+                           allocate(kmcnt(nua+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nua
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nua, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,a,d,i,l,u)
+                           allocate(kmG(nua,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nua
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nua
+                                       kmG(u,kmi) = t2b(u,d,i,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nua, 1d0, H2A_vovv_1320(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(noa,nua), mark(noa,nua), need(2,noa*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); k = t4d_excits(idet,7); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,k,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,l/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    c = t4d_excits(idet,3); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/c,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    b = t4d_excits(idet,2); d = t4d_excits(idet,4); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,d,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    b = t4d_excits(idet,2); c = t4d_excits(idet,3); j = t4d_excits(idet,6); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vabb0202, nblk_vabb0202, pspace_key((/b,c,j,k/), 4, vdims_vabb0202, vchain_vabb0202))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                       y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
+                              end do
+                           end if
+                           ird = rind%perm(rind%off(kdx))
+                           a = RQ(ird,1); d = RQ(ird,2); i = RQ(ird,3); l = RQ(ird,4);
+                           lk(1) = pspace_find_sorted(key_vaab1111, nblk_vaab1111, (/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111)
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nob
+                                 ixv = ixv + (-1d0 * t2b(a,d,i,u)) * H2B_oovo(xx,u,yy,l)
+                              end do
+                              do u = 1, noa
+                                 ixv = ixv + (-1d0 * t2b(a,d,u,l)) * H2A_ooov(u,xx,i,yy)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2b(a,u,i,l)) * H2B_ovvv(xx,d,yy,u)
+                              end do
+                              do u = 1, nua
+                                 ixv = ixv + (1d0 * t2b(u,d,i,l)) * H2A_vovv(a,xx,u,yy)
+                              end do
+                              idx2 = lk(1)
+                              if (idx2/=0) then
+                                 sgn = sign(1, idx2); idx2 = abs(idx2)
+                              do jdet2 = off_vaab1111(idx2), off_vaab1111(idx2+1)-1
+                                 v = vaab1111_excits(jdet2,5); u = vaab1111_excits(jdet2,6)
+                                 ixv = ixv + (1d0 * (sgn*vaab1111_amps(jdet2))) * V2A_oovv(u,xx,v,yy)
+                              end do
+                              end if
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/noa,nua/))
+                           idx = lk(1)
                            if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (2)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (3)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (4)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (5)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (6)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (7)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (8)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (9)
-                              do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
-                                 y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
-                                 val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           end select
+                              sgn = sign(1, idx); idx = abs(idx)
+                           do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                              v = vaab1111_excits(jdet,5); u = vaab1111_excits(jdet,6)
+                              IX(:,:) = IX(:,:) + (1d0 * (sgn*vaab1111_amps(jdet))) * V2A_oovv(u,:,v,:)
+                           end do
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 1d0 * val
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (2)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (3)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (4)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (5)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (6)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (7)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (8)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (9)
+                                 do jdet = off_vabb0202(idx), off_vabb0202(idx+1)-1
+                                    y = vabb0202_excits(jdet,5); x = vabb0202_excits(jdet,6)
+                                    val = val + vabb0202_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
 
@@ -2528,210 +4541,485 @@ module ccsdtq_p_t4d_p_b3
                         end select
                      end do
                      call index_pspace(RQ, nrd, 4, (/1,2,3,4/), (/nub,nub,nob,nob/), (/.false.,.false.,.false.,.false./), rind)
-                     !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
-                     allocate(IX(noa,nua), mark(noa,nua), need(2,noa*nua))
-                     mark = .false.
-                     !$omp do schedule(dynamic,8)
-                     do kdx = 1, rind%nblock
-                        nneed = 0
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           select case (icls)
-                           case (1)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (2)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (3)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (4)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (5)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (6)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (7)
-                              a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (8)
-                              a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           case (9)
-                              a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
-                              idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
-                              rp(ird) = idx
-                              if (idx/=0) then
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
-                              end do
-                              end if
-                           end select
-                        end do
-                        ird = rind%perm(rind%off(kdx))
-                        c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
-                        if (2*nneed < size(IX)) then
-                        do nn = 1, nneed
-                           xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
-                           do u = 1, nob
-                              ixv = ixv + (1d0 * t2c(c,d,l,u)) * H2B_oovo(xx,u,yy,k)
+                     allocate(kmnn(4096), kmslot(4096), kmdk(4096), kmRB(noa*nua,4096))
+                     do kch0 = 1, rind%nblock, 4096
+                        kch1 = min(rind%nblock, kch0 + 4096 - 1)
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(mark(noa,nua), need(2,noa*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              select case (icls)
+                              case (1)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (2)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (3)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (4)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (5)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (6)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (7)
+                                 a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (8)
+                                 a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              case (9)
+                                 a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                 idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                 rp(ird) = idx
+                                 if (idx/=0) then
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                 end do
+                                 end if
+                              end select
                            end do
-                           do u = 1, nub
-                              ixv = ixv + (-1d0 * t2c(d,u,k,l)) * H2B_ovvv(xx,c,yy,u)
+                           kmnn(kdx-kch0+1) = nneed
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
                            end do
-                           do u = 1, nub
-                              ixv = ixv + (1d0 * t2c(c,u,k,l)) * H2B_ovvv(xx,d,yy,u)
+                        end do
+                        !$omp end do
+                        deallocate(mark, need)
+                        !$omp end parallel
+                        ndk = 0
+                        do kdx = kch0, kch1
+                           kmslot(kdx-kch0+1) = 0
+                           if (8*kmnn(kdx-kch0+1) >= noa*nua) then
+                              ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk
+                           end if
+                        end do
+                        if (ndk > 0) then
+                           kmRB(:,1:ndk) = 0.0d0
+                           ! IX += +1 * H2B_oovo(xuyk) * t2c(cdlu), one GEMM per value of k
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmcnt(kms+1) = kmcnt(kms+1) + 1
                            end do
-                           do u = 1, nob
-                              ixv = ixv + (-1d0 * t2c(c,d,k,u)) * H2B_oovo(xx,u,yy,l)
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
                            end do
-                           IX(xx,yy) = ixv
-                        end do
-                        else
-                        IX = 0.0d0
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(c,d,l,u)) * H2B_oovo(:,u,:,k)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(d,u,k,l)) * H2B_ovvv(:,c,:,u)
-                        end do
-                        do u = 1, nub
-                           IX(:,:) = IX(:,:) + (1d0 * t2c(c,u,k,l)) * H2B_ovvv(:,d,:,u)
-                        end do
-                        do u = 1, nob
-                           IX(:,:) = IX(:,:) + (-1d0 * t2c(c,d,k,u)) * H2B_oovo(:,u,:,l)
-                        end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),3); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,c,d,k,l,u)
+                           allocate(kmG(nob,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2c(c,d,l,u)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nob, 1d0, H2B_oovo_0213(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_ovvv(xcyu) * t2c(dukl), one GEMM per value of c
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),1); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,c,d,k,l,u)
+                           allocate(kmG(nub,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(d,u,k,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nub, -1d0, H2B_ovvv_0231(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += +1 * H2B_ovvv(xdyu) * t2c(cukl), one GEMM per value of d
+                           allocate(kmcnt(nub+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nub
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),2); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nub, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,c,d,k,l,u)
+                           allocate(kmG(nub,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nub
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nub
+                                       kmG(u,kmi) = t2c(c,u,k,l)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nub, 1d0, H2B_ovvv_0231(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
+                           ! IX += -1 * H2B_oovo(xuyl) * t2c(cdku), one GEMM per value of l
+                           allocate(kmcnt(nob+1), kmord(ndk))
+                           kmcnt = 0
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmcnt(kms+1) = kmcnt(kms+1) + 1
+                           end do
+                           kmcnt(1) = 1
+                           do kms = 1, nob
+                              kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)
+                           end do
+                           do kmi = 1, ndk
+                              kms = RQ(rind%perm(rind%off(kmdk(kmi))),4); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1
+                           end do
+                           do kms = nob, 1, -1
+                              kmcnt(kms+1) = kmcnt(kms)
+                           end do
+                           kmcnt(1) = 1
+                           !$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,c,d,k,l,u)
+                           allocate(kmG(nob,MAXC), kmC(noa*nua,MAXC))
+                           !$omp do schedule(dynamic,1)
+                           do kms = 1, nob
+                              do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC
+                                 kmn = min(MAXC, kmcnt(kms+1) - kmk)
+                                 do kmi = 1, kmn
+                                    kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))
+                                    c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                                    do u = 1, nob
+                                       kmG(u,kmi) = t2c(c,d,k,u)
+                                    end do
+                                 end do
+                                 call km_gemm(noa*nua, kmn, nob, -1d0, H2B_oovo_0213(1,1,1,kms), kmG, kmC)
+                                 do kmi = 1, kmn
+                                    kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)
+                                 end do
+                              end do
+                           end do
+                           !$omp end do
+                           deallocate(kmG, kmC)
+                           !$omp end parallel
+                           deallocate(kmcnt, kmord)
                         end if
-                        do nn = 1, nneed
-                           mark(need(1,nn),need(2,nn)) = .false.
-                        end do
-                        do jr = rind%off(kdx), rind%off(kdx+1)-1
-                           ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
-                           val = 0.0d0
-                           idx = rp(ird)
-                           if (idx/=0) then
-                           select case (icls)
-                           case (1)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                        !$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)
+                        allocate(IX(noa,nua), mark(noa,nua), need(2,noa*nua))
+                        mark = .false.
+                        !$omp do schedule(dynamic,8)
+                        do kdx = kch0, kch1
+                           nneed = 0
+                           if (kmslot(kdx-kch0+1) == 0) then
+                              nneed = 0
+                              do jr = rind%off(kdx), rind%off(kdx+1)-1
+                                 ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                                 select case (icls)
+                                 case (1)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (2)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (3)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); l = t4d_excits(idet,8);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,l/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (4)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (5)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (6)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); k = t4d_excits(idet,7);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,k/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (7)
+                                    a = t4d_excits(idet,1); d = t4d_excits(idet,4); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,d,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (8)
+                                    a = t4d_excits(idet,1); c = t4d_excits(idet,3); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,c,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 case (9)
+                                    a = t4d_excits(idet,1); b = t4d_excits(idet,2); i = t4d_excits(idet,5); j = t4d_excits(idet,6);
+                                    idx = pspace_find(key_vaab1111, nblk_vaab1111, pspace_key((/a,b,i,j/), 4, vdims_vaab1111, vchain_vaab1111))
+                                    rp(ird) = idx
+                                    if (idx/=0) then
+                                    do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                       y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                       if (.not. mark(x,y)) then; mark(x,y) = .true.; nneed = nneed + 1; need(1,nneed) = x; need(2,nneed) = y; end if
+                                    end do
+                                    end if
+                                 end select
                               end do
-                           case (2)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (3)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (4)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (5)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (6)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (7)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           case (8)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                              val = -val
-                           case (9)
-                              do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
-                                 y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
-                                 val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
-                              end do
-                           end select
                            end if
-                           if (val /= 0.0d0) then
-                              !$omp atomic
-                              resid(idet) = resid(idet) + 1d0 * val
+                           ird = rind%perm(rind%off(kdx))
+                           c = RQ(ird,1); d = RQ(ird,2); k = RQ(ird,3); l = RQ(ird,4);
+                           if (kmslot(kdx-kch0+1) == 0) then
+                           do nn = 1, nneed
+                              xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0
+                              do u = 1, nob
+                                 ixv = ixv + (1d0 * t2c(c,d,l,u)) * H2B_oovo(xx,u,yy,k)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (-1d0 * t2c(d,u,k,l)) * H2B_ovvv(xx,c,yy,u)
+                              end do
+                              do u = 1, nub
+                                 ixv = ixv + (1d0 * t2c(c,u,k,l)) * H2B_ovvv(xx,d,yy,u)
+                              end do
+                              do u = 1, nob
+                                 ixv = ixv + (-1d0 * t2c(c,d,k,u)) * H2B_oovo(xx,u,yy,l)
+                              end do
+                              IX(xx,yy) = ixv
+                           end do
+                           else
+                           IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/noa,nua/))
                            end if
+                           do nn = 1, nneed
+                              mark(need(1,nn),need(2,nn)) = .false.
+                           end do
+                           do jr = rind%off(kdx), rind%off(kdx+1)-1
+                              ird = rind%perm(jr); icls = kc0 + (ird-1)/n4abbb; idet = mod(ird-1, n4abbb) + 1
+                              val = 0.0d0
+                              idx = rp(ird)
+                              if (idx/=0) then
+                              select case (icls)
+                              case (1)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (2)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (3)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (4)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (5)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (6)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (7)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              case (8)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                                 val = -val
+                              case (9)
+                                 do jdet = off_vaab1111(idx), off_vaab1111(idx+1)-1
+                                    y = vaab1111_excits(jdet,5); x = vaab1111_excits(jdet,6)
+                                    val = val + vaab1111_amps(jdet) * ((+1)*IX(x,y))
+                                 end do
+                              end select
+                              end if
+                              if (val /= 0.0d0) then
+                                 !$omp atomic
+                                 resid(idet) = resid(idet) + 1d0 * val
+                              end if
+                           end do
                         end do
+                        !$omp end do
+                        deallocate(IX, mark, need)
+                        !$omp end parallel
                      end do
-                     !$omp end do
-                     deallocate(IX, mark, need)
-                     !$omp end parallel
+                     deallocate(kmnn, kmslot, kmdk, kmRB)
                      deallocate(RQ, rp)
                   end do
                   deallocate(pidx)

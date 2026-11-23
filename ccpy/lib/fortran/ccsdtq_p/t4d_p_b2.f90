@@ -98,6 +98,9 @@ module ccsdtq_p_t4d_p_b2
                   integer, allocatable :: RQ(:,:), rp(:)
                   type(pspace_index) :: rind
                   integer :: icls, ird, jr, kc0, kc1, kbat, nrd, ird0, sgn
+                  integer, allocatable :: kmnn(:), kmslot(:), kmdk(:), kmcnt(:), kmord(:)
+                  real(kind=8), allocatable :: kmRB(:,:), kmG(:,:), kmC(:,:)
+                  integer :: kch0, kch1, ndk, kmi, kms, kmk, kmn
                   allocate(bt4c_amps(n4aabb),bt4c_excits(n4aabb,8))
                   bt4c_amps(:) = t4c_amps(:)
                   bt4c_excits(:,:) = t4c_excits(:,:)

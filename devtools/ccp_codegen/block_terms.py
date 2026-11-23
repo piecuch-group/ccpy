@@ -187,6 +187,8 @@ BLOCK_CHOICE = None
 MAXLK = 512   # block-constant lookups per fused block loop
 KEYMAJOR = True   # two-index (I x T3) terms: one IX per distinct q over all classes
 KEYMAJOR_READERS = 2**24   # (class, T4 row) readers indexed at a time
+KM_CHUNK = 4096   # key blocks per GEMM chunk
+KM_GEMM_RATIO = 8   # a block takes the GEMM build when it needs >= 1/KM_GEMM_RATIO of IX
 T4N = {"aaaa": "t4a", "aaab": "t4b", "aabb": "t4c", "abbb": "t4d", "bbbb": "t4e"}
 T3N = {"aaa": "t3a", "aab": "t3b", "abb": "t3c", "bbb": "t3d"}
 T2N = {"aa": "t2a", "ab": "t2b", "bb": "t2c"}
@@ -714,95 +716,240 @@ class BlockTerm:
         w(I3 + "end do")
         w(I3 + f"call index_pspace(RQ, nrd, {nq}, (/{','.join(str(t_ + 1) for t_ in range(nq))}/), "
                f"(/{','.join(dims)}/), (/{','.join(['.false.'] * nq)}/), rind)")
-        w(I3 + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,"
-               "xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)")
-        w(I3 + f"allocate(IX({self.ix_dims()}), mark({self.ix_dims()}), need(2,{self.ix_dims().replace(',', '*')}))")
-        w(I3 + "mark = .false.")
-        w(I3 + "!$omp do schedule(dynamic,8)")
-        w(I3 + "do kdx = 1, rind%nblock")
-        B = I6
+        priv = ("IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,"
+                "xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn")
+        ixd = self.ix_dims()
+        nix = ixd.replace(",", "*")
         reader = (f"ird = rind%perm(jr); icls = kc0 + (ird-1)/{n4}; idet = mod(ird-1, {n4}) + 1")
-        # (1) entries of IX the readers' partner rows carry
-        w(B + "nneed = 0")
-        w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
-        w(B + "   " + reader)
-        w(B + "   select case (icls)")
-        for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
-            w(B + f"   case ({k})")
-            w(B + "      " + " ".join(f"{x} = {ex}(idet,{col(x)});" for x in p))
-            w(B + f"      idx = {view_find(v.name, keys)}")
-            w(B + "      rp(ird) = idx")
-            w(B + "      if (idx/=0) then")
-            w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
-            w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
-            for args in acc:
-                e = f"{args[0]},{args[1]}"
-                w(B + f"         if (.not. mark({e})) then; mark({e}) = .true.; nneed = nneed + 1; "
-                      f"need(1,nneed) = {args[0]}; need(2,nneed) = {args[1]}; end if")
-            w(B + "      end do")
-            w(B + "      end if")
-        w(B + "   end select")
-        w(B + "end do")
-        # (2) IX once, at the q values of this block
-        w(B + "ird = rind%perm(rind%off(kdx))")
-        w(B + " ".join(f"{x} = RQ(ird,{t_ + 1});" for t_, x in enumerate(qlet)))
-        build, memo = [], {}
-        self.memo, self.km = memo, True
-        try:
+
+        def needs(B):
+            """nneed / need(:,1:nneed): the entries of IX the block's readers' partner rows carry."""
+            w(B + "nneed = 0")
+            w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
+            w(B + "   " + reader)
+            w(B + "   select case (icls)")
+            for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
+                w(B + f"   case ({k})")
+                w(B + "      " + " ".join(f"{x} = {ex}(idet,{col(x)});" for x in p))
+                w(B + f"      idx = {view_find(v.name, keys)}")
+                w(B + "      rp(ird) = idx")
+                w(B + "      if (idx/=0) then")
+                w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
+                w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
+                for args in acc:
+                    e = f"{args[0]},{args[1]}"
+                    w(B + f"         if (.not. mark({e})) then; mark({e}) = .true.; nneed = nneed + 1; "
+                          f"need(1,nneed) = {args[0]}; need(2,nneed) = {args[1]}; end if")
+                w(B + "      end do")
+                w(B + "      end if")
+            w(B + "   end select")
+            w(B + "end do")
+
+        def unmark(B):
+            w(B + "do nn = 1, nneed")
+            w(B + "   mark(need(1,nn),need(2,nn)) = .false.")
+            w(B + "end do")
+
+        def qvals(B):
+            w(B + "ird = rind%perm(rind%off(kdx))")
+            w(B + " ".join(f"{x} = RQ(ird,{t_ + 1});" for t_, x in enumerate(qlet)))
+
+        def build(B, insts_point, insts_dense, cond, prefix=()):
+            """IX of one block: per entry (cond true) from insts_point, else whole from insts_dense
+            (after the lines of prefix)."""
+            out, memo = [], {}
+            self.memo, self.km = memo, True
+            try:
+                out.append(B + f"if ({cond}) then")
+                out.append(B + "do nn = 1, nneed")
+                out.append(B + "   xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0")
+                for cf, facs in insts_point:
+                    self.emit_instance(out.append, B + "   ", cf, facs, {}, None, None, ":,:", point=True)
+                out.append(B + "   IX(xx,yy) = ixv")
+                out.append(B + "end do")
+                out.append(B + "else")
+                out += [B + x for x in prefix]
+                for cf, facs in insts_dense:
+                    self.emit_instance(out.append, B, cf, facs, {}, None, None, ":,:")
+                out.append(B + "end if")
+            finally:
+                self.memo, self.km = None, False
+            assert len(memo) <= MAXLK, len(memo)
+            for expr, n in memo.items():
+                w(B + f"lk({n}) = {expr}")
+            for line in out:
+                w(line)
+
+        def contract(B):
+            w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
+            w(B + "   " + reader)
+            w(B + "   val = 0.0d0")
+            w(B + "   idx = rp(ird)")
+            w(B + "   if (idx/=0) then")
+            w(B + "   select case (icls)")
+            for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
+                expr = " + ".join(f"({cnt:+d})*IX({a_[0]},{a_[1]})" for a_, cnt in acc.items())
+                w(B + f"   case ({k})")
+                if not expr:
+                    continue
+                w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
+                w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
+                w(B + f"         val = val + {v.name}_amps(jdet) * ({expr})")
+                w(B + "      end do")
+                if sign < 0:
+                    w(B + "      val = -val")
+            w(B + "   end select")
+            w(B + "   end if")
+            w(B + "   if (val /= 0.0d0) then")
+            w(B + "      !$omp atomic")
+            w(B + f"      resid(idet) = resid(idet) + {tot:.16g}d0 * val")
+            w(B + "   end if")
+            w(B + "end do")
+
+        gp = self.gemm_pieces(qlet)
+        if gp is None or BLOCK_CHOICE == "point":
+            # one pass per block: IX per entry or whole, per block
             cond = {"point": ".true.", "dense": ".false.", None: "2*nneed < size(IX)"}[BLOCK_CHOICE]
-            build.append(B + f"if ({cond}) then")
-            build.append(B + "do nn = 1, nneed")
-            build.append(B + "   xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0")
-            for cf, facs in self.instances:
-                self.emit_instance(build.append, B + "   ", cf, facs, {}, None, None, ":,:", point=True)
-            build.append(B + "   IX(xx,yy) = ixv")
-            build.append(B + "end do")
-            build.append(B + "else")
-            build.append(B + "IX = 0.0d0")
-            for cf, facs in self.instances:
-                self.emit_instance(build.append, B, cf, facs, {}, None, None, ":,:")
-            build.append(B + "end if")
-        finally:
-            self.memo, self.km = None, False
-        assert len(memo) <= MAXLK, len(memo)
-        for expr, n in memo.items():
-            w(B + f"lk({n}) = {expr}")
-        for line in build:
-            w(line)
-        w(B + "do nn = 1, nneed")
-        w(B + "   mark(need(1,nn),need(2,nn)) = .false.")
-        w(B + "end do")
-        # (3) every reader of this q
-        w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
-        w(B + "   " + reader)
-        w(B + "   val = 0.0d0")
-        w(B + "   idx = rp(ird)")
-        w(B + "   if (idx/=0) then")
-        w(B + "   select case (icls)")
-        for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
-            expr = " + ".join(f"({cnt:+d})*IX({a_[0]},{a_[1]})" for a_, cnt in acc.items())
-            w(B + f"   case ({k})")
-            if not expr:
-                continue
-            w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
-            w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
-            w(B + f"         val = val + {v.name}_amps(jdet) * ({expr})")
-            w(B + "      end do")
-            if sign < 0:
-                w(B + "      val = -val")
-        w(B + "   end select")
-        w(B + "   end if")
-        w(B + "   if (val /= 0.0d0) then")
-        w(B + "      !$omp atomic")
-        w(B + f"      resid(idet) = resid(idet) + {tot:.16g}d0 * val")
-        w(B + "   end if")
-        w(B + "end do")
-        w(I3 + "end do")
-        w(I3 + "!$omp end do")
-        w(I3 + "deallocate(IX, mark, need)")
-        w(I3 + "!$omp end parallel")
+            w(I3 + f"!$omp parallel default(shared) private({priv})")
+            w(I3 + f"allocate(IX({ixd}), mark({ixd}), need(2,{nix}))")
+            w(I3 + "mark = .false.")
+            w(I3 + "!$omp do schedule(dynamic,8)")
+            w(I3 + "do kdx = 1, rind%nblock")
+            needs(I6)
+            qvals(I6)
+            build(I6, self.instances, self.instances, cond, ["IX = 0.0d0"])
+            unmark(I6)
+            contract(I6)
+            w(I3 + "end do")
+            w(I3 + "!$omp end do")
+            w(I3 + "deallocate(IX, mark, need)")
+            w(I3 + "!$omp end parallel")
+        else:
+            # chunks of blocks: (1) count the entries each block needs; (2) blocks that need much of
+            # IX get their H*T2 pieces from one GEMM per H slice (blocks grouped by slice value, the
+            # slice stored contiguous as H(x,y,u,s)); (3) IX of every block (GEMM part + T3 pieces,
+            # or per entry) and its contraction
+            sparse = [(cf, f) for cf, f in self.instances
+                      if any(o.startswith("T.") and len(o.split(".")[1]) == 3 for o, _ in f)]
+            dcond = {"dense": ".true.", None: f"{KM_GEMM_RATIO}*kmnn(kdx-kch0+1) >= {nix}"}[BLOCK_CHOICE]
+            w(I3 + f"allocate(kmnn({KM_CHUNK}), kmslot({KM_CHUNK}), kmdk({KM_CHUNK}), kmRB({nix},{KM_CHUNK}))")
+            w(I3 + f"do kch0 = 1, rind%nblock, {KM_CHUNK}")
+            C = I6
+            w(C + f"kch1 = min(rind%nblock, kch0 + {KM_CHUNK} - 1)")
+            w(C + f"!$omp parallel default(shared) private({priv})")
+            w(C + f"allocate(mark({ixd}), need(2,{nix}))")
+            w(C + "mark = .false.")
+            w(C + "!$omp do schedule(dynamic,8)")
+            w(C + "do kdx = kch0, kch1")
+            needs(C + "   ")
+            w(C + "   kmnn(kdx-kch0+1) = nneed")
+            unmark(C + "   ")
+            w(C + "end do")
+            w(C + "!$omp end do")
+            w(C + "deallocate(mark, need)")
+            w(C + "!$omp end parallel")
+            w(C + "ndk = 0")
+            w(C + "do kdx = kch0, kch1")
+            w(C + "   kmslot(kdx-kch0+1) = 0")
+            w(C + f"   if ({dcond}) then")
+            w(C + "      ndk = ndk + 1; kmdk(ndk) = kdx; kmslot(kdx-kch0+1) = ndk")
+            w(C + "   end if")
+            w(C + "end do")
+            w(C + "if (ndk > 0) then")
+            w(C + "   kmRB(:,1:ndk) = 0.0d0")
+            for cf, ho, hl, to, tl, u, sl in gp:
+                perm = [hl.index(x) for x in self.internal + [u, sl]]
+                name = f"{opname_f(ho)}_{''.join(map(str, perm))}"
+                self.layouts[name] = (ho, tuple(perm))
+                kinds = letter_spins(ho, hl)
+                du, ds = DIM[kinds[u]], DIM[kinds[sl]]
+                cs = qlet.index(sl) + 1
+                D = C + "   "
+                w(D + f"! IX += {cf:+g} * {opname_f(ho)}({hl}) * {T2N[to.split('.')[1]]}({tl}), one GEMM per value of {sl}")
+                w(D + f"allocate(kmcnt({ds}+1), kmord(ndk))")
+                w(D + "kmcnt = 0")
+                w(D + "do kmi = 1, ndk")
+                w(D + f"   kms = RQ(rind%perm(rind%off(kmdk(kmi))),{cs}); kmcnt(kms+1) = kmcnt(kms+1) + 1")
+                w(D + "end do")
+                w(D + "kmcnt(1) = 1")
+                w(D + f"do kms = 1, {ds}")
+                w(D + "   kmcnt(kms+1) = kmcnt(kms) + kmcnt(kms+1)")
+                w(D + "end do")
+                w(D + "do kmi = 1, ndk")   # stable fill: kmcnt(s) walks from the start of run s
+                w(D + f"   kms = RQ(rind%perm(rind%off(kmdk(kmi))),{cs}); kmord(kmcnt(kms)) = kmi; kmcnt(kms) = kmcnt(kms) + 1")
+                w(D + "end do")
+                w(D + f"do kms = {ds}, 1, -1")   # back to run starts
+                w(D + "   kmcnt(kms+1) = kmcnt(kms)")
+                w(D + "end do")
+                w(D + "kmcnt(1) = 1")
+                w(D + f"!$omp parallel default(shared) private(kmG,kmC,kms,kmk,kmi,kmn,kdx,ird,{','.join(qlet)},{u})")
+                w(D + f"allocate(kmG({du},MAXC), kmC({nix},MAXC))")
+                w(D + "!$omp do schedule(dynamic,1)")
+                w(D + f"do kms = 1, {ds}")
+                w(D + "   do kmk = kmcnt(kms), kmcnt(kms+1)-1, MAXC")
+                w(D + "      kmn = min(MAXC, kmcnt(kms+1) - kmk)")
+                w(D + "      do kmi = 1, kmn")
+                w(D + "         kdx = kmdk(kmord(kmk+kmi-1)); ird = rind%perm(rind%off(kdx))")
+                w(D + "         " + " ".join(f"{x} = RQ(ird,{t_ + 1});" for t_, x in enumerate(qlet)))
+                w(D + f"         do {u} = 1, {du}")
+                w(D + f"            kmG({u},kmi) = {T2N[to.split('.')[1]]}({','.join(tl)})")
+                w(D + "         end do")
+                w(D + "      end do")
+                w(D + f"      call km_gemm({nix}, kmn, {du}, {cf:.16g}d0, {name}(1,1,1,kms), kmG, kmC)")
+                w(D + "      do kmi = 1, kmn")
+                w(D + "         kmRB(:,kmord(kmk+kmi-1)) = kmRB(:,kmord(kmk+kmi-1)) + kmC(:,kmi)")
+                w(D + "      end do")
+                w(D + "   end do")
+                w(D + "end do")
+                w(D + "!$omp end do")
+                w(D + "deallocate(kmG, kmC)")
+                w(D + "!$omp end parallel")
+                w(D + "deallocate(kmcnt, kmord)")
+            w(C + "end if")
+            w(C + f"!$omp parallel default(shared) private({priv})")
+            w(C + f"allocate(IX({ixd}), mark({ixd}), need(2,{nix}))")
+            w(C + "mark = .false.")
+            w(C + "!$omp do schedule(dynamic,8)")
+            w(C + "do kdx = kch0, kch1")
+            E = C + "   "
+            w(E + "nneed = 0")
+            w(E + "if (kmslot(kdx-kch0+1) == 0) then")
+            needs(E + "   ")
+            w(E + "end if")
+            qvals(E)
+            build(E, self.instances, sparse, "kmslot(kdx-kch0+1) == 0",
+                  [f"IX = reshape(kmRB(:,kmslot(kdx-kch0+1)), (/{ixd}/))"])
+            unmark(E)
+            contract(E)
+            w(C + "end do")
+            w(C + "!$omp end do")
+            w(C + "deallocate(IX, mark, need)")
+            w(C + "!$omp end parallel")
+            w(I3 + "end do")
+            w(I3 + "deallocate(kmnn, kmslot, kmdk, kmRB)")
         w(I3 + "deallocate(RQ, rp)")
         w(IND + "end do")
+
+    def gemm_pieces(self, qlet):
+        """Dense pieces of a two-index intermediate as (coef, H, H letters, T2, T2 letters, summed letter,
+        slice letter): IX(x,y) += coef * H(x,y,u,s) t2(..u..) with s a q letter, T2 over q letters and u.
+        None when some dense piece has another form (the block then builds IX per block)."""
+        out = []
+        for cf, facs in self.instances:
+            if any(o.startswith("T.") and len(o.split(".")[1]) in (3, 4) for o, _ in facs):
+                continue
+            hs = [(o, l) for o, l in facs if o.startswith("H")]
+            ts = [(o, l) for o, l in facs if o.startswith("T.")]
+            if len(hs) != 1 or len(ts) != 1 or len(facs) != 2:
+                return None
+            (ho, hl), (to, tl) = hs[0], ts[0]
+            us = [x for x in hl if x in tl]
+            rest = [x for x in hl if x not in self.internal and x not in us]
+            if (len(us) != 1 or len(rest) != 1 or rest[0] not in qlet or not all(x in hl for x in self.internal)
+                    or any(x not in qlet and x != us[0] for x in tl)):
+                return None
+            out.append((cf, ho, hl, to, tl, us[0], rest[0]))
+        return out or None
 
     def emit_instance(self, w, I3, cf, facs, perm, pl, sk, col, point=False, lazy=False):
         """One piece of IX: the whole IX(col) block, or (point) its entry at (xx, yy) into ixv,
@@ -1126,6 +1273,9 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_v
     w(IND + "integer, allocatable :: RQ(:,:), rp(:)")
     w(IND + "type(pspace_index) :: rind")
     w(IND + "integer :: icls, ird, jr, kc0, kc1, kbat, nrd, ird0, sgn")
+    w(IND + "integer, allocatable :: kmnn(:), kmslot(:), kmdk(:), kmcnt(:), kmord(:)")
+    w(IND + "real(kind=8), allocatable :: kmRB(:,:), kmG(:,:), kmC(:,:)")
+    w(IND + "integer :: kch0, kch1, ndk, kmi, kms, kmk, kmn")
     out = "\n".join(L) + "\n"
     for sp in sources:   # private copies: the target list itself is re-sorted by q
         b = f"b{T4N[sp]}"
