@@ -185,6 +185,8 @@ FRESH = "uvwzrstgh"
 # systems always pick the dense build)
 BLOCK_CHOICE = None
 MAXLK = 512   # block-constant lookups per fused block loop
+KEYMAJOR = True   # two-index (I x T3) terms: one IX per distinct q over all classes
+KEYMAJOR_READERS = 2**24   # (class, T4 row) readers indexed at a time
 T4N = {"aaaa": "t4a", "aaab": "t4b", "aabb": "t4c", "abbb": "t4d", "bbbb": "t4e"}
 T3N = {"aaa": "t3a", "aab": "t3b", "abb": "t3c", "bbb": "t3d"}
 T2N = {"aa": "t2a", "ab": "t2b", "bb": "t2c"}
@@ -468,6 +470,97 @@ class BlockTerm:
     def ix_dims(self):
         return ",".join(DIM[s] for s in self.ispin)
 
+    def slice_letters(self, perm, insts):
+        """Two H letters that fix the H slice, when the pass is one dense piece H(x,u,s1,s2) T2(..u..)
+        against a dense T2 partner (the H T2 T2 terms); None otherwise."""
+        if self.natural or len(self.internal) != 1 or len(self.c.t3) != 2 or len(insts) != 1:
+            return None
+        cf, facs, pl, _ = insts[0]
+        if pl is not None or len(facs) != 2:
+            return None
+        sub = lambda s_: "".join(perm.get(x, x) for x in s_)
+        hs = [(o, sub(l)) for o, l in facs if o.startswith("H")]
+        ts = [(o, sub(l)) for o, l in facs if o.startswith("T.") and len(o) == 4]
+        if len(hs) != 1 or len(ts) != 1:
+            return None
+        hl, tl = hs[0][1], ts[0][1]
+        s = [x for x in hl if x in tl]
+        rest = [x for x in hl if x not in self.internal and x not in s]
+        return rest if len(s) == 1 and len(rest) == 2 else None
+
+    def emit_batched(self, w, q, qcols, perm, sign, insts):
+        """H T2 T2 pass on T4 sorted by q: the q blocks are grouped by their H slice letters (a
+        counting sort of the blocks), and the IX vectors of one slice's blocks come from one matrix
+        product with the contiguous slice H(:,:,s1,s2), chunk by chunk. The same flops as one matvec
+        per q block (full P: the dense CCSDTQ factorization), at matrix-product speed when blocks
+        hold few determinants."""
+        nt = len(self.c.target)
+        ex = f"{T4N[self.c.target]}_excits"
+        I3, I6, I9 = IND + "   ", IND + "      ", IND + "         "
+        (cf, facs, _, _), = insts
+        sub = lambda s_: "".join(perm.get(x, x) for x in s_)
+        (ho, hl), = [(o, sub(l)) for o, l in facs if o.startswith("H")]
+        (to_, ul), = [(o, sub(l)) for o, l in facs if o.startswith("T.")]
+        (s,) = [x for x in hl if x in ul]
+        name, rest = self.stored(ho, hl, self.internal + [s])
+        du, dx = DIM[letter_spins(ho, hl)[s]], DIM[self.ispin[0]]
+        p = [x for x in "abcd"[:nt] + "ijkl"[:nt] if x not in q]
+        pcols = ["abcd".index(x) + 1 if x in "abcd" else "ijkl".index(x) + 1 + nt for x in p]
+        tl = "".join(perm.get(x, x) for x in self.tsub)
+        tot = sign * self.scale()
+        qassign = " ".join(f"{x} = {ex}(idet,{cc});" for x, cc in zip(q, qcols))
+        col = dict(zip(q, qcols))
+        (c1, c2), (d1, d2) = [col[x] for x in rest], [DIM[self.tspin[x]] for x in rest]
+        w(IND + "! q blocks grouped by their slice letters (counting sort of the blocks, T4 not moved)")
+        w(IND + f"allocate(trun({d1}*{d2}+1), tcur({d1}*{d2}), bord(tnblk))")
+        w(IND + "trun = 0")
+        w(IND + "do kdx = 1, tnblk")
+        w(I3 + "if (toff(kdx+1)-1 < toff(kdx)) cycle")
+        w(I3 + f"tt = ({ex}(toff(kdx),{c1})-1)*{d2} + {ex}(toff(kdx),{c2})")
+        w(I3 + "trun(tt+1) = trun(tt+1) + 1")
+        w(IND + "end do")
+        w(IND + "trun(1) = 1")
+        w(IND + f"do tt = 1, {d1}*{d2}")
+        w(I3 + "trun(tt+1) = trun(tt) + trun(tt+1)")
+        w(IND + "end do")
+        w(IND + f"tcur(:) = trun(1:{d1}*{d2})")
+        w(IND + "do kdx = 1, tnblk")
+        w(I3 + "if (toff(kdx+1)-1 < toff(kdx)) cycle")
+        w(I3 + f"tt = ({ex}(toff(kdx),{c1})-1)*{d2} + {ex}(toff(kdx),{c2})")
+        w(I3 + "bord(tcur(tt)) = kdx; tcur(tt) = tcur(tt) + 1")
+        w(IND + "end do")
+        w(IND + "!$omp parallel default(shared) private(GB,RB,val,a,b,c,d,i,j,k,l,x,u,v,w,z,r,s,t,g,h,idet,kdx,irun,k0,nc,tt)")
+        w(IND + f"allocate(GB({du},MAXC), RB({dx},MAXC))")
+        w(IND + "!$omp do schedule(dynamic,4)")
+        w(IND + f"do irun = 1, {d1}*{d2}")
+        w(I3 + "do k0 = trun(irun), trun(irun+1)-1, MAXC")
+        w(I6 + "nc = min(MAXC, trun(irun+1)-k0)")
+        w(I6 + "do tt = 1, nc")
+        w(I9 + "idet = toff(bord(k0+tt-1))")
+        w(I9 + qassign)
+        w(I9 + f"do {s} = 1, {du}")
+        w(I9 + f"   GB({s},tt) = {cf:.16g}d0 * {T2N[to_.split('.')[1]]}({','.join(ul)})")
+        w(I9 + "end do")
+        w(I6 + "end do")
+        w(I6 + f"RB(:,1:nc) = matmul({name}(:,:,{','.join(rest)}), GB(:,1:nc))")
+        w(I6 + "do tt = 1, nc")
+        w(I9 + "kdx = bord(k0+tt-1)")
+        w(I9 + "do idet = toff(kdx), toff(kdx+1)-1")
+        w(I9 + "   " + " ".join(f"{x} = {ex}(idet,{cc});" for x, cc in zip(p, pcols)))
+        w(I9 + "   val = 0.0d0")
+        w(I9 + f"   do x = 1, {dx}")
+        w(I9 + f"      val = val + RB(x,tt) * {T2N[self.c.t3]}({','.join(tl)})")
+        w(I9 + "   end do")
+        w(I9 + f"   resid(idet) = resid(idet) {'+' if tot > 0 else '-'} {abs(tot):.16g}d0 * val")
+        w(I9 + "end do")
+        w(I6 + "end do")
+        w(I3 + "end do")
+        w(IND + "end do")
+        w(IND + "!$omp end do")
+        w(IND + "deallocate(GB, RB)")
+        w(IND + "!$omp end parallel")
+        w(IND + "deallocate(trun, tcur, bord)")
+
     def emit_body(self, w, q, qcols, perm, sign, insts, first, last):
         """Body of one pass for block kdx: IX from the instances, then IX x partner into resid."""
         col = ":" if len(self.internal) == 1 else ":,:"
@@ -521,9 +614,15 @@ class BlockTerm:
             w(I6 + "IX(xx,yy) = ixv")
             w(I3 + "end do")
             w(I3 + "else")
-        w(I3 + "IX = 0.0d0")
+        # IX built only from sparse T3/T4 pieces is zero unless one of their lookups hits: zero it
+        # on the first hit and skip the contraction when none does (most passes at small P)
+        lazy = not self.natural and all(any(o.startswith("T.") and len(o.split(".")[1]) in (3, 4) for o, _ in facs)
+                                        for _, facs, _, _ in insts)
+        w(I3 + ("anyx = .false." if lazy else "IX = 0.0d0"))
         for cf, facs, pl, sk in insts:
-            self.emit_instance(w, I3, cf, facs, perm, pl, sk, col)
+            self.emit_instance(w, I3, cf, facs, perm, pl, sk, col, lazy=lazy)
+        if lazy:
+            w(I3 + "if (anyx) then")
         if self.natural:
             w(I3 + "end if")
             w(I3 + "do nn = 1, nneed")
@@ -558,8 +657,154 @@ class BlockTerm:
         assert sg == 1
         w(I6 + upd)
         w(I3 + "end do")
+        if lazy:
+            w(I3 + "end if")
 
-    def emit_instance(self, w, I3, cf, facs, perm, pl, sk, col, point=False):
+    def partner(self, perm, p):
+        """Sparse T3 partner of one coset class: (view, key letters, read letters, {(x arg, y arg): count})."""
+        tl = "".join(perm.get(x, x) for x in self.tsub)
+        v = self.view(self.c.t3, tl, set(p))
+        layout = [(list(range(nk)), list(range(nk, len(cols))))
+                  for (_, _, cols), nk in zip(blocks_of(self.c.t3), v.nkey)]
+        keys, reads, terms = sparse_lookup(self.c.t3, tl, set(p), layout)
+        acc = {}
+        for s_, mp in terms:
+            args = tuple(mp.get(x, x) for x in self.internal)
+            acc[args] = acc.get(args, 0) + s_
+        return v, keys, reads, {a_: n_ for a_, n_ in acc.items() if n_}
+
+    def emit_keymajor(self, w):
+        """Two-index term, key-major: the intermediate depends only on its q values, not on the
+        coset class that reads it, so IX(q) is built once per distinct q over all classes (the dense
+        factorization's one build, many uses) and contracted into every (class, T4 row) reading it.
+        Readers (class x row, q values in the intermediate's letter order) are grouped by q with
+        index_pspace, classes in batches of at most KEYMAJOR_READERS readers."""
+        assert self.natural
+        nt = len(self.c.target)
+        ex, n4 = f"{T4N[self.c.target]}_excits", f"n4{self.c.target}"
+        col = lambda x: "abcd".index(x) + 1 if x in "abcd" else "ijkl".index(x) + 1 + nt
+        qlet = self.qbase
+        nq = len(qlet)
+        dims = [DIM[self.tspin[x]] for x in qlet]
+        cls = self.classes()
+        ncls = len(cls)
+        tot = self.scale()
+        I3, I6, I9 = IND + "   ", IND + "      ", IND + "         "
+        tgt = "abcd"[:nt] + "ijkl"[:nt]
+        info = []
+        for q, perm, sign in cls:
+            p = [x for x in tgt if x not in q]
+            info.append((perm, sign, p) + self.partner(perm, p))
+        w(IND + f"! key-major: {self.c.iname}({self.isub}) x t{self.c.t3}({self.tsub}), {ncls} classes share IX(q)")
+        w(IND + f"kbat = max(1, min({ncls}, {KEYMAJOR_READERS} / max(1, {n4})))")
+        w(IND + f"do kc0 = 1, {ncls}, kbat")
+        w(I3 + f"kc1 = min({ncls}, kc0 + kbat - 1)")
+        w(I3 + f"nrd = (kc1 - kc0 + 1) * {n4}")
+        w(I3 + f"allocate(RQ(nrd,{nq + 1}), rp(nrd))")
+        w(I3 + f"RQ(:,{nq + 1}) = 0   ! keeps a one-reader list from looking like the empty sentinel")
+        w(I3 + "do icls = kc0, kc1")
+        w(I6 + f"ird0 = (icls - kc0) * {n4}")
+        w(I6 + "select case (icls)")
+        for k, (perm, *_rest) in enumerate(info, 1):
+            w(I6 + f"case ({k})")
+            w(I9 + f"do idet = 1, {n4}")
+            w(I9 + "   " + " ".join(f"RQ(ird0+idet,{t_ + 1}) = {ex}(idet,{col(perm[x])});" for t_, x in enumerate(qlet)))
+            w(I9 + "end do")
+        w(I6 + "end select")
+        w(I3 + "end do")
+        w(I3 + f"call index_pspace(RQ, nrd, {nq}, (/{','.join(str(t_ + 1) for t_ in range(nq))}/), "
+               f"(/{','.join(dims)}/), (/{','.join(['.false.'] * nq)}/), rind)")
+        w(I3 + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,kdx,idx,"
+               "xx,yy,ixv,idx2,jdet2,jj2,lk,mark,need,nneed,nn,icls,ird,jr,sgn)")
+        w(I3 + f"allocate(IX({self.ix_dims()}), mark({self.ix_dims()}), need(2,{self.ix_dims().replace(',', '*')}))")
+        w(I3 + "mark = .false.")
+        w(I3 + "!$omp do schedule(dynamic,8)")
+        w(I3 + "do kdx = 1, rind%nblock")
+        B = I6
+        reader = (f"ird = rind%perm(jr); icls = kc0 + (ird-1)/{n4}; idet = mod(ird-1, {n4}) + 1")
+        # (1) entries of IX the readers' partner rows carry
+        w(B + "nneed = 0")
+        w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
+        w(B + "   " + reader)
+        w(B + "   select case (icls)")
+        for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
+            w(B + f"   case ({k})")
+            w(B + "      " + " ".join(f"{x} = {ex}(idet,{col(x)});" for x in p))
+            w(B + f"      idx = {view_find(v.name, keys)}")
+            w(B + "      rp(ird) = idx")
+            w(B + "      if (idx/=0) then")
+            w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
+            w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
+            for args in acc:
+                e = f"{args[0]},{args[1]}"
+                w(B + f"         if (.not. mark({e})) then; mark({e}) = .true.; nneed = nneed + 1; "
+                      f"need(1,nneed) = {args[0]}; need(2,nneed) = {args[1]}; end if")
+            w(B + "      end do")
+            w(B + "      end if")
+        w(B + "   end select")
+        w(B + "end do")
+        # (2) IX once, at the q values of this block
+        w(B + "ird = rind%perm(rind%off(kdx))")
+        w(B + " ".join(f"{x} = RQ(ird,{t_ + 1});" for t_, x in enumerate(qlet)))
+        build, memo = [], {}
+        self.memo, self.km = memo, True
+        try:
+            cond = {"point": ".true.", "dense": ".false.", None: "2*nneed < size(IX)"}[BLOCK_CHOICE]
+            build.append(B + f"if ({cond}) then")
+            build.append(B + "do nn = 1, nneed")
+            build.append(B + "   xx = need(1,nn); yy = need(2,nn); ixv = 0.0d0")
+            for cf, facs in self.instances:
+                self.emit_instance(build.append, B + "   ", cf, facs, {}, None, None, ":,:", point=True)
+            build.append(B + "   IX(xx,yy) = ixv")
+            build.append(B + "end do")
+            build.append(B + "else")
+            build.append(B + "IX = 0.0d0")
+            for cf, facs in self.instances:
+                self.emit_instance(build.append, B, cf, facs, {}, None, None, ":,:")
+            build.append(B + "end if")
+        finally:
+            self.memo, self.km = None, False
+        assert len(memo) <= MAXLK, len(memo)
+        for expr, n in memo.items():
+            w(B + f"lk({n}) = {expr}")
+        for line in build:
+            w(line)
+        w(B + "do nn = 1, nneed")
+        w(B + "   mark(need(1,nn),need(2,nn)) = .false.")
+        w(B + "end do")
+        # (3) every reader of this q
+        w(B + "do jr = rind%off(kdx), rind%off(kdx+1)-1")
+        w(B + "   " + reader)
+        w(B + "   val = 0.0d0")
+        w(B + "   idx = rp(ird)")
+        w(B + "   if (idx/=0) then")
+        w(B + "   select case (icls)")
+        for k, (perm, sign, p, v, keys, reads, acc) in enumerate(info, 1):
+            expr = " + ".join(f"({cnt:+d})*IX({a_[0]},{a_[1]})" for a_, cnt in acc.items())
+            w(B + f"   case ({k})")
+            if not expr:
+                continue
+            w(B + f"      do jdet = off_{v.name}(idx), off_{v.name}(idx+1)-1")
+            w(B + "         " + "; ".join(f"{x} = {v.name}_excits(jdet,{5 + t_})" for t_, x in enumerate(reads)))
+            w(B + f"         val = val + {v.name}_amps(jdet) * ({expr})")
+            w(B + "      end do")
+            if sign < 0:
+                w(B + "      val = -val")
+        w(B + "   end select")
+        w(B + "   end if")
+        w(B + "   if (val /= 0.0d0) then")
+        w(B + "      !$omp atomic")
+        w(B + f"      resid(idet) = resid(idet) + {tot:.16g}d0 * val")
+        w(B + "   end if")
+        w(B + "end do")
+        w(I3 + "end do")
+        w(I3 + "!$omp end do")
+        w(I3 + "deallocate(IX, mark, need)")
+        w(I3 + "!$omp end parallel")
+        w(I3 + "deallocate(RQ, rp)")
+        w(IND + "end do")
+
+    def emit_instance(self, w, I3, cf, facs, perm, pl, sk, col, point=False, lazy=False):
         """One piece of IX: the whole IX(col) block, or (point) its entry at (xx, yy) into ixv,
         with its own lookup variables so it can run inside the partner loop."""
         sub = lambda s_: "".join(perm.get(x, x) for x in s_)
@@ -567,6 +812,7 @@ class BlockTerm:
         lhs = "ixv" if point else f"IX({col})"
         sp_f = [(o, sub(l)) for o, l in facs if o.startswith("T.") and len(o.split(".")[1]) in (3, 4)]
         if sp_f:   # sparse piece: H0 * T3 (view) or H0 * T4 (sorted buffer, placement pl)
+            signed = None
             (to, tl), = sp_f
             (ho, hl), = [(o, sub(l)) for o, l in facs if not o.startswith("T.")]
             sp = to.split(".")[1]
@@ -576,11 +822,18 @@ class BlockTerm:
                 layout = [(list(range(nk)), list(range(nk, len(cols))))
                           for (_, _, cols), nk in zip(blocks_of(sp), v.nkey)]
                 keys, reads, terms = sparse_lookup(sp, tl, set(q), layout)
-                look = f"{idx} = {self.lookup(view_find(v.name, keys))}"
                 rng = f"do {jdet} = off_{v.name}({idx}), off_{v.name}({idx}+1)-1"
                 pre = []
                 rcols = [f"{v.name}_excits({jdet},{5 + t_})" for t_ in range(len(reads))]
-                amp = f"{v.name}_amps({jdet})"
+                if getattr(self, "km", False):
+                    # key-major: the intermediate's letters arrive in any order -> sort, keep the sign
+                    look = (f"{idx} = " + self.lookup(f"pspace_find_sorted(key_{v.name}, nblk_{v.name}, "
+                                                      f"(/{','.join(keys)}/), 4, vdims_{v.name}, vchain_{v.name})"))
+                    signed = f"sgn = sign(1, {idx}); {idx} = abs({idx})"
+                    amp = f"(sgn*{v.name}_amps({jdet}))"
+                else:
+                    look = f"{idx} = {self.lookup(view_find(v.name, keys))}"
+                    amp = f"{v.name}_amps({jdet})"
             else:
                 keys, reads, terms = sparse_lookup(sp, tl, set(q), pl)
                 b = f"b{T4N[sp]}"
@@ -593,7 +846,8 @@ class BlockTerm:
                     rc += [bcols[p] + 1 for p in rp]
                 rcols = [f"{b}_excits({jdet},{c_})" for c_ in rc]
                 amp = f"{b}_amps({jdet})"
-            assert set(hl) == set(self.internal) | set(reads), (hl, reads)
+            # H may also carry target letters (H*T3 x T2 terms): fixed per block, indexed as is
+            assert set(self.internal) | set(reads) <= set(hl) <= set(self.internal) | set(reads) | set("abcdijkl"), (hl, reads)
             name, rest = self.stored(ho, hl, self.internal)
             acc = {}
             for s_, mp in terms:
@@ -601,7 +855,7 @@ class BlockTerm:
                 # antisymmetric pairs of the integral among its summed letters
                 for a_, b_ in antisym_pairs(ho):
                     la, lb = hl[a_], hl[b_]
-                    if la in rest and lb in rest:
+                    if la in reads and lb in reads:
                         pa, pb = rest.index(la), rest.index(lb)
                         if reads.index(args[pa]) > reads.index(args[pb]):
                             args[pa], args[pb] = args[pb], args[pa]
@@ -610,6 +864,10 @@ class BlockTerm:
                 acc[key] = acc.get(key, 0) + s_
             w(I3 + look)
             w(I3 + f"if ({idx}/=0) then")
+            if signed:
+                w(I3 + "   " + signed)
+            if lazy:
+                w(I3 + f"   if (.not. anyx) then; IX({col}) = 0.0d0; anyx = .true.; end if")
             w(I3 + rng)
             w(I3 + "   " + "; ".join(pre + [f"{x} = {rc_}" for x, rc_ in zip(reads, rcols)]))
             for args, cnt in acc.items():
@@ -625,10 +883,14 @@ class BlockTerm:
         assert all(x in hl for x in self.internal), (facs,)
         s = [x for x in hl if x in tl]
         assert len(s) == 1, facs
-        name, rest = self.stored(ho, hl, self.internal)
         kind = letter_spins(ho, hl)[s[0]]
         w(I3 + f"do {s[0]} = 1, {DIM[kind]}")
-        ref = self.href(name, hl, rest, rest, point)
+        if self.natural:
+            name, rest = self.stored(ho, hl, self.internal)
+            ref = self.href(name, hl, rest, rest, point)
+        else:   # summed letter next to the block axes: the slice read over s is one contiguous block
+            name, rest = self.stored(ho, hl, self.internal + s)
+            ref = f"{name}({col},{s[0]}{''.join(',' + x for x in rest)})"
         w(I3 + f"   {lhs} = {lhs} + ({cf:.16g}d0 * {T2N[to_.split('.')[1]]}({','.join(tl)})) * {ref}")
         w(I3 + "end do")
 
@@ -654,7 +916,7 @@ def emit_fused(w, run, qcols, nb, first, last):
             t.memo = None
     assert len(memo) <= MAXLK, len(memo)
     w(IND + "!$omp parallel default(shared) private(IX,val,a,b,c,d,i,j,k,l,x,y,u,v,w,z,r,s,t,g,h,idet,jdet,jj,kdx,idx,"
-      + "xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn)")
+      + "xx,yy,ixv,nsrc,idx2,jdet2,jj2,lk,mark,need,nneed,nn,anyx)")
     w(IND + f"allocate(IX({run[0]['term'].ix_dims()}))")
     natural = any(p["term"].natural for p in run)
     if natural:   # entries of IX the bucket's sources read (sparse build); mark is reset after each pass
@@ -687,6 +949,8 @@ def emit_grouped(terms, tsp):
     groups = {}
     for t in terms:
         for qc, ps in t.passes():
+            # H T2 T2 pass: its q blocks are regrouped by H slice (emit_batched)
+            ps["batched"] = t.slice_letters(ps["perm"], [(cf, f, pl, None) for cf, f, pl in ps["insts"]]) is not None
             groups.setdefault(qc, []).append(ps)
     L = []
     w = L.append
@@ -708,6 +972,9 @@ def emit_grouped(terms, tsp):
         for p in ps:
             p["insts"] = [(cf, f, pl, None if pl is None else
                            srcs.setdefault(p["term"].source_key(f, pl), len(srcs) + 1)) for cf, f, pl in p["insts"]]
+            if p.get("batched"):
+                p["term"].emit_batched(w, p["q"], list(qcols), p["perm"], p["sign"], p["insts"])
+                continue
             runs.setdefault(p["term"].ix_dims(), []).append(p)
         for run in runs.values():
             emit_fused(w, run, list(qcols), nb, first, last)
@@ -770,7 +1037,15 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_v
         cons = [cons[k] for k in only]
     layouts, views = {}, {}
     terms = [BlockTerm(c, layouts, views) for c in cons]
-    bodies = [emit_grouped(terms, cons[0].target)]
+    km = [t for t in terms if KEYMAJOR and t.natural]
+    rest = [t for t in terms if t not in km]
+    bodies = []
+    for t in km:
+        L = []
+        t.emit_keymajor(L.append)
+        bodies.append("\n".join(L) + "\n")
+    if rest:
+        bodies.append(emit_grouped(rest, cons[0].target))
     tsp = cons[0].target
     t4 = T4N[tsp]
     name = name or f"{t4}_p_blocks"
@@ -839,10 +1114,18 @@ def block_routine(func, name=None, only=None, kinds=("t3", "t2", "t2t2"), skip_v
     w(IND + "logical, allocatable :: mark(:,:)")
     w(IND + "integer, allocatable :: need(:,:)")
     w(IND + "integer :: nneed, nn")
+    w(IND + "logical :: anyx")
+    w(IND + "integer, parameter :: MAXC = 256")
+    w(IND + "real(kind=8), allocatable :: GB(:,:), RB(:,:)")
+    w(IND + "integer, allocatable :: trun(:), tcur(:), bord(:)")
+    w(IND + "integer :: nrun, irun, k0, nc, tt")
     w(IND + f"integer :: lk({MAXLK})")
     w(IND + "integer, allocatable :: pidx(:)")
     w(IND + "integer :: r1, r2, r3, r4, r5, r6, idet, jdet, jj, kdx, idx, nloc")
     w(IND + "type(pspace_index), allocatable :: sidx(:)")
+    w(IND + "integer, allocatable :: RQ(:,:), rp(:)")
+    w(IND + "type(pspace_index) :: rind")
+    w(IND + "integer :: icls, ird, jr, kc0, kc1, kbat, nrd, ird0, sgn")
     out = "\n".join(L) + "\n"
     for sp in sources:   # private copies: the target list itself is re-sorted by q
         b = f"b{T4N[sp]}"

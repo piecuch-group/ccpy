@@ -403,11 +403,15 @@ def dense_reference_blocks(func, ns, only=None, pattern=r"einsum\('[a-z]+,[a-z]+
     return ns["out"]
 
 
-@pytest.fixture(scope="module", params=[None, "point"])
+@pytest.fixture(scope="module", params=[None, "point", "batched"])
 def t4blk(request, tmp_path_factory):
-    """b3 routines with the run-time bucket choice, and with every bucket forced to the sparse IX build."""
+    """b3 routines with the run-time bucket choice, with every bucket forced to the sparse IX build,
+    and with the key-major readers split into many small class batches."""
     import block_terms
-    block_terms.BLOCK_CHOICE = request.param
+    block_terms.BLOCK_CHOICE = None if request.param == "batched" else request.param
+    readers = block_terms.KEYMAJOR_READERS
+    if request.param == "batched":
+        block_terms.KEYMAJOR_READERS = 97
     try:
         texts, meta = [], {}
         for f in T4_FUNCS:
@@ -416,6 +420,7 @@ def t4blk(request, tmp_path_factory):
             meta[f] = args
     finally:
         block_terms.BLOCK_CHOICE = None
+        block_terms.KEYMAJOR_READERS = readers
     modname = f"gen_t4blk_{request.param or 'auto'}"
     src = f"module {modname}\n  use omp_lib\n  use pspace_sort\n  implicit none\ncontains\n" + "\n".join(texts) + f"end module {modname}\n"
     mod = build(modname, src, [f"{f[7:10]}_p_t3blocks" for f in T4_FUNCS], tmp_path_factory.mktemp(modname))

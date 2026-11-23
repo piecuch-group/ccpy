@@ -26,7 +26,7 @@ module pspace_sort
       public :: get_index_table, get_index_table2, get_index_table3, get_index_table4
       public :: sort2, sort3, sort3_excits, sort3_excits_cm, sort4, sort4t, sort4_lt
       public :: argsort, argsort_r8_descend
-      public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace
+      public :: pspace_nkeys, pspace_key, sort_pspace, pspace_find, bucket_pspace, pspace_find_sorted
       public :: release_sort_workspace, keep_largest
       public :: pspace_index, index_pspace
 
@@ -505,12 +505,30 @@ module pspace_sort
                           return
                        end if
                     end if
-                    rank = rank + binomial(vals(k+t-1) - 1, t)
+                    rank = rank + choose(vals(k+t-1) - 1, t)
                  end do
-                 pspace_key = pspace_key * binomial(dims(k), g) + rank
+                 pspace_key = pspace_key * choose(dims(k), g) + rank
                  k = k + g
               end do
               pspace_key = pspace_key + 1
+      contains
+              ! binomial(n, t) for n >= 0, inlined (the module function is not, and keys are
+              ! computed per row per lookup); n < t gives a zero factor, hence 0, like binomial
+              pure integer(kind=8) function choose(n, t)
+                      integer, intent(in) :: n, t
+                      select case (t)
+                      case (1)
+                         choose = n
+                      case (2)
+                         choose = int(n,8)*(n-1)/2
+                      case (3)
+                         choose = int(n,8)*(n-1)*(n-2)/6
+                      case (4)
+                         choose = int(n,8)*(n-1)*(n-2)*(n-3)/24
+                      case default
+                         choose = binomial(n, t)
+                      end select
+              end function choose
       end function pspace_key
 
       subroutine index_pspace(excits, n3p, ncol, cols, dims, chain, ind)
@@ -636,25 +654,50 @@ module pspace_sort
               deallocate(perm2, counts)
       end subroutine radix_sort
 
+      pure integer function pspace_find_sorted(block_key, nblock, vals, ncol, dims, chain)
+      ! sign * pspace_find of vals sorted ascending inside each chained run of columns, sign the
+      ! parity of that sort (0 if absent or a run repeats an index). For keys whose indices need not
+      ! arrive in order (an intermediate's own letters, filled by any coset class).
+              integer, intent(in) :: nblock, ncol, vals(ncol), dims(ncol)
+              integer(kind=8), intent(in) :: block_key(nblock)
+              logical, intent(in) :: chain(ncol)
+              integer :: w(ncol), k, m, tmp, sgn
+              w = vals
+              sgn = 1
+              do k = 2, ncol   ! insertion sort, never across the start of a run
+                 m = k
+                 do while (m > 1)
+                    if (.not. chain(m)) exit
+                    if (w(m-1) == w(m)) then
+                       pspace_find_sorted = 0
+                       return
+                    end if
+                    if (w(m-1) < w(m)) exit
+                    tmp = w(m); w(m) = w(m-1); w(m-1) = tmp
+                    sgn = -sgn
+                    m = m - 1
+                 end do
+              end do
+              pspace_find_sorted = sgn * pspace_find(block_key, nblock, pspace_key(w, ncol, dims, chain))
+      end function pspace_find_sorted
+
       pure integer function pspace_find(block_key, nblock, key)
       ! Index of key in block_key(1:nblock) (ascending), or 0 if absent.
               integer, intent(in) :: nblock
               integer(kind=8), intent(in) :: block_key(nblock), key
-              integer :: lo, hi, mid
+              integer :: base, n, half
+              ! branchless lower bound (conditional select, no mispredicted branches): the lookups
+              ! of the P-space loops mostly miss at small P, where a branchy search pays ~log2(n) flushes
               pspace_find = 0
-              lo = 1
-              hi = nblock
-              do while (lo <= hi)
-                 mid = (lo + hi) / 2
-                 if (block_key(mid) == key) then
-                    pspace_find = mid
-                    return
-                 elseif (block_key(mid) < key) then
-                    lo = mid + 1
-                 else
-                    hi = mid - 1
-                 end if
+              if (nblock <= 0) return
+              base = 1
+              n = nblock
+              do while (n > 1)
+                 half = n / 2
+                 base = merge(base + half, base, block_key(base + half) <= key)
+                 n = n - half
               end do
+              if (block_key(base) == key) pspace_find = base
       end function pspace_find
 
       subroutine bucket_pspace(excits, n3p, ncol, cols, dims, chain, nk, off, dets)

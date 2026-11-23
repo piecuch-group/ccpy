@@ -40549,10 +40549,10 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h1a_vv_10(:,:)
                   real(kind=8), allocatable :: h2a_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_voov_1302(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_vvvv_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vvvv_3201(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
                   integer :: idet, p1, p2, p3, p4, a, b, c, d, i, j, k, l
@@ -40615,22 +40615,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
-                  do p4 = 1, nua
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2a_oooo_1023(noa,noa,noa,noa))
                   do p4 = 1, noa
                      do p3 = 1, noa
                         do p2 = 1, noa
                            do p1 = 1, noa
                               h2a_oooo_1023(p1,p2,p3,p4) = H2A_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
+                  do p4 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, noa
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -40645,12 +40645,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_vvvv_3012(nua,nua,nua,nua))
+                  allocate(h2a_vvvv_3201(nua,nua,nua,nua))
                   do p4 = 1, nua
                      do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, nua
-                              h2a_vvvv_3012(p1,p2,p3,p4) = H2A_vvvv(p2,p3,p4,p1)
+                              h2a_vvvv_3201(p1,p2,p3,p4) = H2A_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
@@ -40687,20 +40687,20 @@ module ccsdtq_p_loops
                                 H2B_ooov, H2B_vovv, H2C_oovv, n4aaaa, n3aaa, n3aab,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
-                  call t4a_p_b2(resid, t4a_amps, t4a_excits, t4b_amps, t4b_excits, t2a,&
-                                h2a_voov_1023, h2a_oooo_1023, h2a_oovv_1023, H2B_oovv, h2a_vvvv_3012, h2a_oovv_3012,&
-                                h2b_oovv_2013, n4aaaa, n4aaab, noa, nua, nob,&
-                                nub)
+                  call t4a_p_b2(resid, t4a_amps, t4a_excits, t4b_amps, t4b_excits, t3a_amps,&
+                                t3a_excits, t2a, h2a_voov_1302, h2a_oooo_1023, h2a_vovv_1023, h2a_oovv_1023,&
+                                H2B_oovv, h2a_vvvv_3201, h2a_oovv_3012, h2b_oovv_2013, n4aaaa, n4aaab,&
+                                n3aaa, noa, nua, nob, nub)
                   deallocate(h2a_vvov_3012)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2a_vvvv_2301)
                   deallocate(h1a_vv_10)
                   deallocate(h2a_voov_1302)
                   deallocate(h2b_voov_1302)
-                  deallocate(h2a_voov_1023)
                   deallocate(h2a_oooo_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
-                  deallocate(h2a_vvvv_3012)
+                  deallocate(h2a_vvvv_3201)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_oovv_2013)
 
@@ -40765,8 +40765,8 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2a_vooo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_voov_1302(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
@@ -40814,22 +40814,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
-                  do p4 = 1, nua
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2a_oooo_1023(noa,noa,noa,noa))
                   do p4 = 1, noa
                      do p3 = 1, noa
                         do p2 = 1, noa
                            do p1 = 1, noa
                               h2a_oooo_1023(p1,p2,p3,p4) = H2A_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
+                  do p4 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, noa
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -40876,15 +40876,16 @@ module ccsdtq_p_loops
                                 H2B_ooov, H2B_vovv, H2C_oovv, n4aaaa, n3aaa, n3aab,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
-                  call t4a_p_b2_chol(resid, t4a_amps, t4a_excits, t4b_amps, t4b_excits, t2a,&
-                                     h2a_voov_1023, h2a_oooo_1023, h2a_oovv_1023, H2B_oovv, h2a_oovv_3012, h2b_oovv_2013,&
-                                     n4aaaa, n4aaab, noa, nua, nob, nub)
+                  call t4a_p_b2_chol(resid, t4a_amps, t4a_excits, t4b_amps, t4b_excits, t3a_amps,&
+                                     t3a_excits, t2a, h2a_voov_1302, h2a_oooo_1023, h2a_vovv_1023, h2a_oovv_1023,&
+                                     H2B_oovv, h2a_oovv_3012, h2b_oovv_2013, n4aaaa, n4aaab, n3aaa,&
+                                     noa, nua, nob, nub)
                   deallocate(h2a_vvov_3012)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2a_voov_1302)
                   deallocate(h2b_voov_1302)
-                  deallocate(h2a_voov_1023)
                   deallocate(h2a_oooo_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_oovv_2013)
@@ -40990,17 +40991,17 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_voov_3102(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_2013(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_vvvv_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vvvv_2013(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovo_2103(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_voov_3102(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vvvv_3201(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   integer :: idet, p1, p2, p3, p4, a, b, c, d, i, j, k, l
@@ -41159,12 +41160,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
                   do p4 = 1, nua
-                     do p3 = 1, noa
+                     do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -41179,12 +41180,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_voov_3012(nub,nua,nob,noa))
+                  allocate(h2b_voov_3102(nub,nob,nua,noa))
                   do p4 = 1, noa
-                     do p3 = 1, nob
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nob
                            do p1 = 1, nub
-                              h2b_voov_3012(p1,p2,p3,p4) = H2B_voov(p2,p3,p4,p1)
+                              h2b_voov_3102(p1,p2,p3,p4) = H2B_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
@@ -41209,42 +41210,32 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_vovo_2013(nua,nua,nob,nob))
+                  allocate(h2b_vovo_2103(nua,nob,nua,nob))
                   do p4 = 1, nob
-                     do p3 = 1, nob
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nob
                            do p1 = 1, nua
-                              h2b_vovo_2013(p1,p2,p3,p4) = H2B_vovo(p2,p3,p1,p4)
+                              h2b_vovo_2103(p1,p2,p3,p4) = H2B_vovo(p3,p2,p1,p4)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_3012(nua,nua,noa,noa))
+                  allocate(h2a_voov_3102(nua,noa,nua,noa))
                   do p4 = 1, noa
-                     do p3 = 1, noa
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, noa
                            do p1 = 1, nua
-                              h2a_voov_3012(p1,p2,p3,p4) = H2A_voov(p2,p3,p4,p1)
+                              h2a_voov_3102(p1,p2,p3,p4) = H2A_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2a_vvvv_3012(nua,nua,nua,nua))
+                  allocate(h2a_vvvv_3201(nua,nua,nua,nua))
                   do p4 = 1, nua
                      do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, nua
-                              h2a_vvvv_3012(p1,p2,p3,p4) = H2A_vvvv(p2,p3,p4,p1)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_vvvv_2013(nua,nua,nub,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nub
-                        do p2 = 1, nua
-                           do p1 = 1, nua
-                              h2b_vvvv_2013(p1,p2,p3,p4) = H2B_vvvv(p2,p3,p1,p4)
+                              h2a_vvvv_3201(p1,p2,p3,p4) = H2A_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
@@ -41265,6 +41256,16 @@ module ccsdtq_p_loops
                         do p2 = 1, noa
                            do p1 = 1, nua
                               h2b_oovv_2013(p1,p2,p3,p4) = H2B_oovv(p2,p3,p1,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -41306,11 +41307,13 @@ module ccsdtq_p_loops
                                 n3aab, n3abb, noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4b_p_b2(resid, t4b_amps, t4b_excits, t4a_amps, t4a_excits, t4c_amps,&
-                                t4c_excits, t2a, t2b, H2B_ovvo, h2a_oooo_1023, H2B_ovov,&
-                                H2B_oooo, h2a_voov_1023, h2a_oovv_1023, H2B_oovv, h2b_voov_3012, h2b_oovv_3012,&
-                                h2c_oovv_3012, h2b_vovo_2013, h2a_voov_3012, h2a_vvvv_3012, h2b_vvvv_2013, h2a_oovv_3012,&
-                                h2b_oovv_2013, h2b_oovv_1023, h2c_oovv_1023, n4aaab, n4aaaa, n4aabb,&
-                                noa, nua, nob, nub)
+                                t4c_excits, t3a_amps, t3a_excits, t3b_amps, t3b_excits, t2a,&
+                                t2b, h2b_ovvo_0213, h2a_oooo_1023, h2b_ovov_0312, H2B_oooo, h2a_voov_1302,&
+                                h2a_vovv_1023, H2B_ovvv, h2a_oovv_1023, H2B_oovv, h2b_voov_3102, h2b_oovv_3012,&
+                                h2c_oovv_3012, h2b_vovo_2103, h2a_voov_3102, h2a_vvvv_3201, h2b_vvvv_2301, h2a_oovv_3012,&
+                                h2b_oovv_2013, h2b_vovv_1023, h2b_oovv_1023, h2c_oovv_1023, n4aaab, n4aaaa,&
+                                n4aabb, n3aaa, n3aab, noa, nua, nob,&
+                                nub)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2b_vooo_1023)
                   deallocate(h2b_vvvo_2013)
@@ -41327,17 +41330,17 @@ module ccsdtq_p_loops
                   deallocate(h2b_vovo_1203)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2a_oooo_1023)
-                  deallocate(h2a_voov_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
-                  deallocate(h2b_voov_3012)
+                  deallocate(h2b_voov_3102)
                   deallocate(h2b_oovv_3012)
                   deallocate(h2c_oovv_3012)
-                  deallocate(h2b_vovo_2013)
-                  deallocate(h2a_voov_3012)
-                  deallocate(h2a_vvvv_3012)
-                  deallocate(h2b_vvvv_2013)
+                  deallocate(h2b_vovo_2103)
+                  deallocate(h2a_voov_3102)
+                  deallocate(h2a_vvvv_3201)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_oovv_2013)
+                  deallocate(h2b_vovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2c_oovv_1023)
 
@@ -41434,15 +41437,16 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_voov_3102(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_2013(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovo_2103(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_voov_3102(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   integer :: idet, p1, p2, p3, p4, a, b, c, d, i, j, k, l
@@ -41569,12 +41573,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
                   do p4 = 1, nua
-                     do p3 = 1, noa
+                     do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -41589,12 +41593,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_voov_3012(nub,nua,nob,noa))
+                  allocate(h2b_voov_3102(nub,nob,nua,noa))
                   do p4 = 1, noa
-                     do p3 = 1, nob
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nob
                            do p1 = 1, nub
-                              h2b_voov_3012(p1,p2,p3,p4) = H2B_voov(p2,p3,p4,p1)
+                              h2b_voov_3102(p1,p2,p3,p4) = H2B_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
@@ -41619,22 +41623,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_vovo_2013(nua,nua,nob,nob))
+                  allocate(h2b_vovo_2103(nua,nob,nua,nob))
                   do p4 = 1, nob
-                     do p3 = 1, nob
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nob
                            do p1 = 1, nua
-                              h2b_vovo_2013(p1,p2,p3,p4) = H2B_vovo(p2,p3,p1,p4)
+                              h2b_vovo_2103(p1,p2,p3,p4) = H2B_vovo(p3,p2,p1,p4)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_3012(nua,nua,noa,noa))
+                  allocate(h2a_voov_3102(nua,noa,nua,noa))
                   do p4 = 1, noa
-                     do p3 = 1, noa
-                        do p2 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, noa
                            do p1 = 1, nua
-                              h2a_voov_3012(p1,p2,p3,p4) = H2A_voov(p2,p3,p4,p1)
+                              h2a_voov_3102(p1,p2,p3,p4) = H2A_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
@@ -41655,6 +41659,16 @@ module ccsdtq_p_loops
                         do p2 = 1, noa
                            do p1 = 1, nua
                               h2b_oovv_2013(p1,p2,p3,p4) = H2B_oovv(p2,p3,p1,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -41695,11 +41709,12 @@ module ccsdtq_p_loops
                                 n3aab, n3abb, noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4b_p_b2_chol(resid, t4b_amps, t4b_excits, t4a_amps, t4a_excits, t4c_amps,&
-                                     t4c_excits, t2a, t2b, H2B_ovvo, h2a_oooo_1023, H2B_ovov,&
-                                     H2B_oooo, h2a_voov_1023, h2a_oovv_1023, H2B_oovv, h2b_voov_3012, h2b_oovv_3012,&
-                                     h2c_oovv_3012, h2b_vovo_2013, h2a_voov_3012, h2a_oovv_3012, h2b_oovv_2013, h2b_oovv_1023,&
-                                     h2c_oovv_1023, n4aaab, n4aaaa, n4aabb, noa, nua,&
-                                     nob, nub)
+                                     t4c_excits, t3a_amps, t3a_excits, t3b_amps, t3b_excits, t2a,&
+                                     t2b, h2b_ovvo_0213, h2a_oooo_1023, h2b_ovov_0312, H2B_oooo, h2a_voov_1302,&
+                                     h2a_vovv_1023, H2B_ovvv, h2a_oovv_1023, H2B_oovv, h2b_voov_3102, h2b_oovv_3012,&
+                                     h2c_oovv_3012, h2b_vovo_2103, h2a_voov_3102, h2a_oovv_3012, h2b_oovv_2013, h2b_vovv_1023,&
+                                     h2b_oovv_1023, h2c_oovv_1023, n4aaab, n4aaaa, n4aabb, n3aaa,&
+                                     n3aab, noa, nua, nob, nub)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2b_vooo_1023)
                   deallocate(h2b_vvvo_2013)
@@ -41712,15 +41727,16 @@ module ccsdtq_p_loops
                   deallocate(h2b_vovo_1203)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2a_oooo_1023)
-                  deallocate(h2a_voov_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
-                  deallocate(h2b_voov_3012)
+                  deallocate(h2b_voov_3102)
                   deallocate(h2b_oovv_3012)
                   deallocate(h2c_oovv_3012)
-                  deallocate(h2b_vovo_2013)
-                  deallocate(h2a_voov_3012)
+                  deallocate(h2b_vovo_2103)
+                  deallocate(h2a_voov_3102)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_oovv_2013)
+                  deallocate(h2b_vovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2c_oovv_1023)
 
@@ -41836,21 +41852,19 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2c_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_2013(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vvvv_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_vvvv_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_vvvv_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vvvv_3201(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vvvv_3201(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
                   integer :: idet, p1, p2, p3, p4, a, b, c, d, i, j, k, l
@@ -42029,42 +42043,32 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nob
-                        do p2 = 1, nub
-                           do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_voov_1023(nob,nua,noa,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_voov_1023(p1,p2,p3,p4) = H2B_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_vovo_1023(nob,nua,nua,nob))
-                  do p4 = 1, nob
-                     do p3 = 1, nua
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_vovo_1023(p1,p2,p3,p4) = H2B_vovo(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nub
+                           do p1 = 1, nob
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -42089,22 +42093,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
-                  do p4 = 1, nua
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2a_oooo_1023(noa,noa,noa,noa))
                   do p4 = 1, noa
                      do p3 = 1, noa
                         do p2 = 1, noa
                            do p1 = 1, noa
                               h2a_oooo_1023(p1,p2,p3,p4) = H2A_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
+                  do p4 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, noa
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -42129,16 +42133,6 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_vvvv_2013(nua,nua,nub,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nub
-                        do p2 = 1, nua
-                           do p1 = 1, nua
-                              h2b_vvvv_2013(p1,p2,p3,p4) = H2B_vvvv(p2,p3,p1,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2a_oovv_3012(nua,noa,noa,nua))
                   do p4 = 1, nua
                      do p3 = 1, noa
@@ -42159,22 +42153,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_vvvv_3012(nua,nua,nua,nua))
+                  allocate(h2a_vvvv_3201(nua,nua,nua,nua))
                   do p4 = 1, nua
                      do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, nua
-                              h2a_vvvv_3012(p1,p2,p3,p4) = H2A_vvvv(p2,p3,p4,p1)
+                              h2a_vvvv_3201(p1,p2,p3,p4) = H2A_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2c_vvvv_3012(nub,nub,nub,nub))
+                  allocate(h2c_vvvv_3201(nub,nub,nub,nub))
                   do p4 = 1, nub
                      do p3 = 1, nub
                         do p2 = 1, nub
                            do p1 = 1, nub
-                              h2c_vvvv_3012(p1,p2,p3,p4) = H2C_vvvv(p2,p3,p4,p1)
+                              h2c_vvvv_3201(p1,p2,p3,p4) = H2C_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
@@ -42213,17 +42207,18 @@ module ccsdtq_p_loops
                   call t4c_p_b3(resid, t4c_amps, t4c_excits, t3a_amps, t3a_excits, t3b_amps,&
                                 t3b_excits, t3c_amps, t3c_excits, t3d_amps, t3d_excits, t2a,&
                                 t2b, t2c, H2A_ooov, H2A_oovv, H2B_ooov, H2B_oovo,&
-                                H2B_oovv, H2C_ooov, H2C_oovv, H2A_vovv, H2B_ovvv, H2B_vovv,&
+                                H2B_oovv, H2C_ooov, H2C_oovv, H2A_vovv, H2B_vovv, H2B_ovvv,&
                                 H2C_vovv, n4aabb, n3aaa, n3aab, n3abb, n3bbb,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4c_p_b2(resid, t4c_amps, t4c_excits, t4b_amps, t4b_excits, t4d_amps,&
-                                t4d_excits, t2a, t2b, t2c, h2c_voov_1023, h2b_voov_1023,&
-                                h2b_vovo_1023, h2c_oooo_1023, h2b_oovv_1023, h2c_oovv_1023, h2a_voov_1023, H2B_ovov,&
-                                h2a_oooo_1023, H2B_oooo, h2a_oovv_1023, H2B_oovv, h2b_ovvo_2013, h2b_vvvv_2013,&
-                                h2a_oovv_3012, h2b_oovv_2013, H2B_ovvo, h2a_vvvv_3012, h2c_vvvv_3012, h2b_oovv_3012,&
-                                h2c_oovv_3012, n4aabb, n4aaab, n4abbb, noa, nua,&
-                                nob, nub)
+                                t4d_excits, t3b_amps, t3b_excits, t3c_amps, t3c_excits, t2a,&
+                                t2b, t2c, h2c_voov_1302, h2b_voov_1302, h2b_vovo_1203, h2c_oooo_1023,&
+                                h2b_vovv_1023, h2c_vovv_1023, h2b_oovv_1023, h2c_oovv_1023, h2a_voov_1302, h2b_ovov_0312,&
+                                h2a_oooo_1023, H2B_oooo, h2a_vovv_1023, H2B_ovvv, h2a_oovv_1023, H2B_oovv,&
+                                h2b_ovvo_2013, h2b_vvvv_2301, h2a_oovv_3012, h2b_oovv_2013, h2b_ovvo_0213, h2a_vvvv_3201,&
+                                h2c_vvvv_3201, h2b_oovv_3012, h2c_oovv_3012, n4aabb, n4aaab, n4abbb,&
+                                n3aab, n3abb, noa, nua, nob, nub)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2b_vooo_1023)
@@ -42242,21 +42237,19 @@ module ccsdtq_p_loops
                   deallocate(h2c_voov_1302)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2b_vovo_1203)
-                  deallocate(h2c_voov_1023)
-                  deallocate(h2b_voov_1023)
-                  deallocate(h2b_vovo_1023)
                   deallocate(h2c_oooo_1023)
+                  deallocate(h2b_vovv_1023)
+                  deallocate(h2c_vovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2c_oovv_1023)
-                  deallocate(h2a_voov_1023)
                   deallocate(h2a_oooo_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
                   deallocate(h2b_ovvo_2013)
-                  deallocate(h2b_vvvv_2013)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_oovv_2013)
-                  deallocate(h2a_vvvv_3012)
-                  deallocate(h2c_vvvv_3012)
+                  deallocate(h2a_vvvv_3201)
+                  deallocate(h2c_vvvv_3201)
                   deallocate(h2b_oovv_3012)
                   deallocate(h2c_oovv_3012)
 
@@ -42362,14 +42355,13 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2c_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2a_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2a_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
@@ -42510,42 +42502,32 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nob
-                        do p2 = 1, nub
-                           do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_voov_1023(nob,nua,noa,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_voov_1023(p1,p2,p3,p4) = H2B_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_vovo_1023(nob,nua,nua,nob))
-                  do p4 = 1, nob
-                     do p3 = 1, nua
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_vovo_1023(p1,p2,p3,p4) = H2B_vovo(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nub
+                           do p1 = 1, nob
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -42570,22 +42552,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2a_voov_1023(noa,nua,noa,nua))
-                  do p4 = 1, nua
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, noa
-                              h2a_voov_1023(p1,p2,p3,p4) = H2A_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2a_oooo_1023(noa,noa,noa,noa))
                   do p4 = 1, noa
                      do p3 = 1, noa
                         do p2 = 1, noa
                            do p1 = 1, noa
                               h2a_oooo_1023(p1,p2,p3,p4) = H2A_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2a_vovv_1023(noa,nua,nua,nua))
+                  do p4 = 1, nua
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, noa
+                              h2a_vovv_1023(p1,p2,p3,p4) = H2A_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -42663,16 +42645,18 @@ module ccsdtq_p_loops
                   call t4c_p_b3(resid, t4c_amps, t4c_excits, t3a_amps, t3a_excits, t3b_amps,&
                                 t3b_excits, t3c_amps, t3c_excits, t3d_amps, t3d_excits, t2a,&
                                 t2b, t2c, H2A_ooov, H2A_oovv, H2B_ooov, H2B_oovo,&
-                                H2B_oovv, H2C_ooov, H2C_oovv, H2A_vovv, H2B_ovvv, H2B_vovv,&
+                                H2B_oovv, H2C_ooov, H2C_oovv, H2A_vovv, H2B_vovv, H2B_ovvv,&
                                 H2C_vovv, n4aabb, n3aaa, n3aab, n3abb, n3bbb,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4c_p_b2_chol(resid, t4c_amps, t4c_excits, t4b_amps, t4b_excits, t4d_amps,&
-                                     t4d_excits, t2a, t2b, t2c, h2c_voov_1023, h2b_voov_1023,&
-                                     h2b_vovo_1023, h2c_oooo_1023, h2b_oovv_1023, h2c_oovv_1023, h2a_voov_1023, H2B_ovov,&
-                                     h2a_oooo_1023, H2B_oooo, h2a_oovv_1023, H2B_oovv, h2b_ovvo_2013, h2a_oovv_3012,&
-                                     h2b_oovv_2013, H2B_ovvo, h2b_oovv_3012, h2c_oovv_3012, n4aabb, n4aaab,&
-                                     n4abbb, noa, nua, nob, nub)
+                                     t4d_excits, t3b_amps, t3b_excits, t3c_amps, t3c_excits, t2a,&
+                                     t2b, t2c, h2c_voov_1302, h2b_voov_1302, h2b_vovo_1203, h2c_oooo_1023,&
+                                     h2b_vovv_1023, h2c_vovv_1023, h2b_oovv_1023, h2c_oovv_1023, h2a_voov_1302, h2b_ovov_0312,&
+                                     h2a_oooo_1023, H2B_oooo, h2a_vovv_1023, H2B_ovvv, h2a_oovv_1023, H2B_oovv,&
+                                     h2b_ovvo_2013, h2a_oovv_3012, h2b_oovv_2013, h2b_ovvo_0213, h2b_oovv_3012, h2c_oovv_3012,&
+                                     n4aabb, n4aaab, n4abbb, n3aab, n3abb, noa,&
+                                     nua, nob, nub)
                   deallocate(h2a_vooo_1023)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2b_vooo_1023)
@@ -42686,14 +42670,13 @@ module ccsdtq_p_loops
                   deallocate(h2c_voov_1302)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2b_vovo_1203)
-                  deallocate(h2c_voov_1023)
-                  deallocate(h2b_voov_1023)
-                  deallocate(h2b_vovo_1023)
                   deallocate(h2c_oooo_1023)
+                  deallocate(h2b_vovv_1023)
+                  deallocate(h2c_vovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2c_oovv_1023)
-                  deallocate(h2a_voov_1023)
                   deallocate(h2a_oooo_1023)
+                  deallocate(h2a_vovv_1023)
                   deallocate(h2a_oovv_1023)
                   deallocate(h2b_ovvo_2013)
                   deallocate(h2a_oovv_3012)
@@ -42801,20 +42784,19 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2a_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_vvvv_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vvvv_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_voov_3102(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vvvv_3201(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vvvv_3201(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
@@ -42964,32 +42946,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_voov_1023(nob,nua,noa,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_voov_1023(p1,p2,p3,p4) = H2B_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_vovo_1023(nob,nua,nua,nob))
-                  do p4 = 1, nob
-                     do p3 = 1, nua
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_vovo_1023(p1,p2,p3,p4) = H2B_vovo(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -43004,12 +42966,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
                   do p4 = 1, nub
-                     do p3 = 1, nob
+                     do p3 = 1, nub
                         do p2 = 1, nub
                            do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -43074,32 +43046,32 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_3012(nub,nub,nob,nob))
+                  allocate(h2c_voov_3102(nub,nob,nub,nob))
                   do p4 = 1, nob
-                     do p3 = 1, nob
-                        do p2 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nob
                            do p1 = 1, nub
-                              h2c_voov_3012(p1,p2,p3,p4) = H2C_voov(p2,p3,p4,p1)
+                              h2c_voov_3102(p1,p2,p3,p4) = H2C_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2c_vvvv_3012(nub,nub,nub,nub))
+                  allocate(h2c_vvvv_3201(nub,nub,nub,nub))
                   do p4 = 1, nub
                      do p3 = 1, nub
                         do p2 = 1, nub
                            do p1 = 1, nub
-                              h2c_vvvv_3012(p1,p2,p3,p4) = H2C_vvvv(p2,p3,p4,p1)
+                              h2c_vvvv_3201(p1,p2,p3,p4) = H2C_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
                   end do
-                  allocate(h2b_vvvv_3012(nub,nua,nub,nua))
-                  do p4 = 1, nua
-                     do p3 = 1, nub
+                  allocate(h2b_vvvv_3201(nub,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
                         do p2 = 1, nua
                            do p1 = 1, nub
-                              h2b_vvvv_3012(p1,p2,p3,p4) = H2B_vvvv(p2,p3,p4,p1)
+                              h2b_vvvv_3201(p1,p2,p3,p4) = H2B_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
@@ -43151,11 +43123,13 @@ module ccsdtq_p_loops
                                 n3abb, n3bbb, noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4d_p_b2(resid, t4d_amps, t4d_excits, t4c_amps, t4c_excits, t4e_amps,&
-                                t4e_excits, t2b, t2c, h2b_voov_1023, h2c_oooo_1023, h2b_vovo_1023,&
-                                h2b_oooo_1023, h2c_voov_1023, h2c_oovv_1023, h2b_oovv_1023, h2b_ovvo_2013, h2b_oovv_2013,&
-                                h2a_oovv_3012, h2b_ovov_3012, h2c_voov_3012, h2c_vvvv_3012, h2b_vvvv_3012, h2c_oovv_3012,&
-                                h2b_oovv_3012, H2B_oovv, h2a_oovv_1023, n4abbb, n4aabb, n4bbbb,&
-                                noa, nua, nob, nub)
+                                t4e_excits, t3c_amps, t3c_excits, t3d_amps, t3d_excits, t2b,&
+                                t2c, h2b_voov_1302, h2c_oooo_1023, h2b_vovo_1203, h2b_oooo_1023, h2c_voov_1302,&
+                                h2c_vovv_1023, h2b_vovv_1023, h2c_oovv_1023, h2b_oovv_1023, h2b_ovvo_2013, h2b_oovv_2013,&
+                                h2a_oovv_3012, h2b_ovov_3012, h2c_voov_3102, h2c_vvvv_3201, h2b_vvvv_3201, h2c_oovv_3012,&
+                                h2b_oovv_3012, H2B_ovvv, H2B_oovv, h2a_oovv_1023, n4abbb, n4aabb,&
+                                n4bbbb, n3abb, n3bbb, noa, nua, nob,&
+                                nub)
                   deallocate(h2b_vooo_1023)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2b_vvov_3012)
@@ -43171,20 +43145,19 @@ module ccsdtq_p_loops
                   deallocate(h2a_voov_1302)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2b_vovo_1203)
-                  deallocate(h2b_voov_1023)
                   deallocate(h2c_oooo_1023)
-                  deallocate(h2b_vovo_1023)
                   deallocate(h2b_oooo_1023)
-                  deallocate(h2c_voov_1023)
+                  deallocate(h2c_vovv_1023)
+                  deallocate(h2b_vovv_1023)
                   deallocate(h2c_oovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2b_ovvo_2013)
                   deallocate(h2b_oovv_2013)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_ovov_3012)
-                  deallocate(h2c_voov_3012)
-                  deallocate(h2c_vvvv_3012)
-                  deallocate(h2b_vvvv_3012)
+                  deallocate(h2c_voov_3102)
+                  deallocate(h2c_vvvv_3201)
+                  deallocate(h2b_vvvv_3201)
                   deallocate(h2c_oovv_3012)
                   deallocate(h2b_oovv_3012)
                   deallocate(h2a_oovv_1023)
@@ -43281,18 +43254,17 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2a_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_0312(:,:,:,:)
                   real(kind=8), allocatable :: h2b_vovo_1203(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2b_vovo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oooo_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2b_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_2013(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovov_3012(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_voov_3102(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2a_oovv_1023(:,:,:,:)
@@ -43410,32 +43382,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2b_voov_1023(nob,nua,noa,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, noa
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_voov_1023(p1,p2,p3,p4) = H2B_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
-                  allocate(h2b_vovo_1023(nob,nua,nua,nob))
-                  do p4 = 1, nob
-                     do p3 = 1, nua
-                        do p2 = 1, nua
-                           do p1 = 1, nob
-                              h2b_vovo_1023(p1,p2,p3,p4) = H2B_vovo(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -43450,12 +43402,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
                   do p4 = 1, nub
-                     do p3 = 1, nob
+                     do p3 = 1, nub
                         do p2 = 1, nub
                            do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2b_vovv_1023(nob,nua,nua,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nua
+                        do p2 = 1, nua
+                           do p1 = 1, nob
+                              h2b_vovv_1023(p1,p2,p3,p4) = H2B_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -43520,12 +43482,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_3012(nub,nub,nob,nob))
+                  allocate(h2c_voov_3102(nub,nob,nub,nob))
                   do p4 = 1, nob
-                     do p3 = 1, nob
-                        do p2 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nob
                            do p1 = 1, nub
-                              h2c_voov_3012(p1,p2,p3,p4) = H2C_voov(p2,p3,p4,p1)
+                              h2c_voov_3102(p1,p2,p3,p4) = H2C_voov(p3,p2,p4,p1)
                            end do
                         end do
                      end do
@@ -43576,11 +43538,12 @@ module ccsdtq_p_loops
                                 n3abb, n3bbb, noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
                   call t4d_p_b2_chol(resid, t4d_amps, t4d_excits, t4c_amps, t4c_excits, t4e_amps,&
-                                     t4e_excits, t2b, t2c, h2b_voov_1023, h2c_oooo_1023, h2b_vovo_1023,&
-                                     h2b_oooo_1023, h2c_voov_1023, h2c_oovv_1023, h2b_oovv_1023, h2b_ovvo_2013, h2b_oovv_2013,&
-                                     h2a_oovv_3012, h2b_ovov_3012, h2c_voov_3012, h2c_oovv_3012, h2b_oovv_3012, H2B_oovv,&
-                                     h2a_oovv_1023, n4abbb, n4aabb, n4bbbb, noa, nua,&
-                                     nob, nub)
+                                     t4e_excits, t3c_amps, t3c_excits, t3d_amps, t3d_excits, t2b,&
+                                     t2c, h2b_voov_1302, h2c_oooo_1023, h2b_vovo_1203, h2b_oooo_1023, h2c_voov_1302,&
+                                     h2c_vovv_1023, h2b_vovv_1023, h2c_oovv_1023, h2b_oovv_1023, h2b_ovvo_2013, h2b_oovv_2013,&
+                                     h2a_oovv_3012, h2b_ovov_3012, h2c_voov_3102, h2c_oovv_3012, h2b_oovv_3012, H2B_ovvv,&
+                                     H2B_oovv, h2a_oovv_1023, n4abbb, n4aabb, n4bbbb, n3abb,&
+                                     n3bbb, noa, nua, nob, nub)
                   deallocate(h2b_vooo_1023)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2b_vvov_3012)
@@ -43592,18 +43555,17 @@ module ccsdtq_p_loops
                   deallocate(h2a_voov_1302)
                   deallocate(h2b_ovov_0312)
                   deallocate(h2b_vovo_1203)
-                  deallocate(h2b_voov_1023)
                   deallocate(h2c_oooo_1023)
-                  deallocate(h2b_vovo_1023)
                   deallocate(h2b_oooo_1023)
-                  deallocate(h2c_voov_1023)
+                  deallocate(h2c_vovv_1023)
+                  deallocate(h2b_vovv_1023)
                   deallocate(h2c_oovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2b_ovvo_2013)
                   deallocate(h2b_oovv_2013)
                   deallocate(h2a_oovv_3012)
                   deallocate(h2b_ovov_3012)
-                  deallocate(h2c_voov_3012)
+                  deallocate(h2c_voov_3102)
                   deallocate(h2c_oovv_3012)
                   deallocate(h2b_oovv_3012)
                   deallocate(h2a_oovv_1023)
@@ -43673,11 +43635,11 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h1b_vv_10(:,:)
                   real(kind=8), allocatable :: h2c_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_0213(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_vvvv_3012(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vvvv_3201(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_3012(:,:,:,:)
                   integer :: idet, p1, p2, p3, p4, a, b, c, d, i, j, k, l
@@ -43740,22 +43702,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nob
-                        do p2 = 1, nub
-                           do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nub
+                           do p1 = 1, nob
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -43780,12 +43742,12 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_vvvv_3012(nub,nub,nub,nub))
+                  allocate(h2c_vvvv_3201(nub,nub,nub,nub))
                   do p4 = 1, nub
                      do p3 = 1, nub
                         do p2 = 1, nub
                            do p1 = 1, nub
-                              h2c_vvvv_3012(p1,p2,p3,p4) = H2C_vvvv(p2,p3,p4,p1)
+                              h2c_vvvv_3201(p1,p2,p3,p4) = H2C_vvvv(p3,p4,p2,p1)
                            end do
                         end do
                      end do
@@ -43822,21 +43784,21 @@ module ccsdtq_p_loops
                                 H2B_oovo, H2B_ovvv, H2A_oovv, n4bbbb, n3abb, n3bbb,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
-                  call t4e_p_b2(resid, t4e_amps, t4e_excits, t4d_amps, t4d_excits, t2c,&
-                                h2c_voov_1023, h2c_oooo_1023, h2c_oovv_1023, h2b_oovv_1023, h2c_vvvv_3012, h2c_oovv_3012,&
-                                h2b_oovv_3012, n4bbbb, n4abbb, noa, nua, nob,&
-                                nub)
+                  call t4e_p_b2(resid, t4e_amps, t4e_excits, t4d_amps, t4d_excits, t3d_amps,&
+                                t3d_excits, t2c, h2c_voov_1302, h2c_oooo_1023, h2c_vovv_1023, h2c_oovv_1023,&
+                                h2b_oovv_1023, h2c_vvvv_3201, h2c_oovv_3012, h2b_oovv_3012, n4bbbb, n4abbb,&
+                                n3bbb, noa, nua, nob, nub)
                   deallocate(h2c_vvov_3012)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2c_vvvv_2301)
                   deallocate(h1b_vv_10)
                   deallocate(h2c_voov_1302)
                   deallocate(h2b_ovvo_0213)
-                  deallocate(h2c_voov_1023)
                   deallocate(h2c_oooo_1023)
+                  deallocate(h2c_vovv_1023)
                   deallocate(h2c_oovv_1023)
                   deallocate(h2b_oovv_1023)
-                  deallocate(h2c_vvvv_3012)
+                  deallocate(h2c_vvvv_3201)
                   deallocate(h2c_oovv_3012)
                   deallocate(h2b_oovv_3012)
 
@@ -43901,8 +43863,8 @@ module ccsdtq_p_loops
                   real(kind=8), allocatable :: h2c_vooo_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_voov_1302(:,:,:,:)
                   real(kind=8), allocatable :: h2b_ovvo_0213(:,:,:,:)
-                  real(kind=8), allocatable :: h2c_voov_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oooo_1023(:,:,:,:)
+                  real(kind=8), allocatable :: h2c_vovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2b_oovv_1023(:,:,:,:)
                   real(kind=8), allocatable :: h2c_oovv_3012(:,:,:,:)
@@ -43951,22 +43913,22 @@ module ccsdtq_p_loops
                         end do
                      end do
                   end do
-                  allocate(h2c_voov_1023(nob,nub,nob,nub))
-                  do p4 = 1, nub
-                     do p3 = 1, nob
-                        do p2 = 1, nub
-                           do p1 = 1, nob
-                              h2c_voov_1023(p1,p2,p3,p4) = H2C_voov(p2,p1,p3,p4)
-                           end do
-                        end do
-                     end do
-                  end do
                   allocate(h2c_oooo_1023(nob,nob,nob,nob))
                   do p4 = 1, nob
                      do p3 = 1, nob
                         do p2 = 1, nob
                            do p1 = 1, nob
                               h2c_oooo_1023(p1,p2,p3,p4) = H2C_oooo(p2,p1,p3,p4)
+                           end do
+                        end do
+                     end do
+                  end do
+                  allocate(h2c_vovv_1023(nob,nub,nub,nub))
+                  do p4 = 1, nub
+                     do p3 = 1, nub
+                        do p2 = 1, nub
+                           do p1 = 1, nob
+                              h2c_vovv_1023(p1,p2,p3,p4) = H2C_vovv(p2,p1,p3,p4)
                            end do
                         end do
                      end do
@@ -44023,15 +43985,16 @@ module ccsdtq_p_loops
                                 H2B_oovo, H2B_ovvv, H2A_oovv, n4bbbb, n3abb, n3bbb,&
                                 noa, nua, nob, nub)
                   ! (I(T2, T4) * T2)_C and (H * T2 * T2)_C terms
-                  call t4e_p_b2_chol(resid, t4e_amps, t4e_excits, t4d_amps, t4d_excits, t2c,&
-                                     h2c_voov_1023, h2c_oooo_1023, h2c_oovv_1023, h2b_oovv_1023, h2c_oovv_3012, h2b_oovv_3012,&
-                                     n4bbbb, n4abbb, noa, nua, nob, nub)
+                  call t4e_p_b2_chol(resid, t4e_amps, t4e_excits, t4d_amps, t4d_excits, t3d_amps,&
+                                     t3d_excits, t2c, h2c_voov_1302, h2c_oooo_1023, h2c_vovv_1023, h2c_oovv_1023,&
+                                     h2b_oovv_1023, h2c_oovv_3012, h2b_oovv_3012, n4bbbb, n4abbb, n3bbb,&
+                                     noa, nua, nob, nub)
                   deallocate(h2c_vvov_3012)
                   deallocate(h2c_vooo_1023)
                   deallocate(h2c_voov_1302)
                   deallocate(h2b_ovvo_0213)
-                  deallocate(h2c_voov_1023)
                   deallocate(h2c_oooo_1023)
+                  deallocate(h2c_vovv_1023)
                   deallocate(h2c_oovv_1023)
                   deallocate(h2b_oovv_1023)
                   deallocate(h2c_oovv_3012)
